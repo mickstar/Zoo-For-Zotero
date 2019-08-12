@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+          package="com.mickstarify.zooforzotero">
+
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+    <uses-permission android:name="android.permission.INTERNET"/>
+
+    <application
+            android:allowBackup="true"
+            android:icon="@mipmap/ic_launcher"
+            android:label="@string/app_name"
+            android:roundIcon="@mipmap/ic_launcher_round"
+            android:supportsRtl="true"
+            android:theme="@style/AppTheme">
+        <activity
+                android:name="com.mickstarify.zooforzotero.ItemActivity.ItemActivity"
+                android:label="@string/title_activity_item"
+                android:parentActivityName="com.mickstarify.zooforzotero.LibraryActivity.LibraryActivity"
+                android:theme="@style/AppTheme.NoActionBar">
+            <meta-data
+                    android:name="android.support.PARENT_ACTIVITY"
+                    android:value="com.mickstarify.zooforzotero.LibraryActivity.LibraryActivity"/>
+        </activity>
+        <activity
+                android:name="com.mickstarify.zooforzotero.LibraryActivity.LibraryActivity"
+                android:label="@string/title_activity_library"
+                android:theme="@style/AppTheme.NoActionBar">
+        </activity>
+
+        <uses-library
+                android:name="org.apache.http.legacy"
+                android:required="false"/>
+
+        <activity
+                android:name="com.mickstarify.zooforzotero.SyncSetup.ZoteroAPISetup.ZoteroAPISetup"
+                android:label="@string/title_activity_zotero_api_setup"
+                android:launchMode="singleInstance"
+                android:parentActivityName="com.mickstarify.zooforzotero.SyncSetup.SyncSetupView"
+                android:theme="@style/AppTheme.NoActionBar">
+            <meta-data
+                    android:name="android.support.PARENT_ACTIVITY"
+                    android:value="com.mickstarify.zooforzotero.SyncSetup.SyncSetupView"/>
+
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW"/>
+
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+
+                <data
+                        android:host="oauth_callback"
+                        android:scheme="zooforzotero"/>
+            </intent-filter>
+        </activity>
+        <activity
+                android:name="com.mickstarify.zooforzotero.SyncSetup.SyncSetupView"
+                android:label="@string/title_activity_sync_setup"
+                android:theme="@style/AppTheme.NoActionBar">
+        </activity>
+        <activity android:name="com.mickstarify.zooforzotero.MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+        </activity>
+    </application>
+
+</manifest>
