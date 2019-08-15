@@ -60,6 +60,7 @@ class ZoteroDB (val context : Context){
         this.items = gson.fromJson(itemsJsonReader, typeToken)
         itemsJsonReader.close()
         this.createAttachmentsMap()
+        this.createCollectionItemMap()
     }
 
     fun loadCollectionsFromStorage(){
@@ -118,13 +119,11 @@ class ZoteroDB (val context : Context){
         }
         itemsFromCollections = HashMap()
         for (item : Item in this.items!!){
-            if (item.data.containsKey("collections")){
-                for (collection in (item.data["collections"] as List<String>)){
-                    if (!itemsFromCollections!!.containsKey(collection)){
-                        itemsFromCollections!![collection] = LinkedList<Item>()
-                    }
-                    itemsFromCollections!![collection]!!.add(item)
+            for (collection in item.collections){
+                if (!itemsFromCollections!!.containsKey(collection)){
+                    itemsFromCollections!![collection] = LinkedList<Item>()
                 }
+                itemsFromCollections!![collection]!!.add(item)
             }
         }
     }
