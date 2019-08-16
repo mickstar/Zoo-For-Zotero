@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<LinearLayout
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:tools="http://schemas.android.com/tools"
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        tools:context=".LibraryActivity.ItemViewFragment.ItemAuthorsEntry">
+
+
+    <Spinner
+            android:layout_margin="@dimen/text_margin"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" android:id="@+id/spinner_creatorType" android:layout_weight="0"
+            android:layout_gravity="center"/>
+    <EditText
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:inputType="textPersonName"
+            android:text=""
+            android:ems="10"
+            android:id="@+id/editText_lastname" android:layout_weight="2" android:hint="(Last)" android:layout_marginEnd="8dp"/>
+    <EditText
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:inputType="textPersonName"
+            android:text=""
+            android:ems="10"
+            android:id="@+id/editText_firstname" android:layout_weight="2" android:hint="(First)"
+            android:layout_marginEnd="16dp"/>
+</LinearLayout>

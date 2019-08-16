@@ -1,6 +1,7 @@
 package com.mickstarify.zooforzotero.LibraryActivity.ItemViewFragment
 
 import android.content.Context
+import android.net.Uri
 import android.os.Bundle
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -11,16 +12,22 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.fragment.app.Fragment
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
+import com.mickstarify.zooforzotero.LibraryActivity.ItemViewFragment.ItemAuthorsEntry.*
 import com.mickstarify.zooforzotero.R
+import com.mickstarify.zooforzotero.ZoteroAPI.Model.Creator
 
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Item
+import java.util.*
 
 /**
  * A fragment representing a list of Items.
  * Activities containing this fragment MUST implement the
  * [ItemViewFragment.OnListFragmentInteractionListener] interface.
  */
-class ItemViewFragment: BottomSheetDialogFragment() {
+class ItemViewFragment: BottomSheetDialogFragment(), OnFragmentInteractionListener{
+    override fun onFragmentInteraction(uri: Uri) {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
 
     private lateinit var item : Item
     private var listener: OnListFragmentInteractionListener? = null
@@ -45,7 +52,12 @@ class ItemViewFragment: BottomSheetDialogFragment() {
 
         addTextEntry("Item Type", item.data["itemType"]?:"Unknown")
         addTextEntry("title", item.getTitle())
-
+        if (item.creators.isNotEmpty()){
+            this.addCreators(item.creators)
+        }
+        else{
+            this.addCreators(listOf(Creator("Author", "", "")))
+        }
         for ((key,value) in item.data){
             if (key != "itemType" && key != "title"){
                 addTextEntry(key,value)
@@ -59,6 +71,17 @@ class ItemViewFragment: BottomSheetDialogFragment() {
         val fmt = this.childFragmentManager.beginTransaction()
         fmt.add(R.id.item_fragment_scrollview_ll_layout,
             ItemTextEntry.newInstance(label, content) as Fragment)
+        fmt.commit()
+    }
+
+    private fun addCreators(creators : List<Creator>) {
+        val fmt = this.childFragmentManager.beginTransaction()
+        for (creator in creators) {
+            fmt.add(
+                R.id.item_fragment_scrollview_ll_layout,
+                ItemAuthorsEntry.newInstance(creator) as Fragment
+            )
+        }
         fmt.commit()
     }
 
