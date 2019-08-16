@@ -1,6 +1,7 @@
 package com.mickstarify.zooforzotero.LibraryActivity
 
 import android.os.Bundle
+import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 import android.widget.ListView
@@ -48,6 +49,9 @@ class LibraryActivity : AppCompatActivity(), Contract.View, NavigationView.OnNav
     override fun initUI() {
         val navigationView = findViewById<NavigationView>(R.id.nav_view_library)
         collectionsMenu = navigationView.menu.addSubMenu(R.id.group_collections, Menu.NONE, Menu.NONE, "Collections")
+
+        val swipeRefresh = findViewById<SwipeRefreshLayout>(R.id.library_swipe_refresh)
+        swipeRefresh.setOnRefreshListener(this)
     }
 
     override fun addNavigationEntry(collection: Collection, parent: String) {
@@ -78,7 +82,9 @@ class LibraryActivity : AppCompatActivity(), Contract.View, NavigationView.OnNav
     }
 
     override fun onRefresh() {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        Log.d("Zotero", "got request for refresh")
+        presenter.requestLibraryRefresh()
+
     }
 
     override fun createErrorAlert(title: String, message: String) {
@@ -86,11 +92,13 @@ class LibraryActivity : AppCompatActivity(), Contract.View, NavigationView.OnNav
     }
 
     override fun showLoadingAnimation() {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        val swipeRefresh = findViewById<SwipeRefreshLayout>(R.id.library_swipe_refresh)
+        swipeRefresh.isRefreshing = true
     }
 
     override fun hideLoadingAnimation() {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        val swipeRefresh = findViewById<SwipeRefreshLayout>(R.id.library_swipe_refresh)
+        swipeRefresh.isRefreshing = false
     }
 
     override fun setTitle(title: String) {

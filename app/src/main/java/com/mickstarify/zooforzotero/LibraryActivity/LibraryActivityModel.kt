@@ -2,13 +2,21 @@ package com.mickstarify.zooforzotero.LibraryActivity
 
 import android.content.Context
 import com.mickstarify.zooforzotero.SyncSetup.AuthenticationStorage
+import com.mickstarify.zooforzotero.ZoteroAPI.Model.Collection
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Item
 import com.mickstarify.zooforzotero.ZoteroAPI.ZoteroAPI
 import com.mickstarify.zooforzotero.ZoteroAPI.ZoteroDB
 import java.lang.Exception
 import java.util.*
 
-class LibraryActivityModel(val presenter: Contract.Presenter, context: Context) : Contract.Model {
+class LibraryActivityModel(private val presenter: Contract.Presenter, context: Context) : Contract.Model {
+    var loadingItems = false
+    var loadingCollections = false
+    override fun refreshLibrary() {
+        this.requestItems({})
+        this.requestCollections({})
+    }
+
     override fun getLibraryItems(): List<Item> {
         return zoteroDB.getDisplayableItems()
     }
@@ -28,7 +36,8 @@ class LibraryActivityModel(val presenter: Contract.Presenter, context: Context) 
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
-    override fun requestItems() {
+    override fun requestItems(onFinish : () -> (Unit)) {
+        loadingItems = true
         zoteroAPI.getItems { statusCode, libraryVersion, items ->
             when (statusCode) {
                 200 -> {
@@ -49,13 +58,16 @@ class LibraryActivityModel(val presenter: Contract.Presenter, context: Context) 
                     }
                 }
             }
-            presenter.setCollection("all")
+            loadingItems = false
+            presenter.stopLoading()
+            onFinish()
         }
     }
 
-    override fun requestCollections() {
+    override fun requestCollections(onFinish : () -> (Unit)) {
+        loadingCollections = true
         zoteroAPI.getCollections { statusCode, collections ->
-            when(statusCode){
+            when(statusCode) {
                 200 -> {
                     zoteroDB.collections = collections
                     zoteroDB.commitCollectionsToStorage()
@@ -73,8 +85,14 @@ class LibraryActivityModel(val presenter: Contract.Presenter, context: Context) 
                     }
                 }
             }
-            presenter.receiveCollections(zoteroDB.collections!!)
+            loadingCollections = false
+            presenter.stopLoading()
+            onFinish()
         }
+    }
+
+    override fun getCollections() : List<Collection>? {
+        return zoteroDB.collections
     }
 
     override fun requestItemsForCollection(collectionKey: String) {

@@ -23,15 +23,19 @@ interface Contract {
         fun receiveCollections(collections : List<Collection>)
         fun setCollection(collectionName: String)
         fun selectItem(item : Item)
+        fun requestLibraryRefresh()
+        fun stopLoading()
     }
 
     interface Model {
         fun requestTestConnection()
-        fun requestItems()
-        fun requestCollections()
+        fun requestItems(onFinish : () -> (Unit))
+        fun requestCollections(onFinish : () -> (Unit))
         fun requestItemsForCollection(collectionKey : String)
         fun requestItem()
         fun getLibraryItems() : List<Item>
         fun getItemsFromCollection(collectionName : String) : List<Item>
+        fun refreshLibrary()
+        fun getCollections(): List<Collection>?
     }
 }

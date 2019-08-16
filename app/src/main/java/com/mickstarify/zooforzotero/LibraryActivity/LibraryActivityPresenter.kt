@@ -6,6 +6,17 @@ import com.mickstarify.zooforzotero.ZoteroAPI.Model.Collection
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Item
 
 class LibraryActivityPresenter(val view : Contract.View, context : Context) : Contract.Presenter {
+    override fun stopLoading() {
+        if (!model.loadingCollections && !model.loadingItems) {
+            view.hideLoadingAnimation()
+        }
+    }
+
+    override fun requestLibraryRefresh() {
+        view.showLoadingAnimation()
+        model.refreshLibrary()
+    }
+
     override fun selectItem(item: Item) {
         view.showItemDialog(item)
     }
@@ -47,7 +58,8 @@ class LibraryActivityPresenter(val view : Contract.View, context : Context) : Co
 
     init {
         view.initUI()
-        model.requestCollections()
-        model.requestItems()
+        view.showLoadingAnimation()
+        model.requestCollections({receiveCollections(model.getCollections()!!)})
+        model.requestItems({this.setCollection("all")})
     }
 }

@@ -14,15 +14,6 @@
             android:supportsRtl="true"
             android:theme="@style/AppTheme">
         <activity
-                android:name="com.mickstarify.zooforzotero.ItemActivity.ItemActivity"
-                android:label="@string/title_activity_item"
-                android:parentActivityName="com.mickstarify.zooforzotero.LibraryActivity.LibraryActivity"
-                android:theme="@style/AppTheme.NoActionBar">
-            <meta-data
-                    android:name="android.support.PARENT_ACTIVITY"
-                    android:value="com.mickstarify.zooforzotero.LibraryActivity.LibraryActivity"/>
-        </activity>
-        <activity
                 android:name="com.mickstarify.zooforzotero.LibraryActivity.LibraryActivity"
                 android:label="@string/title_activity_library"
                 android:theme="@style/AppTheme.NoActionBar">
