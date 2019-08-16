@@ -4,6 +4,10 @@ import android.net.Uri
 import com.mickstarify.zooforzotero.SyncSetup.AuthenticationStorage
 
 class ZoteroAPISetupPresenter (val view : Contract.View, val authenticationStorage: AuthenticationStorage): Contract.Presenter {
+    override fun openLibraryView() {
+        view.openLibraryView()
+    }
+
     override fun handleOAuthCallback(uri: Uri?) {
             val oauth_token = uri?.getQueryParameter("oauth_token")
             val oauth_verifier = uri?.getQueryParameter("oauth_verifier")

@@ -11,12 +11,19 @@ import android.net.Uri
 import android.view.View
 import android.webkit.URLUtil
 import androidx.constraintlayout.widget.ConstraintLayout
+import com.mickstarify.zooforzotero.LibraryActivity.LibraryActivity
 import com.mickstarify.zooforzotero.R
 import com.mickstarify.zooforzotero.SyncSetup.AuthenticationStorage
 import kotlinx.android.synthetic.main.activity_zotero_api_setup.*
 
 
 class ZoteroAPISetup : AppCompatActivity(), Contract.View {
+    override fun openLibraryView() {
+        val intent = Intent(this, LibraryActivity::class.java)
+        startActivity(intent)
+        finish()
+    }
+
     override fun startLoadingAnimation() {
         val progressLayout = findViewById<ConstraintLayout>(R.id.constraintLayout_progressdialog)
         progressLayout.visibility = View.VISIBLE

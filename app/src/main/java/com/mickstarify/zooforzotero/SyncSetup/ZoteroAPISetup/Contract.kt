@@ -9,11 +9,13 @@ interface Contract {
         fun makeErrorAlert(title: String, message: String)
         fun startLoadingAnimation()
         fun stopLoadingAnimation()
+        fun openLibraryView()
     }
 
     interface Presenter{
         fun loadAuthorizationURL(authorizationURL: String)
         fun handleOAuthCallback(uri: Uri?)
+        fun openLibraryView()
     }
 
     interface Model {

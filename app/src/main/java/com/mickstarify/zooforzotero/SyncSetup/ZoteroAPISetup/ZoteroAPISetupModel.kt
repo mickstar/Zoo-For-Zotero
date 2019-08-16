@@ -3,6 +3,7 @@ package com.mickstarify.zooforzotero.SyncSetup.ZoteroAPISetup
 import android.util.Log
 import com.mickstarify.zooforzotero.BuildConfig
 import com.mickstarify.zooforzotero.SyncSetup.AuthenticationStorage
+import com.mickstarify.zooforzotero.ZoteroAPI.ZoteroAPI
 import oauth.signpost.commonshttp.CommonsHttpOAuthConsumer
 import oauth.signpost.commonshttp.CommonsHttpOAuthProvider
 import org.jetbrains.anko.doAsync
@@ -72,6 +73,7 @@ class ZoteroAPISetupModel (val presenter: Contract.Presenter): Contract.Model {
                 Log.d("zotero", "userkey ${OAuthConsumer.token}")
                 Log.d("zotero", "user secret ${OAuthConsumer.tokenSecret}")
                 authenticationStorage.setCredentials(username, userID, userkey)
+                presenter.openLibraryView()
             }
 
         }
