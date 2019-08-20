@@ -1,6 +1,9 @@
 package com.mickstarify.zooforzotero.ZoteroAPI
 
+import android.content.Context
 import android.util.Log
+import com.google.common.hash.Hashing
+import com.google.common.io.Files
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Collection
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Item
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.ItemJSONConverter
@@ -9,13 +12,19 @@ import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.ResponseBody
 import okhttp3.logging.HttpLoggingInterceptor
+import org.jetbrains.anko.doAsync
+import org.jetbrains.anko.onComplete
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import java.io.File
 import java.lang.Exception
+import java.security.DigestInputStream
+import java.security.MessageDigest
 import java.util.*
+
 
 const val BASE_URL = "https://api.zotero.org"
 
@@ -37,7 +46,7 @@ class ZoteroAPI(
                     .addHeader("Zotero-API-Version", "3")
                     .addHeader("Zotero-API-Key", API_KEY)
 
-                if (libraryVersion > 0){
+                if (libraryVersion > 0) {
                     request.addHeader("If-Modified-Since-Version", "$libraryVersion")
                 }
                 return chain.proceed(request.build())
@@ -53,7 +62,7 @@ class ZoteroAPI(
 
     private val zoteroAPI = retrofit.create(ZoteroAPIService::class.java)
 
-    fun getCollections(callback: (statusCode : Int, collections: List<Collection>) -> (Unit)) {
+    fun getCollections(callback: (statusCode: Int, collections: List<Collection>) -> (Unit)) {
         /*Does a async call to the API and callbacks with the list of collections, returns an empty list on failure.*/
         val call: Call<List<Collection>> = zoteroAPI.getCollections(userID)
 
@@ -61,9 +70,9 @@ class ZoteroAPI(
             override fun onResponse(call: Call<List<Collection>>, response: Response<List<Collection>>) {
                 if (response.code() == 200) {
                     callback(200, response.body() ?: LinkedList())
-                } else if (response.code() == 304){
+                } else if (response.code() == 304) {
                     callback(304, LinkedList())
-                }else {
+                } else {
                     callback(404, LinkedList())
                 }
             }
@@ -73,6 +82,58 @@ class ZoteroAPI(
                 callback(404, LinkedList())
             }
         })
+    }
+
+    fun getFileForDownload(context: Context, item: Item): File {
+        val filename = item.data["filename"] ?: "unknown"
+        val outputDir = context.externalCacheDir
+        var extension = when (item.data["contentType"]) {
+            "application/pdf" -> "pdf"
+            else -> ""
+        }
+        val file = File(outputDir, filename)
+        return file
+    }
+
+    fun checkIfFileExists(file: File, item: Item): Boolean {
+        if (file.exists()) {
+            val md5 = item.data["md5"] ?: ""
+            val md5Key = Files.hash(file, Hashing.md5()).toString()
+            return md5Key == md5
+        }
+        return false
+    }
+
+    fun downloadItem(context: Context, item: Item): File? {
+        if (item.getItemType() != "attachment") {
+            Log.d("zotero", "got download request for item that isn't attachment")
+        }
+
+        val outputFile = getFileForDownload(context, item)
+        if (checkIfFileExists(outputFile, item)) {
+            return outputFile
+        }
+
+        val call: Call<ResponseBody> = zoteroAPI.getItemFile(userID, item.ItemKey)
+        val response: Response<ResponseBody> = call.execute()
+        Log.d("zotero", "downloadItem() got response code ${response.code()}")
+        val inputStream = response.body()?.byteStream()
+        if (inputStream == null) {
+            throw Exception("network error inputstream is null")
+        }
+        val outputFileStream = outputFile.outputStream()
+        val buffer = ByteArray(32768)
+        var read = inputStream.read(buffer)
+        while (read > 0) {
+            outputFileStream.write(buffer, 0, read)
+            read = inputStream.read(buffer)
+        }
+        outputFileStream.close()
+        inputStream.close()
+        if (checkIfFileExists(outputFile, item)) {
+            return outputFile
+        }
+        return null
     }
 
     fun testConnection(callback: (success: Boolean, message: String) -> (Unit)) {
@@ -137,7 +198,7 @@ class ZoteroAPI(
                     items.addAll(newItems)
 
                     val totalResults: String? = response.headers()["Total-Results"]
-                    val myLibraryVersion : Int = response.headers()["Last-Modified-Version"]?.toInt()?:-1
+                    val myLibraryVersion: Int = response.headers()["Last-Modified-Version"]?.toInt() ?: -1
                     if (totalResults == null) {
                         callback(200, myLibraryVersion, items)
                     } else {

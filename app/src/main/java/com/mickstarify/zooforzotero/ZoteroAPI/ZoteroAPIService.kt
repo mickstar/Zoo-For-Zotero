@@ -7,6 +7,7 @@ import retrofit2.Call
 import retrofit2.http.GET
 import retrofit2.http.Path
 import retrofit2.http.Query
+import retrofit2.http.Streaming
 
 interface ZoteroAPIService {
     @GET("users/{user}/items")
@@ -25,4 +26,11 @@ interface ZoteroAPIService {
     fun getCollections (
         @Path("user") user: String
     ) : Call<List<Collection>>
+
+    @Streaming
+    @GET("users/{user}/items/{itemKey}/file")
+    fun getItemFile(
+        @Path("user") user : String,
+        @Path("itemKey") itemKey : String
+    ) : Call<ResponseBody>
 }

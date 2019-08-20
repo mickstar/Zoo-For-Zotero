@@ -4,8 +4,18 @@ import android.content.Context
 import android.util.Log
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Collection
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Item
+import java.io.File
 
 class LibraryActivityPresenter(val view : Contract.View, context : Context) : Contract.Presenter {
+    override fun openPDF(attachment: File) {
+        view.openPDF(attachment)
+    }
+
+    override fun openAttachment(item: Item) {
+        view.showLoadingAnimation()
+        model.openAttachment(item)
+    }
+
     override fun stopLoading() {
         if (!model.loadingCollections && !model.loadingItems) {
             view.hideLoadingAnimation()
@@ -18,7 +28,7 @@ class LibraryActivityPresenter(val view : Contract.View, context : Context) : Co
     }
 
     override fun selectItem(item: Item) {
-        view.showItemDialog(item)
+        view.showItemDialog(item, model.getAttachments(item.ItemKey))
     }
 
     override fun setCollection(collectionName: String) {
@@ -47,7 +57,7 @@ class LibraryActivityPresenter(val view : Contract.View, context : Context) : Co
     }
 
     override fun createErrorAlert(title: String, message: String) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        view.createErrorAlert(title, message)
     }
 
     override fun getItemEntries(): List<Contract.View> {

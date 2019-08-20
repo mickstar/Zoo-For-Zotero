@@ -2,6 +2,7 @@ package com.mickstarify.zooforzotero.LibraryActivity
 
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Collection
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Item
+import java.io.File
 
 interface Contract {
     interface View {
@@ -13,7 +14,8 @@ interface Contract {
         fun setSidebarEntries(entries : List<String>)
         fun addNavigationEntry(collection: Collection, parent: String)
         fun populateItems (items : List<Item>)
-        fun showItemDialog(item: Item)
+        fun showItemDialog(item: Item, attachments : List<Item>)
+        fun openPDF(attachment: File)
     }
 
     interface Presenter{
@@ -25,6 +27,8 @@ interface Contract {
         fun selectItem(item : Item)
         fun requestLibraryRefresh()
         fun stopLoading()
+        fun openAttachment(item: Item)
+        fun openPDF(attachment: File)
     }
 
     interface Model {
@@ -37,5 +41,7 @@ interface Contract {
         fun getItemsFromCollection(collectionName : String) : List<Item>
         fun refreshLibrary()
         fun getCollections(): List<Collection>?
+        fun getAttachments(itemKey: String): List<Item>
+        fun openAttachment(item: Item)
     }
 }

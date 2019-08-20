@@ -1,15 +1,39 @@
 package com.mickstarify.zooforzotero.LibraryActivity
 
 import android.content.Context
+import android.util.Log
 import com.mickstarify.zooforzotero.SyncSetup.AuthenticationStorage
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Collection
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Item
 import com.mickstarify.zooforzotero.ZoteroAPI.ZoteroAPI
 import com.mickstarify.zooforzotero.ZoteroAPI.ZoteroDB
+import org.jetbrains.anko.doAsync
+import org.jetbrains.anko.onComplete
+import java.io.File
 import java.lang.Exception
 import java.util.*
 
-class LibraryActivityModel(private val presenter: Contract.Presenter, context: Context) : Contract.Model {
+class LibraryActivityModel(private val presenter: Contract.Presenter, val context: Context) : Contract.Model {
+    override fun openAttachment(item: Item) {
+        var attachment : File? = null
+        doAsync {
+            try {
+                attachment = zoteroAPI.downloadItem(context, item)
+            }
+            catch (exception :Exception){
+                presenter.createErrorAlert("Error getting Attachment", "There was an error" +
+                        "downloading the attachment ${item.data["filename"]} from the Zotero Servers.\n" +
+                        "Error Message: ${exception.message}")
+            }
+            onComplete {
+                presenter.stopLoading()
+                if (attachment != null) {
+                    presenter.openPDF(attachment!!)
+                }
+            }
+        }
+    }
+
     var loadingItems = false
     var loadingCollections = false
     override fun refreshLibrary() {
@@ -101,6 +125,10 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, context: C
 
     override fun requestItem() {
         TODO("bro")
+    }
+
+    override fun getAttachments(itemKey : String) : List<Item>{
+        return zoteroDB.getAttachments(itemKey)
     }
 
     init {

@@ -2,6 +2,7 @@ package com.mickstarify.zooforzotero.LibraryActivity.ItemViewFragment
 
 import android.content.Context
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -10,13 +11,17 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.TextView
+import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.Toolbar
 import androidx.fragment.app.Fragment
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
+import com.google.android.material.resources.TextAppearance
 import com.mickstarify.zooforzotero.LibraryActivity.ItemViewFragment.ItemAuthorsEntry.*
 import com.mickstarify.zooforzotero.R
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Creator
 
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Item
+import kotlinx.android.synthetic.main.fragment_item_main.*
 import java.util.*
 
 /**
@@ -30,13 +35,14 @@ class ItemViewFragment: BottomSheetDialogFragment(), OnFragmentInteractionListen
     }
 
     private lateinit var item : Item
+    private lateinit var attachments : List<Item>
     private var listener: OnListFragmentInteractionListener? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         arguments?.let {
             item = it.getParcelable<Item>(ARG_ITEM)!!
+            attachments = it.getParcelableArrayList<Item>(ARG_ATTACHMENTS)!!
         }
     }
 
@@ -45,8 +51,10 @@ class ItemViewFragment: BottomSheetDialogFragment(), OnFragmentInteractionListen
         savedInstanceState: Bundle?
     ): View? {
         val view = inflater.inflate(R.layout.fragment_item_main, container, false)
-        val titleView = view.findViewById<TextView>(R.id.item_title)
-        titleView.text = item.getTitle()
+
+        val toolbar : Toolbar? = view.findViewById(R.id.toolbar)
+        (activity as AppCompatActivity).setSupportActionBar(toolbar)
+        (activity as AppCompatActivity).title = item.getTitle()
 
         val layout : LinearLayout = view.findViewById(R.id.item_fragment_scrollview_ll_layout)
 
@@ -63,8 +71,27 @@ class ItemViewFragment: BottomSheetDialogFragment(), OnFragmentInteractionListen
                 addTextEntry(key,value)
             }
         }
+        val attachmentsLayout = view.findViewById<LinearLayout>(R.id.item_fragment_scrollview_ll_attachments)
+        attachmentsLayout.addView(TextView(context).apply {
+            this.text = "Attachments"
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                this.setTextAppearance(android.R.style.TextAppearance_DeviceDefault_Large)
+            }
+        })
+        this.addAttachments(attachments)
 
         return view
+    }
+
+    private fun addAttachments(attachments: List<Item>){
+        val fmt = this.childFragmentManager.beginTransaction()
+        for (attachment in attachments) {
+            fmt.add(
+                R.id.item_fragment_scrollview_ll_attachments,
+                ItemAttachmentEntry.newInstance(attachment)
+            )
+        }
+        fmt.commit()
     }
 
     private fun addTextEntry(label: String, content : String) {
@@ -117,12 +144,14 @@ class ItemViewFragment: BottomSheetDialogFragment(), OnFragmentInteractionListen
 
     companion object {
         const val ARG_ITEM = "item"
+        const val ARG_ATTACHMENTS = "attachments"
 
         @JvmStatic
-        fun newInstance(item : Item) =
+        fun newInstance(item : Item, attachments : List<Item>) =
             ItemViewFragment().apply {
                 arguments = Bundle().apply {
                     putParcelable(ARG_ITEM, item)
+                    putParcelableArrayList(ARG_ATTACHMENTS, ArrayList(attachments))
                 }
             }
     }

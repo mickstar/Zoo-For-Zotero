@@ -4,7 +4,7 @@ apply plugin: 'kotlin-android'
 
 apply plugin: 'kotlin-android-extensions'
 
-def apikeyPropertiesFile = rootProject.file("apikeys.properties");
+def apikeyPropertiesFile = rootProject.file("apikeys.properties")
 def apikeyProperties = new Properties()
 apikeyProperties.load(new FileInputStream(apikeyPropertiesFile))
 
@@ -51,6 +51,7 @@ dependencies {
     implementation "androidx.navigation:navigation-fragment-ktx:2.0.0"
     implementation "androidx.navigation:navigation-ui-ktx:2.0.0"
     implementation 'com.google.android.material:material:1.0.0'
+    api 'com.google.guava:guava:28.0-android'
     implementation 'oauth.signpost:oauth-signpost:1.2.1.2'
     implementation("com.squareup.okhttp3:logging-interceptor:4.0.1")
     implementation('oauth.signpost:signpost-commonshttp4:1.2.1.2') {

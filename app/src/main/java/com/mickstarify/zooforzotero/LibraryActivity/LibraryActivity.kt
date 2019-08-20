@@ -1,24 +1,60 @@
 package com.mickstarify.zooforzotero.LibraryActivity
 
+import android.content.Intent
+import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
+import android.widget.Button
 import android.widget.ListView
 import androidx.appcompat.app.ActionBarDrawerToggle
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.google.android.material.navigation.NavigationView
+import com.mickstarify.zooforzotero.LibraryActivity.ItemViewFragment.ItemAttachmentEntry
 import com.mickstarify.zooforzotero.LibraryActivity.ItemViewFragment.ItemViewFragment
 import com.mickstarify.zooforzotero.R
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Collection
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Item
 import kotlinx.android.synthetic.main.activity_library.*
+import java.io.File
+import androidx.core.content.FileProvider
+
+
 
 class LibraryActivity : AppCompatActivity(), Contract.View, NavigationView.OnNavigationItemSelectedListener,
-    SwipeRefreshLayout.OnRefreshListener, ItemViewFragment.OnListFragmentInteractionListener {
+    SwipeRefreshLayout.OnRefreshListener,
+    ItemViewFragment.OnListFragmentInteractionListener,
+    ItemAttachmentEntry.OnAttachmentFragmentInteractionListener {
+    override fun openPDF(attachment: File) {
+        var intent = Intent(Intent.ACTION_VIEW)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            val uri = FileProvider.getUriForFile(this, "$packageName.fileprovider", attachment)
+            Log.d("zotero", "${uri.query}")
+            intent = Intent(Intent.ACTION_VIEW)
+            intent.data = uri
+            intent.flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
+            startActivity(intent)
+        }
+        else {
+            intent.setDataAndType(Uri.fromFile(attachment), "application/pdf");
+            intent.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
+            intent = Intent.createChooser(intent, "Open File");
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(intent)
+        }
+
+    }
+
+    override fun openAttachmentFileListener(item: Item) {
+        presenter.openAttachment(item)
+    }
+
     override fun onListFragmentInteraction(item: Item?) {
     }
 
@@ -72,7 +108,7 @@ class LibraryActivity : AppCompatActivity(), Contract.View, NavigationView.OnNav
     }
 
     override fun populateItems(items: List<Item>) {
-        val listView : ListView = findViewById<ListView>(R.id.library_listview)
+        val listView: ListView = findViewById<ListView>(R.id.library_listview)
         listView.adapter = ZoteroItemListAdapter(this, items)
 
         listView.setOnItemClickListener { adapter, view, position: Int, lpos ->
@@ -88,7 +124,13 @@ class LibraryActivity : AppCompatActivity(), Contract.View, NavigationView.OnNav
     }
 
     override fun createErrorAlert(title: String, message: String) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        val alert = AlertDialog.Builder(this)
+        alert.setIcon(R.drawable.ic_error_black_24dp)
+        alert.setTitle(title)
+        alert.setMessage(message)
+        alert.setPositiveButton("Ok") { _, _ ->
+        }
+        alert.show()
     }
 
     override fun showLoadingAnimation() {
@@ -109,8 +151,8 @@ class LibraryActivity : AppCompatActivity(), Contract.View, NavigationView.OnNav
         TODO("later bro")
     }
 
-    override fun showItemDialog(item: Item){
-        val myBottomSheet = ItemViewFragment.newInstance(item)
+    override fun showItemDialog(item: Item, attachments: List<Item>) {
+        val myBottomSheet = ItemViewFragment.newInstance(item, attachments)
         val fm = supportFragmentManager
         myBottomSheet.show(fm, "hello world")
     }
