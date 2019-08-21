@@ -1,5 +1,6 @@
 package com.mickstarify.zooforzotero.LibraryActivity
 
+import android.app.ProgressDialog
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
@@ -26,41 +27,12 @@ import java.io.File
 import androidx.core.content.FileProvider
 
 
-
 class LibraryActivity : AppCompatActivity(), Contract.View, NavigationView.OnNavigationItemSelectedListener,
     SwipeRefreshLayout.OnRefreshListener,
     ItemViewFragment.OnListFragmentInteractionListener,
     ItemAttachmentEntry.OnAttachmentFragmentInteractionListener {
-    override fun openPDF(attachment: File) {
-        var intent = Intent(Intent.ACTION_VIEW)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            val uri = FileProvider.getUriForFile(this, "$packageName.fileprovider", attachment)
-            Log.d("zotero", "${uri.query}")
-            intent = Intent(Intent.ACTION_VIEW)
-            intent.data = uri
-            intent.flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
-            startActivity(intent)
-        }
-        else {
-            intent.setDataAndType(Uri.fromFile(attachment), "application/pdf");
-            intent.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
-            intent = Intent.createChooser(intent, "Open File");
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            startActivity(intent)
-        }
-
-    }
-
-    override fun openAttachmentFileListener(item: Item) {
-        presenter.openAttachment(item)
-    }
-
-    override fun onListFragmentInteraction(item: Item?) {
-    }
-
 
     private lateinit var presenter: Contract.Presenter
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_library)
@@ -155,5 +127,42 @@ class LibraryActivity : AppCompatActivity(), Contract.View, NavigationView.OnNav
         val myBottomSheet = ItemViewFragment.newInstance(item, attachments)
         val fm = supportFragmentManager
         myBottomSheet.show(fm, "hello world")
+    }
+
+    override fun openPDF(attachment: File) {
+        var intent = Intent(Intent.ACTION_VIEW)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            val uri = FileProvider.getUriForFile(this, "$packageName.fileprovider", attachment)
+            Log.d("zotero", "${uri.query}")
+            intent = Intent(Intent.ACTION_VIEW)
+            intent.data = uri
+            intent.flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
+            startActivity(intent)
+        } else {
+            intent.setDataAndType(Uri.fromFile(attachment), "application/pdf");
+            intent.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
+            intent = Intent.createChooser(intent, "Open File");
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(intent)
+        }
+
+    }
+
+    var progressDialog : ProgressDialog? = null
+    override fun showDownloadProgress() {
+        progressDialog = ProgressDialog(this)
+        progressDialog?.setTitle("Downloading")
+        progressDialog?.show()
+    }
+
+    override fun hideDownloadProgress() {
+        progressDialog?.hide()
+    }
+
+    override fun openAttachmentFileListener(item: Item) {
+        presenter.openAttachment(item)
+    }
+
+    override fun onListFragmentInteraction(item: Item?) {
     }
 }

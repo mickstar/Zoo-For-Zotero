@@ -26,7 +26,6 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                         "Error Message: ${exception.message}")
             }
             onComplete {
-                presenter.stopLoading()
                 if (attachment != null) {
                     presenter.openPDF(attachment!!)
                 }

@@ -16,6 +16,8 @@ interface Contract {
         fun populateItems (items : List<Item>)
         fun showItemDialog(item: Item, attachments : List<Item>)
         fun openPDF(attachment: File)
+        fun showDownloadProgress()
+        fun hideDownloadProgress()
     }
 
     interface Presenter{

@@ -8,11 +8,12 @@ import java.io.File
 
 class LibraryActivityPresenter(val view : Contract.View, context : Context) : Contract.Presenter {
     override fun openPDF(attachment: File) {
+        view.hideDownloadProgress()
         view.openPDF(attachment)
     }
 
     override fun openAttachment(item: Item) {
-        view.showLoadingAnimation()
+        view.showDownloadProgress()
         model.openAttachment(item)
     }
 
