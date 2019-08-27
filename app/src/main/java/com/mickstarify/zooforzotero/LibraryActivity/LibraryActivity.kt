@@ -119,7 +119,7 @@ class LibraryActivity : AppCompatActivity(), Contract.View, NavigationView.OnNav
     }
 
     override fun setTitle(title: String) {
-        this.title = title
+        this.supportActionBar?.title = title
     }
 
     override fun setSidebarEntries(entries: List<String>) {
