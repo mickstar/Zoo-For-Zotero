@@ -85,7 +85,7 @@ class LibraryActivity : AppCompatActivity(), Contract.View, NavigationView.OnNav
         return true
     }
 
-    override fun populateItems(entries: List<ListEntry>) {
+    override fun populateEntries(entries: List<ListEntry>) {
         val listView: ListView = findViewById<ListView>(R.id.library_listview)
         listView.adapter = ZoteroItemListAdapter(this, entries)
 

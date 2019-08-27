@@ -12,7 +12,7 @@ interface Contract {
         fun hideLoadingAnimation()
         fun setTitle(title : String)
         fun addNavigationEntry(collection: Collection, parent: String)
-        fun populateItems(items: List<ListEntry>)
+        fun populateEntries(entries: List<ListEntry>)
         fun showItemDialog(item: Item, attachments : List<Item>)
         fun openPDF(attachment: File)
         fun showDownloadProgress()

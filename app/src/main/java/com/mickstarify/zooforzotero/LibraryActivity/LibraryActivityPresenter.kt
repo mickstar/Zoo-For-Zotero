@@ -42,7 +42,7 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
         Log.d("zotero", "Got request to change collection to ${collectionName}")
         if (collectionName == "all") {
             view.setTitle("My Library")
-            view.populateItems(model.getLibraryItems().sortedBy {
+            view.populateEntries(model.getLibraryItems().sortedBy {
                 it.getTitle().toLowerCase(Locale.getDefault())
             }.map { ListEntry(it) })
         } else {
@@ -55,7 +55,7 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
             entries.addAll(model.getItemsFromCollection(collectionName).sortedBy {
                 it.getTitle().toLowerCase(Locale.getDefault())
             }.map { ListEntry(it) })
-            view.populateItems(entries)
+            view.populateEntries(entries)
         }
     }
 
