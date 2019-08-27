@@ -68,6 +68,12 @@ class LibraryActivity : AppCompatActivity(), Contract.View, NavigationView.OnNav
             .setCheckable(true)
     }
 
+    override fun onCreateOptionsMenu(menu: Menu): Boolean {
+        menuInflater.inflate(R.menu.activity_library_actionbar, menu)
+
+        return true
+    }
+
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
         if (item.itemId == R.id.my_library) {
             presenter.setCollection("all")
