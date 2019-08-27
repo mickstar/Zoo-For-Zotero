@@ -3,21 +3,15 @@ package com.mickstarify.zooforzotero.LibraryActivity.ItemViewFragment
 import android.content.Context
 import android.net.Uri
 import android.os.Bundle
-import android.os.Parcelable
-import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
-import android.widget.AutoCompleteTextView
 import android.widget.EditText
 import android.widget.Spinner
-import androidx.core.view.get
-
+import androidx.fragment.app.Fragment
 import com.mickstarify.zooforzotero.R
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Creator
-import org.jetbrains.anko.Android
-import java.util.ArrayList
 
 private const val ARG_CREATOR = "creator"
 

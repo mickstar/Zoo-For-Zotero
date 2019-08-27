@@ -30,18 +30,12 @@
 
 
         <RadioButton
-                android:id="@+id/radio_systempicker"
-                android:textSize="24dp"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:drawableLeft="@mipmap/ic_zoterosync"
-                android:text="Use builtin System Picker" />
-        <RadioButton
                 android:id="@+id/radio_googledrive"
                 android:textSize="24dp"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:drawableLeft="@mipmap/ic_drive_scaled"
+                android:enabled="false"
                 android:text="Google Drive" />
 
         <RadioButton
@@ -51,7 +45,8 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="Dropbox"
-                android:drawableLeft="@mipmap/ic_dropbox" />
+                android:drawableLeft="@mipmap/ic_dropbox"
+                android:enabled="false" />
 
         <RadioButton
                 android:id="@+id/radio_onedrive"
@@ -59,6 +54,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:drawableLeft="@mipmap/ic_onedrive"
+                android:enabled="false"
                 android:text="Onedrive" />
 
         <RadioButton
@@ -81,6 +77,17 @@
             android:text="Proceed"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintRight_toRightOf="parent" />
+
+    <TextView
+            android:id="@+id/textView3"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="48dp"
+            android:text="I have only implemented support for the Zotero Account Syncing option. I will implement alternative syncing options in the future, sorry for the inconvenience."
+            app:layout_constraintEnd_toEndOf="@+id/btn_sync_proceed"
+            app:layout_constraintHorizontal_bias="0.0"
+            app:layout_constraintStart_toStartOf="@+id/radiogroup_cloudproviders"
+            app:layout_constraintTop_toBottomOf="@+id/radiogroup_cloudproviders" />
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>

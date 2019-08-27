@@ -2,11 +2,9 @@
     <string name="app_name">Zoo for Zotero</string>
     <string name="title_activity_sync_setup">Sync Setup</string>
     <string name="title_activity_zotero_api_setup">Zotero API</string>
-    <string name="title_activity_library">LibraryActivity</string>
+    <string name="title_activity_library">Loading</string>
     <string name="navigation_drawer_open">Open navigation drawer</string>
     <string name="navigation_drawer_close">Close navigation drawer</string>
     <string name="title_activity_item">ItemActivity</string>
-
-    <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
 </resources>

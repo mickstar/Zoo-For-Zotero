@@ -3,7 +3,6 @@ package com.mickstarify.zooforzotero.ZoteroAPI.Model
 import android.os.Parcelable
 import com.google.gson.annotations.SerializedName
 import kotlinx.android.parcel.Parcelize
-import kotlin.collections.HashMap
 
 @Parcelize
 open class Item (

@@ -1,16 +1,14 @@
 package com.mickstarify.zooforzotero.LibraryActivity.ItemViewFragment
 
-import androidx.recyclerview.widget.RecyclerView
+
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
-import com.mickstarify.zooforzotero.R
-
-
+import androidx.recyclerview.widget.RecyclerView
 import com.mickstarify.zooforzotero.LibraryActivity.ItemViewFragment.ItemViewFragment.OnListFragmentInteractionListener
+import com.mickstarify.zooforzotero.R
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Item
-
 import kotlinx.android.synthetic.main.fragment_item_text_entry.view.*
 
 
