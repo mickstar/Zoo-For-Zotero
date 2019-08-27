@@ -68,9 +68,12 @@ class ZoteroAPISetupModel (val presenter: Contract.Presenter): Contract.Model {
                 val username = params.getFirst("username")
                 val userID = params.getFirst("userID")
                 val userkey = OAuthConsumer.token
-                Log.d("zotero", "params ${params.toList()}")
-                Log.d("zotero", "userkey ${OAuthConsumer.token}")
-                Log.d("zotero", "user secret ${OAuthConsumer.tokenSecret}")
+
+                if (BuildConfig.DEBUG) {
+                    Log.d("zotero", "params ${params.toList()}")
+                    Log.d("zotero", "userkey ${OAuthConsumer.token}")
+                    Log.d("zotero", "user secret ${OAuthConsumer.tokenSecret}")
+                }
                 authenticationStorage.setCredentials(username, userID, userkey)
                 presenter.openLibraryView()
             }

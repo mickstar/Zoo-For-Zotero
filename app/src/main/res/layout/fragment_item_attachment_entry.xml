@@ -11,7 +11,7 @@
         tools:context=".LibraryActivity.ItemViewFragment.ItemAttachmentEntry">
 
     <ImageView
-            android:src="@drawable/treeitem_attachment_pdf_2x"
+            android:src="@drawable/treeitem_attachment_link_2x"
             android:layout_width="48dp"
             android:layout_height="48dp" android:id="@+id/imageView_attachment_icon" android:layout_weight="1"
             android:layout_marginStart="8dp" app:layout_constraintStart_toStartOf="parent"
