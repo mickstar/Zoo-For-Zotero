@@ -3,7 +3,6 @@ package com.mickstarify.zooforzotero.SyncSetup.ZoteroAPISetup
 import android.util.Log
 import com.mickstarify.zooforzotero.BuildConfig
 import com.mickstarify.zooforzotero.SyncSetup.AuthenticationStorage
-import com.mickstarify.zooforzotero.ZoteroAPI.ZoteroAPI
 import oauth.signpost.commonshttp.CommonsHttpOAuthConsumer
 import oauth.signpost.commonshttp.CommonsHttpOAuthProvider
 import org.jetbrains.anko.doAsync

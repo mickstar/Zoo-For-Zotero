@@ -1,15 +1,14 @@
 package com.mickstarify.zooforzotero.SyncSetup.ZoteroAPISetup
 
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.util.Log
+import android.view.View
+import android.webkit.URLUtil
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.appcompat.app.AppCompatActivity
-
-import android.net.Uri
-import android.view.View
-import android.webkit.URLUtil
 import androidx.constraintlayout.widget.ConstraintLayout
 import com.mickstarify.zooforzotero.LibraryActivity.LibraryActivity
 import com.mickstarify.zooforzotero.R

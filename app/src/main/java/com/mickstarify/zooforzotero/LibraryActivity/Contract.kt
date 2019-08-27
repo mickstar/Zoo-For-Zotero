@@ -7,22 +7,22 @@ import java.io.File
 interface Contract {
     interface View {
         fun initUI ()
-        fun createErrorAlert(title : String,message : String)
+        fun createErrorAlert(title: String, message: String, onClick: () -> Unit)
         fun showLoadingAnimation()
         fun hideLoadingAnimation()
         fun setTitle(title : String)
         fun setSidebarEntries(entries : List<String>)
         fun addNavigationEntry(collection: Collection, parent: String)
-        fun populateItems (items : List<Item>)
+        fun populateItems(items: List<ListEntry>)
         fun showItemDialog(item: Item, attachments : List<Item>)
         fun openPDF(attachment: File)
         fun showDownloadProgress()
         fun hideDownloadProgress()
+        fun makeToastAlert(message: String)
     }
 
     interface Presenter{
-        fun createErrorAlert(title : String,message : String)
-        fun getItemEntries() : List<View>
+        fun createErrorAlert(title: String, message: String, onClick: () -> Unit)
         fun testConnection()
         fun receiveCollections(collections : List<Collection>)
         fun setCollection(collectionName: String)
@@ -31,6 +31,7 @@ interface Contract {
         fun stopLoading()
         fun openAttachment(item: Item)
         fun openPDF(attachment: File)
+        fun makeToastAlert(message: String)
     }
 
     interface Model {
@@ -45,5 +46,6 @@ interface Contract {
         fun getCollections(): List<Collection>?
         fun getAttachments(itemKey: String): List<Item>
         fun openAttachment(item: Item)
+        fun getSubCollections(collectionName: String): List<Collection>
     }
 }

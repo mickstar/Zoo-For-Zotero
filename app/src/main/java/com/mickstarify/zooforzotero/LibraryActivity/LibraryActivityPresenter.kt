@@ -5,8 +5,11 @@ import android.util.Log
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Collection
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Item
 import java.io.File
+import java.util.*
 
-class LibraryActivityPresenter(val view : Contract.View, context : Context) : Contract.Presenter {
+class LibraryActivityPresenter(val view: Contract.View, context: Context) : Contract.Presenter {
+
+
     override fun openPDF(attachment: File) {
         view.hideDownloadProgress()
         view.openPDF(attachment)
@@ -34,13 +37,22 @@ class LibraryActivityPresenter(val view : Contract.View, context : Context) : Co
 
     override fun setCollection(collectionName: String) {
         Log.d("zotero", "Got request to change collection to ${collectionName}")
-        if (collectionName == "all"){
+        if (collectionName == "all") {
             view.setTitle("My Library")
-            view.populateItems(model.getLibraryItems().sortedBy { it.getTitle().toLowerCase() })
-        }
-        else{
+            view.populateItems(model.getLibraryItems().sortedBy {
+                it.getTitle().toLowerCase(Locale.getDefault())
+            }.map { ListEntry(it) })
+        } else {
             view.setTitle(collectionName)
-            view.populateItems(model.getItemsFromCollection(collectionName).sortedBy { it.getTitle().toLowerCase() })
+
+            val entries = LinkedList<ListEntry>()
+            entries.addAll(model.getSubCollections(collectionName).sortedBy {
+                it.getName().toLowerCase(Locale.getDefault())
+            }.map { ListEntry(it) })
+            entries.addAll(model.getItemsFromCollection(collectionName).sortedBy {
+                it.getTitle().toLowerCase(Locale.getDefault())
+            }.map { ListEntry(it) })
+            view.populateItems(entries)
         }
     }
 
@@ -49,20 +61,24 @@ class LibraryActivityPresenter(val view : Contract.View, context : Context) : Co
     }
 
     override fun receiveCollections(collections: List<Collection>) {
-        for (collection : Collection in collections.filter {
+        for (collection: Collection in collections.filter {
             !it.hasParent()
-        }.sortedBy { it.getName().toLowerCase() }){
+        }.sortedBy { it.getName().toLowerCase() }) {
             Log.d("zotero", "Got collection ${collection.getName()}")
             view.addNavigationEntry(collection, "Catalog")
         }
     }
 
-    override fun createErrorAlert(title: String, message: String) {
-        view.createErrorAlert(title, message)
+    override fun createErrorAlert(
+        title: String,
+        message: String,
+        onClick: () -> Unit
+    ) {
+        view.createErrorAlert(title, message, onClick)
     }
 
-    override fun getItemEntries(): List<Contract.View> {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    override fun makeToastAlert(message: String) {
+        view.makeToastAlert(message)
     }
 
     private val model = LibraryActivityModel(this, context)
@@ -70,7 +86,7 @@ class LibraryActivityPresenter(val view : Contract.View, context : Context) : Co
     init {
         view.initUI()
         view.showLoadingAnimation()
-        model.requestCollections({receiveCollections(model.getCollections()!!)})
-        model.requestItems({this.setCollection("all")})
+        model.requestCollections({ receiveCollections(model.getCollections()!!) })
+        model.requestItems({ this.setCollection("all") })
     }
 }

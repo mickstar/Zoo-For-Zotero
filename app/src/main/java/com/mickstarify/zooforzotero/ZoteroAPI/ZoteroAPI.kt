@@ -12,17 +12,12 @@ import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.ResponseBody
 import okhttp3.logging.HttpLoggingInterceptor
-import org.jetbrains.anko.doAsync
-import org.jetbrains.anko.onComplete
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.io.File
-import java.lang.Exception
-import java.security.DigestInputStream
-import java.security.MessageDigest
 import java.util.*
 
 
@@ -34,7 +29,7 @@ class ZoteroAPI(
     val username: String,
     val libraryVersion: Int
 ) {
-    private var httpClient = OkHttpClient()
+    private var httpClientWithCaching = OkHttpClient()
         .newBuilder()
         .addInterceptor(ZoteroAPIInterceptor(API_KEY))
         .addInterceptor(HttpLoggingInterceptor().apply {
@@ -54,17 +49,48 @@ class ZoteroAPI(
         })
         .build()
 
-    private var retrofit: Retrofit = Retrofit.Builder()
+    private var httpClientWithoutCaching = OkHttpClient()
+        .newBuilder()
+        .addInterceptor(ZoteroAPIInterceptor(API_KEY))
+        .addInterceptor(HttpLoggingInterceptor().apply {
+            this.level = HttpLoggingInterceptor.Level.HEADERS
+        })
+        .addInterceptor(object : Interceptor {
+            override fun intercept(chain: Interceptor.Chain): okhttp3.Response {
+                val request = chain.request().newBuilder()
+                    .addHeader("Zotero-API-Version", "3")
+                    .addHeader("Zotero-API-Key", API_KEY)
+                return chain.proceed(request.build())
+            }
+        })
+        .build()
+
+    private var retrofitCaching: Retrofit = Retrofit.Builder()
         .baseUrl(BASE_URL)
-        .client(httpClient)
+        .client(httpClientWithCaching)
+        .addConverterFactory(GsonConverterFactory.create())
+        .build()
+    private var retrofitWithoutCaching: Retrofit = Retrofit.Builder()
+        .baseUrl(BASE_URL)
+        .client(httpClientWithoutCaching)
         .addConverterFactory(GsonConverterFactory.create())
         .build()
 
-    private val zoteroAPI = retrofit.create(ZoteroAPIService::class.java)
+    private val zoteroAPI = retrofitCaching.create(ZoteroAPIService::class.java)
+    private val zoteroAPIWithoutCaching =
+        retrofitWithoutCaching.create(ZoteroAPIService::class.java)
 
-    fun getCollections(callback: (statusCode: Int, collections: List<Collection>) -> (Unit)) {
+    fun getCollections(
+        useCaching: Boolean,
+        callback: (statusCode: Int, collections: List<Collection>) -> (Unit)
+    ) {
         /*Does a async call to the API and callbacks with the list of collections, returns an empty list on failure.*/
-        val call: Call<List<Collection>> = zoteroAPI.getCollections(userID)
+
+        val call: Call<List<Collection>> = if (useCaching) {
+            zoteroAPI.getCollections(userID)
+        } else {
+            zoteroAPIWithoutCaching.getCollections(userID)
+        }
 
         call.enqueue(object : Callback<List<Collection>> {
             override fun onResponse(call: Call<List<Collection>>, response: Response<List<Collection>>) {
@@ -157,7 +183,10 @@ class ZoteroAPI(
         })
     }
 
-    fun getItems(callback: (status: Int, libraryVersion: Int, items: List<Item>) -> (Unit)) {
+    fun getItems(
+        useCaching: Boolean,
+        callback: (status: Int, libraryVersion: Int, items: List<Item>) -> (Unit)
+    ) {
         /*
         * getItems loads the Every Item from the Zotero API.
         * You must pass a callback function which will be called when the data is loaded.
@@ -175,16 +204,22 @@ class ZoteroAPI(
 
 
         val items = LinkedList<Item>()
-        getItemsFromIndex(items, 0, callback)
+        getItemsFromIndex(items, 0, useCaching, callback)
     }
 
 
     fun getItemsFromIndex(
         items: MutableList<Item>,
-        index: Int, callback: (status: Int, libraryVersion: Int, items: List<Item>) -> (Unit)
+        index: Int,
+        useCaching: Boolean,
+        callback: (status: Int, libraryVersion: Int, items: List<Item>) -> (Unit)
     ) {
         /*Does a async call to the API and callbacks with the list of collections, returns an empty list on failure.*/
-        val call: Call<ResponseBody> = zoteroAPI.getItems(userID, index, libraryVersion)
+        val call: Call<ResponseBody> = if (useCaching) {
+            zoteroAPI.getItems(userID, index, libraryVersion)
+        } else {
+            zoteroAPIWithoutCaching.getItems(userID, index, libraryVersion)
+        }
 
         call.enqueue(object : Callback<ResponseBody> {
             override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
@@ -204,7 +239,7 @@ class ZoteroAPI(
                     } else {
                         val newIndex = index + newItems.size
                         if (newIndex < totalResults.toInt()) {
-                            getItemsFromIndex(items, newIndex, callback)
+                            getItemsFromIndex(items, newIndex, useCaching, callback)
                         } else {
                             callback(200, myLibraryVersion, items)
                         }

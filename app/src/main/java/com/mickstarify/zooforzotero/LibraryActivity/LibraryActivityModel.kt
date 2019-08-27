@@ -10,7 +10,6 @@ import com.mickstarify.zooforzotero.ZoteroAPI.ZoteroDB
 import org.jetbrains.anko.doAsync
 import org.jetbrains.anko.onComplete
 import java.io.File
-import java.lang.Exception
 import java.util.*
 
 class LibraryActivityModel(private val presenter: Contract.Presenter, val context: Context) : Contract.Model {
@@ -21,9 +20,11 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                 attachment = zoteroAPI.downloadItem(context, item)
             }
             catch (exception :Exception){
-                presenter.createErrorAlert("Error getting Attachment", "There was an error" +
-                        "downloading the attachment ${item.data["filename"]} from the Zotero Servers.\n" +
-                        "Error Message: ${exception.message}")
+                presenter.createErrorAlert(
+                    "Error getting Attachment", "There was an error" +
+                            "downloading the attachment ${item.data["filename"]} from the Zotero Servers.\n" +
+                            "Error Message: ${exception.message}"
+                ) { }
             }
             onComplete {
                 if (attachment != null) {
@@ -32,6 +33,10 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
             }
         }
     }
+
+    // just a flag to store whether we have shown the user a network error so that we don't
+    // do it twice (from getCatalog & getItems
+    private var shownNetworkError: Boolean = false
 
     var loadingItems = false
     var loadingCollections = false
@@ -52,6 +57,14 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
         throw (Exception("Error, could not find collection with name ${collectionName}"))
     }
 
+    override fun getSubCollections(collectionName: String): List<Collection> {
+        val collectionKey = zoteroDB.getCollectionId(collectionName)
+        if (collectionKey != null) {
+            return zoteroDB.getSubCollectionsFor(collectionKey)
+        }
+        throw (Exception("Error, could not find collection with name ${collectionName}"))
+    }
+
     private lateinit var zoteroAPI: ZoteroAPI
     private var zoteroDB = ZoteroDB(context)
 
@@ -61,7 +74,8 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
 
     override fun requestItems(onFinish : () -> (Unit)) {
         loadingItems = true
-        zoteroAPI.getItems { statusCode, libraryVersion, items ->
+        val useCaching = zoteroDB.hasStorage()
+        zoteroAPI.getItems(useCaching) { statusCode, libraryVersion, items ->
             when (statusCode) {
                 200 -> {
                     zoteroDB.items = items
@@ -69,48 +83,84 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                     zoteroDB.commitItemsToStorage()
                 }
                 304 -> {
-                    zoteroDB.loadItemsFromStorage()
+                    try {
+                        zoteroDB.loadItemsFromStorage()
+                    } catch (e: Exception) {
+                        Log.d("zotero", "there was an error loading cached items copy.")
+                        this.requestItems(onFinish)
+                    }
                 }
                 404 -> {
-                    if (!zoteroDB.hasStorage()) {
-                        presenter.createErrorAlert(
-                            "Network Error",
-                            "There was a problem downloading your library from the Zotero API."
-                        )
+                    if (zoteroDB.hasStorage()) {
+                        Log.d("zotero", "no internet connection. Using cached copy")
+                        presenter.makeToastAlert("No internet connection, using cached copy of library")
+                        zoteroDB.loadItemsFromStorage()
+                    } else {
+                        if (this.shownNetworkError == false) {
+                            this.shownNetworkError = true
+                            presenter.createErrorAlert(
+                                "Network Error",
+                                "There was a problem downloading your library from the Zotero API.\n" +
+                                        "Please check your network connection and try again.",
+                                { this.shownNetworkError = false }
+                            )
+                        }
                         zoteroDB.items = LinkedList()
                     }
                 }
             }
-            loadingItems = false
-            presenter.stopLoading()
-            onFinish()
+            if (zoteroDB.items != null) {
+                loadingItems = false
+                if (!loadingCollections) {
+                    presenter.stopLoading()
+                }
+                onFinish()
+            }
         }
     }
 
     override fun requestCollections(onFinish : () -> (Unit)) {
         loadingCollections = true
-        zoteroAPI.getCollections { statusCode, collections ->
+        val useCaching = zoteroDB.hasStorage()
+        zoteroAPI.getCollections(useCaching) { statusCode, collections ->
             when(statusCode) {
                 200 -> {
                     zoteroDB.collections = collections
                     zoteroDB.commitCollectionsToStorage()
                 }
                 304 -> {
-                    zoteroDB.loadCollectionsFromStorage()
+                    try {
+                        zoteroDB.loadCollectionsFromStorage()
+                    } catch (e: Exception) {
+                        Log.d("zotero", "there was an error loading cached collections copy.")
+                        this.requestCollections(onFinish)
+                    }
                 }
                 404 -> {
-                    if (!zoteroDB.hasStorage()) {
-                        presenter.createErrorAlert(
-                            "Network Error",
-                            "There was a problem downloading your library from the Zotero API."
-                        )
+                    if (zoteroDB.hasStorage()) {
+                        Log.d("zotero", "no internet connection. Using cached copy")
+                        zoteroDB.loadCollectionsFromStorage()
+                    } else {
+                        if (this.shownNetworkError == false) {
+                            this.shownNetworkError = true
+                            presenter.createErrorAlert(
+                                "Network Error",
+                                "There was a problem downloading your library from the Zotero API.\n" +
+                                        "Please check your network connection and try again.",
+                                { this.shownNetworkError = false }
+                            )
+                        }
                         zoteroDB.collections = LinkedList()
                     }
                 }
             }
-            loadingCollections = false
-            presenter.stopLoading()
-            onFinish()
+            if (zoteroDB.collections != null) {
+                loadingCollections = false
+                if (!loadingItems) {
+                    presenter.stopLoading()
+                }
+                onFinish()
+            }
         }
     }
 
@@ -143,7 +193,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
             presenter.createErrorAlert(
                 "Error with stored API", "The API Key we have stored in the application is invalid!" +
                         "Please re-authenticate the application"
-            )
+            ) { }
             auth.destroyCredentials()
         }
     }

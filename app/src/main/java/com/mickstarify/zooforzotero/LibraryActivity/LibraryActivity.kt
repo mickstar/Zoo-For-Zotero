@@ -8,11 +8,12 @@ import android.os.Bundle
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
-import android.widget.Button
 import android.widget.ListView
+import android.widget.Toast
 import androidx.appcompat.app.ActionBarDrawerToggle
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.FileProvider
 import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
@@ -24,7 +25,6 @@ import com.mickstarify.zooforzotero.ZoteroAPI.Model.Collection
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Item
 import kotlinx.android.synthetic.main.activity_library.*
 import java.io.File
-import androidx.core.content.FileProvider
 
 
 class LibraryActivity : AppCompatActivity(), Contract.View, NavigationView.OnNavigationItemSelectedListener,
@@ -79,13 +79,17 @@ class LibraryActivity : AppCompatActivity(), Contract.View, NavigationView.OnNav
         return true
     }
 
-    override fun populateItems(items: List<Item>) {
+    override fun populateItems(entries: List<ListEntry>) {
         val listView: ListView = findViewById<ListView>(R.id.library_listview)
-        listView.adapter = ZoteroItemListAdapter(this, items)
+        listView.adapter = ZoteroItemListAdapter(this, entries)
 
         listView.setOnItemClickListener { adapter, view, position: Int, lpos ->
-            val item = listView.adapter.getItem(position) as Item
-            presenter.selectItem(item)
+            val entry = listView.adapter.getItem(position) as ListEntry
+            if (entry.isCollection()) {
+                presenter.setCollection(entry.getCollection().getName())
+            } else {
+                presenter.selectItem(entry.getItem())
+            }
         }
     }
 
@@ -95,13 +99,12 @@ class LibraryActivity : AppCompatActivity(), Contract.View, NavigationView.OnNav
 
     }
 
-    override fun createErrorAlert(title: String, message: String) {
+    override fun createErrorAlert(title: String, message: String, onClick: () -> Unit) {
         val alert = AlertDialog.Builder(this)
         alert.setIcon(R.drawable.ic_error_black_24dp)
         alert.setTitle(title)
         alert.setMessage(message)
-        alert.setPositiveButton("Ok") { _, _ ->
-        }
+        alert.setPositiveButton("Ok") { _, _ -> onClick() }
         alert.show()
     }
 
@@ -139,10 +142,10 @@ class LibraryActivity : AppCompatActivity(), Contract.View, NavigationView.OnNav
             intent.flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
             startActivity(intent)
         } else {
-            intent.setDataAndType(Uri.fromFile(attachment), "application/pdf");
-            intent.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
-            intent = Intent.createChooser(intent, "Open File");
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            intent.setDataAndType(Uri.fromFile(attachment), "application/pdf")
+            intent.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY)
+            intent = Intent.createChooser(intent, "Open File")
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             startActivity(intent)
         }
 
@@ -164,5 +167,11 @@ class LibraryActivity : AppCompatActivity(), Contract.View, NavigationView.OnNav
     }
 
     override fun onListFragmentInteraction(item: Item?) {
+        Log.d("zotero", "got onListFragmentInteraction from item ${item?.ItemKey}")
+    }
+
+    override fun makeToastAlert(message: String) {
+        val toast = Toast.makeText(this, message, Toast.LENGTH_LONG)
+        toast.show()
     }
 }
