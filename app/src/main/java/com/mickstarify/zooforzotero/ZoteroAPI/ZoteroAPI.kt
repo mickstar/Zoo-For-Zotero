@@ -115,6 +115,7 @@ class ZoteroAPI(
         val outputDir = context.externalCacheDir
         var extension = when (item.data["contentType"]) {
             "application/pdf" -> "pdf"
+            "text/html" -> "html"
             else -> ""
         }
         val file = File(outputDir, filename)
@@ -159,7 +160,7 @@ class ZoteroAPI(
         if (checkIfFileExists(outputFile, item)) {
             return outputFile
         }
-        return null
+        return outputFile
     }
 
     fun testConnection(callback: (success: Boolean, message: String) -> (Unit)) {

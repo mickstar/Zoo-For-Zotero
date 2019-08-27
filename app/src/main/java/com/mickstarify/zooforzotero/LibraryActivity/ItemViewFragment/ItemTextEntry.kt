@@ -4,6 +4,7 @@ import android.content.Context
 import android.net.Uri
 import android.os.Bundle
 import android.text.method.LinkMovementMethod
+import android.text.util.Linkify
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -53,6 +54,8 @@ class ItemTextEntry : Fragment() {
         if (label == "url"){
             contentView.linksClickable = true
             contentView.movementMethod = LinkMovementMethod.getInstance()
+            Linkify.addLinks(contentView, Linkify.WEB_URLS)
+//            contentView.text = content
         }
 
         return view

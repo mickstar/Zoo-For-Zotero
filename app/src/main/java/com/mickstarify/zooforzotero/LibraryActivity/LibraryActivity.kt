@@ -122,10 +122,6 @@ class LibraryActivity : AppCompatActivity(), Contract.View, NavigationView.OnNav
         this.supportActionBar?.title = title
     }
 
-    override fun setSidebarEntries(entries: List<String>) {
-        TODO("later bro")
-    }
-
     override fun showItemDialog(item: Item, attachments: List<Item>) {
         val myBottomSheet = ItemViewFragment.newInstance(item, attachments)
         val fm = supportFragmentManager

@@ -8,7 +8,10 @@ import java.io.File
 import java.util.*
 
 class LibraryActivityPresenter(val view: Contract.View, context: Context) : Contract.Presenter {
-
+    override fun attachmentDownloadError() {
+        this.makeToastAlert("Error downloading the attachment.")
+        view.hideDownloadProgress()
+    }
 
     override fun openPDF(attachment: File) {
         view.hideDownloadProgress()

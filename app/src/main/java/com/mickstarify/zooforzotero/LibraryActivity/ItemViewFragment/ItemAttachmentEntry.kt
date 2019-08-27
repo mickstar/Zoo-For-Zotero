@@ -6,6 +6,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView
 import android.widget.TextView
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.fragment.app.Fragment
@@ -34,11 +35,14 @@ class ItemAttachmentEntry : Fragment() {
         val view = inflater.inflate(R.layout.fragment_item_attachment_entry, container, false)
         val filename = view.findViewById<TextView>(R.id.textView_filename)
         filename.text = attachment?.data?.get("filename") ?:"unknown"
-
+        val filetype = attachment?.data!!["contentType"] ?: ""
         val layout = view.findViewById<ConstraintLayout>(R.id.constraintLayout_attachments_entry)
-
-        layout.setOnClickListener{
-            fileOpenListener?.openAttachmentFileListener(attachment!!)
+        val icon = view.findViewById<ImageView>(R.id.imageView_attachment_icon)
+        if (filetype == "application/pdf") {
+            icon.setImageResource(R.drawable.treeitem_attachment_pdf_2x)
+            layout.setOnClickListener {
+                fileOpenListener?.openAttachmentFileListener(attachment!!)
+            }
         }
 
         return view

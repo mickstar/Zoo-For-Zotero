@@ -29,6 +29,8 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
             onComplete {
                 if (attachment != null) {
                     presenter.openPDF(attachment!!)
+                } else {
+                    presenter.attachmentDownloadError()
                 }
             }
         }

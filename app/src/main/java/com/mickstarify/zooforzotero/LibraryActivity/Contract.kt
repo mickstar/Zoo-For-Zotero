@@ -11,7 +11,6 @@ interface Contract {
         fun showLoadingAnimation()
         fun hideLoadingAnimation()
         fun setTitle(title : String)
-        fun setSidebarEntries(entries : List<String>)
         fun addNavigationEntry(collection: Collection, parent: String)
         fun populateItems(items: List<ListEntry>)
         fun showItemDialog(item: Item, attachments : List<Item>)
@@ -32,6 +31,7 @@ interface Contract {
         fun openAttachment(item: Item)
         fun openPDF(attachment: File)
         fun makeToastAlert(message: String)
+        fun attachmentDownloadError()
     }
 
     interface Model {
