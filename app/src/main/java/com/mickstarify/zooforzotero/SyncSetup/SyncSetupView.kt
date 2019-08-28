@@ -10,6 +10,21 @@ import com.mickstarify.zooforzotero.R
 import com.mickstarify.zooforzotero.SyncSetup.ZoteroAPISetup.ZoteroAPISetup
 
 class SyncSetupView : AppCompatActivity(), SyncSetupContract.View {
+    override fun showHowToZoteroSyncDialog(onProceed: () -> Unit) {
+        val dialog = AlertDialog.Builder(this)
+        dialog.setTitle("How to")
+        dialog.setMessage(
+            "I am going to open up a browser for the zotero account website.\n\n" +
+                    "You will need to login with your Zotero Account.\n" +
+                    "Then scroll down and make sure you click \"Save Key\"\n\n" +
+                    "Once this is complete the web browser should close."
+        )
+        dialog.setPositiveButton(
+            "Got it!"
+        ) { _, _ -> onProceed() }
+        dialog.show()
+    }
+
     override fun createUnsupportedAlert() {
         val alert = AlertDialog.Builder(this@SyncSetupView)
         alert.setIcon(R.drawable.ic_error_black_24dp)
@@ -34,7 +49,7 @@ class SyncSetupView : AppCompatActivity(), SyncSetupContract.View {
 
     override fun initUI() {
         val btnProceed = findViewById<Button>(R.id.btn_sync_proceed)
-        val rg_cloudproviders = findViewById<RadioGroup>(R.id.radiogroup_cloudproviders);
+        val rg_cloudproviders = findViewById<RadioGroup>(R.id.radiogroup_cloudproviders)
         rg_cloudproviders.setOnCheckedChangeListener { _, i ->
             when (i) {
                 R.id.radio_dropbox -> selected_provider = SyncOption.Dropbox
@@ -63,6 +78,13 @@ class SyncSetupView : AppCompatActivity(), SyncSetupContract.View {
 //        setSupportActionBar(toolbar)
 
         presenter = SyncSetupPresenter(this)
+    }
+
+    override fun onResume() {
+        if (presenter.hasSyncSetup(this)) {
+            finish()
+        }
+        super.onResume()
     }
 
 }

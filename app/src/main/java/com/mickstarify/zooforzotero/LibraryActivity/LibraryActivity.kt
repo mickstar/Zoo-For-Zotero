@@ -43,7 +43,8 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
         setContentView(R.layout.activity_library)
 
         setSupportActionBar(toolbar)
-
+        supportActionBar?.setDisplayShowHomeEnabled(false)
+        supportActionBar?.setHomeButtonEnabled(false)
         val drawer = findViewById<DrawerLayout>(R.id.drawerlayout_library)
         val toggle = ActionBarDrawerToggle(
             this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close
@@ -231,7 +232,7 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         Log.d(packageName, "got intent ${intent.action}")
-        if (intent.action == LibraryActivity.ACTION_FILTER) {
+        if (intent.action == ACTION_FILTER) {
             val query = intent.getStringExtra(EXTRA_QUERY) ?: ""
             Log.d(packageName, "got intent for library filter $query")
             presenter.filterEntries(query)

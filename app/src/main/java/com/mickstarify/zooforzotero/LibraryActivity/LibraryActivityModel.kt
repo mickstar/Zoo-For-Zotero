@@ -17,7 +17,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
     // just a flag to store whether we have shown the user a network error so that we don't
     // do it twice (from getCatalog & getItems
     private var shownNetworkError: Boolean = false
-    public var currentCollection: String = "unset"
+    var currentCollection: String = "unset"
 
     var loadingItems = false
     var loadingCollections = false
@@ -173,7 +173,8 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
         return zoteroDB.items?.filter {
             (it.ItemKey.toUpperCase(Locale.getDefault()).contains(queryUpper) ||
                     it.getTitle().toUpperCase(Locale.getDefault()).contains(queryUpper) ||
-                    it.getItemType().toUpperCase(Locale.getDefault()).contains(queryUpper))
+                    it.getItemType().toUpperCase(Locale.getDefault()).contains(queryUpper) ||
+                    it.tags.joinToString("_").toUpperCase(Locale.getDefault()).contains(query))
 
         } ?: LinkedList()
     }

@@ -15,7 +15,8 @@ open class Item (
     @SerializedName("tags")
     var tags : List<String>,
     val creators: List<Creator>,
-    val collections: List<String>
+    val collections: List<String>,
+    var mtime: Double = 0.0
 ) : Parcelable {
 
     fun getValue(key : String) : Any? {
@@ -23,6 +24,7 @@ open class Item (
             "key" -> return this.ItemKey
             "version" -> return this.version
             "tags" -> return this.tags
+            "mtime" -> return this.mtime.toString()
             else -> {
                 if (key in data){
                     when (key){

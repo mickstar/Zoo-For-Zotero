@@ -31,4 +31,6 @@
     <string name="sync_only_new">Sync only new content</string>
     <string name="sync_only_new_summary_off">Downloading the entire library everytime. Warning this is slow and wastes bandwidth.</string>
     <string name="sync_only_new_summary_on">Only syncing when changes are detected. This is recommended.</string>
+    <string name="title">Title</string>
+    <string name="author">Author</string>
 </resources>

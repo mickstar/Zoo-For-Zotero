@@ -1,10 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
-                                                   xmlns:app="http://schemas.android.com/apk/res-auto"
-                                                   xmlns:tools="http://schemas.android.com/tools"
-                                                   android:layout_width="match_parent"
-                                                   android:layout_height="?android:attr/listPreferredItemHeight"
-                                                   android:descendantFocusability="blocksDescendants">
+        xmlns:app="http://schemas.android.com/apk/res-auto"
+        android:layout_width="match_parent"
+        android:layout_height="?android:attr/listPreferredItemHeight"
+        android:descendantFocusability="blocksDescendants">
 
 
     <ImageView
@@ -15,10 +14,11 @@
             android:layout_marginEnd="16dp"
             android:layout_marginStart="16dp"
             android:layout_marginTop="8dp"
+            android:contentDescription="icon for the item type"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintLeft_toLeftOf="parent"
             app:layout_constraintTop_toTopOf="parent"
-            app:srcCompat="@mipmap/ic_launcher" />
+            app:srcCompat="@mipmap/ic_zoterosync" />
 
     <TextView
             android:id="@+id/txt_title"
@@ -28,7 +28,7 @@
             android:layout_marginEnd="16dp"
             android:layout_marginTop="4dp"
             android:maxLines="2"
-            android:text="Title"
+            android:text="@string/title"
             android:textAppearance="@style/TextAppearance.AppCompat"
             app:layout_constraintHorizontal_bias="0.0"
             app:layout_constraintLeft_toRightOf="@+id/imageView"
@@ -43,7 +43,7 @@
             android:layout_marginEnd="16dp"
             android:layout_marginTop="2dp"
             android:layout_toEndOf="@+id/imageView"
-            android:text="Author"
+            android:text="@string/author"
             app:layout_constraintLeft_toRightOf="@+id/imageView"
             app:layout_constraintRight_toRightOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/txt_title" />

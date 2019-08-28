@@ -10,7 +10,7 @@ import kotlin.collections.HashMap
 class ItemJSONConverter {
     fun deserialize(jsonString: String): List<Item> {
         val gson = Gson()
-        var lmap: List<Map<String, Any>> = LinkedList()
+        val lmap: List<Map<String, Any>> = LinkedList()
         val listOfItemsObjects = gson.fromJson(jsonString, lmap.javaClass)
 
         val items: MutableList<Item> = LinkedList()
@@ -20,16 +20,20 @@ class ItemJSONConverter {
             val version = (((itemMap["version"]) as Double).toInt())
 
 
-            var tags: MutableList<String> = LinkedList()
+            val tags: MutableList<String> = LinkedList()
             val creators = LinkedList<Creator>()
-            var data: MutableMap<String, String> = HashMap()
+            val data: MutableMap<String, String> = HashMap()
             val itemDataMap = ((itemMap["data"] ?: HashMap<String, Any>()) as Map<String, Any>)
-            var collections : List<String> = LinkedList()
+            var collections: List<String> = LinkedList()
+            var mtime: Double = 0.0
             for ((key: String, value: Any) in itemDataMap) {
                 when (key) {
                     "tags" -> {
                         for (tagItem: Map<String, String> in (value as List<Map<String, String>>)) {
-                            tags.add(tagItem.getOrDefault("tags", ""))
+                            val tag = tagItem.get("tags")
+                            if (tag != null) {
+                                tags.add(tag)
+                            }
                         }
                     }
                     "creators" -> {
@@ -52,6 +56,9 @@ class ItemJSONConverter {
                     "relations" -> {
                         //ignore, don't care lol.
                     }
+                    "mtime" -> {
+                        mtime = value as Double
+                    }
                     else -> {
                         if (value is String) {
                             data[key] = value
@@ -64,7 +71,7 @@ class ItemJSONConverter {
                 }
             }
 
-            items.add(Item(itemKey, version, data, tags, creators, collections))
+            items.add(Item(itemKey, version, data, tags, creators, collections, mtime))
         }
 
         return items
