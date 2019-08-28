@@ -62,10 +62,10 @@ dependencies {
     implementation 'org.jetbrains.anko:anko:0.10.8'
     implementation 'androidx.legacy:legacy-support-v4:1.0.0'
     implementation 'androidx.recyclerview:recyclerview:1.0.0'
-    implementation 'androidx.preference:preference:1.1.0-alpha05'
+    implementation 'androidx.preference:preference:1.1.0-rc01'
     testImplementation 'junit:junit:4.12'
-    testImplementation "org.mockito:mockito-core:2.+"
-    androidTestImplementation "org.mockito:mockito-core:2.+"
+    testImplementation "org.mockito:mockito-core:2.28.2"
+    androidTestImplementation "org.mockito:mockito-core:2.28.2"
     androidTestImplementation 'androidx.test:runner:1.2.0'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0'
     implementation 'androidx.gridlayout:gridlayout:1.0.0'
