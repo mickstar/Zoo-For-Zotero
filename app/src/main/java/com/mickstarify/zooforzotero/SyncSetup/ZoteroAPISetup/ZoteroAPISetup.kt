@@ -10,6 +10,7 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.appcompat.app.AppCompatActivity
 import androidx.constraintlayout.widget.ConstraintLayout
+import com.google.firebase.analytics.FirebaseAnalytics
 import com.mickstarify.zooforzotero.LibraryActivity.LibraryActivity
 import com.mickstarify.zooforzotero.R
 import com.mickstarify.zooforzotero.SyncSetup.AuthenticationStorage
@@ -17,6 +18,8 @@ import kotlinx.android.synthetic.main.activity_zotero_api_setup.*
 
 
 class ZoteroAPISetup : AppCompatActivity(), Contract.View {
+    private lateinit var firebaseAnalytics: FirebaseAnalytics
+
     override fun openLibraryView() {
         val intent = Intent(this, LibraryActivity::class.java)
         startActivity(intent)
@@ -67,7 +70,7 @@ class ZoteroAPISetup : AppCompatActivity(), Contract.View {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_zotero_api_setup)
         setSupportActionBar(toolbar)
-
+        firebaseAnalytics = FirebaseAnalytics.getInstance(this)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
         presenter = ZoteroAPISetupPresenter(this, AuthenticationStorage(this))
@@ -84,7 +87,6 @@ class ZoteroAPISetup : AppCompatActivity(), Contract.View {
             Log.d(this.packageName, "got intent $uri")
             Log.d(packageName, "token ${uri?.getQueryParameter("oauth_token")}")
             Log.d(packageName, "verifier ${uri?.getQueryParameter("oauth_verifier")}")
-
             presenter.handleOAuthCallback(uri)
         }
     }

@@ -6,10 +6,13 @@ import android.widget.Button
 import android.widget.RadioGroup
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import com.google.firebase.analytics.FirebaseAnalytics
 import com.mickstarify.zooforzotero.R
 import com.mickstarify.zooforzotero.SyncSetup.ZoteroAPISetup.ZoteroAPISetup
 
 class SyncSetupView : AppCompatActivity(), SyncSetupContract.View {
+    private lateinit var firebaseAnalytics: FirebaseAnalytics
+
     override fun showHowToZoteroSyncDialog(onProceed: () -> Unit) {
         val dialog = AlertDialog.Builder(this)
         dialog.setTitle("How to")
@@ -75,7 +78,7 @@ class SyncSetupView : AppCompatActivity(), SyncSetupContract.View {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_sync_setup)
-//        setSupportActionBar(toolbar)
+        firebaseAnalytics = FirebaseAnalytics.getInstance(this)
 
         presenter = SyncSetupPresenter(this)
     }

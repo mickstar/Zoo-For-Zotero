@@ -13,7 +13,7 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
     }
 
     override fun filterEntries(query: String) {
-        if (query == "") {
+        if (query == "" || !model.isLoaded()) {
             //not going to waste my time lol.
             return
         }
@@ -31,8 +31,12 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
     }
 
     override fun attachmentDownloadError() {
-        this.makeToastAlert("Error downloading the attachment.")
         view.hideDownloadProgress()
+        createErrorAlert(
+            "Error getting Attachment", "There was an error " +
+                    "downloading the attachment from the Zotero Servers.\n" +
+                    "Please check your internet connection."
+        ) { }
     }
 
     override fun openPDF(attachment: File) {
@@ -116,7 +120,7 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
     init {
         view.initUI()
         view.showLoadingAnimation()
-        model.requestCollections({ receiveCollections(model.getCollections()!!) })
+        model.requestCollections({ receiveCollections(model.getCollections()) })
         model.requestItems({ this.setCollection("all") })
     }
 }

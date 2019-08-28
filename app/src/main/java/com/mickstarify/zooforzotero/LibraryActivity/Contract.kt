@@ -38,18 +38,19 @@ interface Contract {
 
     interface Model {
         fun requestTestConnection()
-        fun requestItems(onFinish : () -> (Unit))
-        fun requestCollections(onFinish : () -> (Unit))
+        fun requestItems(onFinish: () -> (Unit), useCaching: Boolean = true)
+        fun requestCollections(onFinish: () -> (Unit), useCaching: Boolean = true)
         fun requestItemsForCollection(collectionKey : String)
         fun requestItem()
         fun getLibraryItems() : List<Item>
         fun getItemsFromCollection(collectionName : String) : List<Item>
         fun refreshLibrary()
-        fun getCollections(): List<Collection>?
+        fun getCollections(): List<Collection>
         fun getAttachments(itemKey: String): List<Item>
         fun openAttachment(item: Item)
         fun getSubCollections(collectionName: String): List<Collection>
         fun filterCollections(query: String): List<Collection>
         fun filterItems(query: String): List<Item>
+        fun isLoaded(): Boolean
     }
 }

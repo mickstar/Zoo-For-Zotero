@@ -21,9 +21,17 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
 
     var loadingItems = false
     var loadingCollections = false
+
+    private var itemsDownloadAttempt = 0
+    private var collectionsDownloadAttempt = 0
+
     override fun refreshLibrary() {
-        this.requestItems({})
-        this.requestCollections({})
+        this.requestItems({}, useCaching = true)
+        this.requestCollections({}, useCaching = true)
+    }
+
+    override fun isLoaded(): Boolean {
+        return !(zoteroDB.items == null || zoteroDB.collections == null)
     }
 
     override fun getLibraryItems(): List<Item> {
@@ -53,9 +61,9 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
-    override fun requestItems(onFinish: () -> (Unit)) {
+    override fun requestItems(onFinish: () -> (Unit), useCaching: Boolean) {
         loadingItems = true
-        val useCaching = zoteroDB.hasStorage()
+        itemsDownloadAttempt++
         zoteroAPI.getItems(useCaching) { statusCode, libraryVersion, items ->
             when (statusCode) {
                 200 -> {
@@ -65,14 +73,18 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                 }
                 304 -> {
                     try {
+                        zoteroDB.setItemsVersion(libraryVersion)
                         zoteroDB.loadItemsFromStorage()
                     } catch (e: Exception) {
                         Log.d("zotero", "there was an error loading cached items copy.")
-                        this.requestItems(onFinish)
+                        this.requestItems(onFinish, useCaching = false)
                     }
                 }
                 404 -> {
-                    if (zoteroDB.hasStorage()) {
+                    if (itemsDownloadAttempt < 2) {
+                        Log.d("zotero", "attempting another download of items")
+                        this.requestItems(onFinish, useCaching)
+                    } else if (zoteroDB.hasStorage()) {
                         Log.d("zotero", "no internet connection. Using cached copy")
                         presenter.makeToastAlert("No internet connection, using cached copy of library")
                         zoteroDB.loadItemsFromStorage()
@@ -100,9 +112,9 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
         }
     }
 
-    override fun requestCollections(onFinish: () -> (Unit)) {
+    override fun requestCollections(onFinish: () -> (Unit), useCaching: Boolean) {
         loadingCollections = true
-        val useCaching = zoteroDB.hasStorage()
+        collectionsDownloadAttempt++
         zoteroAPI.getCollections(useCaching) { statusCode, collections ->
             when (statusCode) {
                 200 -> {
@@ -114,11 +126,14 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                         zoteroDB.loadCollectionsFromStorage()
                     } catch (e: Exception) {
                         Log.d("zotero", "there was an error loading cached collections copy.")
-                        this.requestCollections(onFinish)
+                        this.requestCollections(onFinish, useCaching = false)
                     }
                 }
                 404 -> {
-                    if (zoteroDB.hasStorage()) {
+                    if (collectionsDownloadAttempt < 2) {
+                        Log.d("zotero", "attempting another download of collections")
+                        this.requestCollections(onFinish, useCaching)
+                    } else if (zoteroDB.hasStorage()) {
                         Log.d("zotero", "no internet connection. Using cached copy")
                         zoteroDB.loadCollectionsFromStorage()
                     } else {
@@ -145,8 +160,8 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
         }
     }
 
-    override fun getCollections(): List<Collection>? {
-        return zoteroDB.collections
+    override fun getCollections(): List<Collection> {
+        return zoteroDB.collections ?: LinkedList()
     }
 
     override fun requestItemsForCollection(collectionKey: String) {
@@ -185,11 +200,10 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
             try {
                 attachment = zoteroAPI.downloadItem(context, item)
             } catch (exception: Exception) {
-                presenter.createErrorAlert(
-                    "Error getting Attachment", "There was an error" +
-                            "downloading the attachment ${item.data["filename"]} from the Zotero Servers.\n" +
-                            "Error Message: ${exception.message}"
-                ) { }
+                Log.e(
+                    "zotero",
+                    "there was an error downloading the attachment message: ${exception.message}"
+                )
             }
             onComplete {
                 if (attachment != null) {

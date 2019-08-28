@@ -113,6 +113,7 @@ class ZoteroAPI(
     fun getFileForDownload(context: Context, item: Item): File {
         val filename = item.data["filename"] ?: "unknown"
         val outputDir = context.externalCacheDir
+
         var extension = when (item.data["contentType"]) {
             "application/pdf" -> "pdf"
             "text/html" -> "html"

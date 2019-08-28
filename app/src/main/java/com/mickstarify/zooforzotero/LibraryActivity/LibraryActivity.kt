@@ -21,6 +21,7 @@ import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.google.android.material.navigation.NavigationView
+import com.google.firebase.analytics.FirebaseAnalytics
 import com.mickstarify.zooforzotero.LibraryActivity.ItemViewFragment.ItemAttachmentEntry
 import com.mickstarify.zooforzotero.LibraryActivity.ItemViewFragment.ItemViewFragment
 import com.mickstarify.zooforzotero.R
@@ -38,10 +39,13 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
     ItemAttachmentEntry.OnAttachmentFragmentInteractionListener {
 
     private lateinit var presenter: Contract.Presenter
+    private lateinit var firebaseAnalytics: FirebaseAnalytics
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_library)
 
+        firebaseAnalytics = FirebaseAnalytics.getInstance(this)
         setSupportActionBar(toolbar)
         supportActionBar?.setDisplayShowHomeEnabled(false)
         supportActionBar?.setHomeButtonEnabled(false)
@@ -208,7 +212,7 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
     var progressDialog: ProgressDialog? = null
     override fun showDownloadProgress() {
         progressDialog = ProgressDialog(this)
-        progressDialog?.setTitle("Downloading")
+        progressDialog?.setTitle("Downloading File")
         progressDialog?.show()
     }
 

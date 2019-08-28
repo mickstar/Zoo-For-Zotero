@@ -19,6 +19,7 @@ class MainActivity : AppCompatActivity() {
             Intent(this, SyncSetupView::class.java)
         }
         startActivity(intent)
+        overridePendingTransition(0, 0)
         finish()
     }
 }

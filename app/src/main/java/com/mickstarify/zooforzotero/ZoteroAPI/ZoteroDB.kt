@@ -109,8 +109,8 @@ class ZoteroDB(val context: Context) {
 
 
     fun hasStorage(): Boolean {
-        val collectionsFile = File(COLLECTIONS_FILENAME)
-        val itemsFile = File(ITEMS_FILENAME)
+        val collectionsFile = context.getFileStreamPath(COLLECTIONS_FILENAME)
+        val itemsFile = context.getFileStreamPath(ITEMS_FILENAME)
         return (collectionsFile.exists() && itemsFile.exists())
     }
 
