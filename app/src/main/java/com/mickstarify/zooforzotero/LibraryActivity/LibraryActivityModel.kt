@@ -12,33 +12,12 @@ import org.jetbrains.anko.onComplete
 import java.io.File
 import java.util.*
 
-class LibraryActivityModel(private val presenter: Contract.Presenter, val context: Context) : Contract.Model {
-    override fun openAttachment(item: Item) {
-        var attachment : File? = null
-        doAsync {
-            try {
-                attachment = zoteroAPI.downloadItem(context, item)
-            }
-            catch (exception :Exception){
-                presenter.createErrorAlert(
-                    "Error getting Attachment", "There was an error" +
-                            "downloading the attachment ${item.data["filename"]} from the Zotero Servers.\n" +
-                            "Error Message: ${exception.message}"
-                ) { }
-            }
-            onComplete {
-                if (attachment != null) {
-                    presenter.openPDF(attachment!!)
-                } else {
-                    presenter.attachmentDownloadError()
-                }
-            }
-        }
-    }
-
+class LibraryActivityModel(private val presenter: Contract.Presenter, val context: Context) :
+    Contract.Model {
     // just a flag to store whether we have shown the user a network error so that we don't
     // do it twice (from getCatalog & getItems
     private var shownNetworkError: Boolean = false
+    public var currentCollection: String = "unset"
 
     var loadingItems = false
     var loadingCollections = false
@@ -52,8 +31,8 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
     }
 
     override fun getItemsFromCollection(collectionName: String): List<Item> {
-        val collectionKey =  zoteroDB.getCollectionId(collectionName)
-        if (collectionKey != null){
+        val collectionKey = zoteroDB.getCollectionId(collectionName)
+        if (collectionKey != null) {
             return zoteroDB.getItemsFromCollection(collectionKey)
         }
         throw (Exception("Error, could not find collection with name ${collectionName}"))
@@ -74,7 +53,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
-    override fun requestItems(onFinish : () -> (Unit)) {
+    override fun requestItems(onFinish: () -> (Unit)) {
         loadingItems = true
         val useCaching = zoteroDB.hasStorage()
         zoteroAPI.getItems(useCaching) { statusCode, libraryVersion, items ->
@@ -121,11 +100,11 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
         }
     }
 
-    override fun requestCollections(onFinish : () -> (Unit)) {
+    override fun requestCollections(onFinish: () -> (Unit)) {
         loadingCollections = true
         val useCaching = zoteroDB.hasStorage()
         zoteroAPI.getCollections(useCaching) { statusCode, collections ->
-            when(statusCode) {
+            when (statusCode) {
                 200 -> {
                     zoteroDB.collections = collections
                     zoteroDB.commitCollectionsToStorage()
@@ -166,7 +145,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
         }
     }
 
-    override fun getCollections() : List<Collection>? {
+    override fun getCollections(): List<Collection>? {
         return zoteroDB.collections
     }
 
@@ -178,8 +157,47 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
         TODO("bro")
     }
 
-    override fun getAttachments(itemKey : String) : List<Item>{
+    override fun getAttachments(itemKey: String): List<Item> {
         return zoteroDB.getAttachments(itemKey)
+    }
+
+    override fun filterCollections(query: String): List<Collection> {
+        val queryUpper = query.toUpperCase(Locale.getDefault())
+        return zoteroDB.collections?.filter {
+            it.getName().toUpperCase(Locale.getDefault()).contains(queryUpper)
+        } ?: LinkedList()
+    }
+
+    override fun filterItems(query: String): List<Item> {
+        val queryUpper = query.toUpperCase(Locale.getDefault())
+        return zoteroDB.items?.filter {
+            (it.ItemKey.toUpperCase(Locale.getDefault()).contains(queryUpper) ||
+                    it.getTitle().toUpperCase(Locale.getDefault()).contains(queryUpper) ||
+                    it.getItemType().toUpperCase(Locale.getDefault()).contains(queryUpper))
+
+        } ?: LinkedList()
+    }
+
+    override fun openAttachment(item: Item) {
+        var attachment: File? = null
+        doAsync {
+            try {
+                attachment = zoteroAPI.downloadItem(context, item)
+            } catch (exception: Exception) {
+                presenter.createErrorAlert(
+                    "Error getting Attachment", "There was an error" +
+                            "downloading the attachment ${item.data["filename"]} from the Zotero Servers.\n" +
+                            "Error Message: ${exception.message}"
+                ) { }
+            }
+            onComplete {
+                if (attachment != null) {
+                    presenter.openPDF(attachment!!)
+                } else {
+                    presenter.attachmentDownloadError()
+                }
+            }
+        }
     }
 
     init {
@@ -193,7 +211,8 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
             )
         } else {
             presenter.createErrorAlert(
-                "Error with stored API", "The API Key we have stored in the application is invalid!" +
+                "Error with stored API",
+                "The API Key we have stored in the application is invalid!" +
                         "Please re-authenticate the application"
             ) { }
             auth.destroyCredentials()

@@ -32,6 +32,8 @@ interface Contract {
         fun openPDF(attachment: File)
         fun makeToastAlert(message: String)
         fun attachmentDownloadError()
+        fun filterEntries(query: String)
+        fun closeQuery()
     }
 
     interface Model {
@@ -47,5 +49,7 @@ interface Contract {
         fun getAttachments(itemKey: String): List<Item>
         fun openAttachment(item: Item)
         fun getSubCollections(collectionName: String): List<Collection>
+        fun filterCollections(query: String): List<Collection>
+        fun filterItems(query: String): List<Item>
     }
 }

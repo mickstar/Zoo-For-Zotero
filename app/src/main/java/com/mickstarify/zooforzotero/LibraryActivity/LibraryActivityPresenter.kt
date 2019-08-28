@@ -8,6 +8,28 @@ import java.io.File
 import java.util.*
 
 class LibraryActivityPresenter(val view: Contract.View, context: Context) : Contract.Presenter {
+    override fun closeQuery() {
+        this.setCollection(model.currentCollection)
+    }
+
+    override fun filterEntries(query: String) {
+        if (query == "") {
+            //not going to waste my time lol.
+            return
+        }
+        val collections = model.filterCollections(query)
+        val items = model.filterItems(query)
+
+        val entries = LinkedList<ListEntry>()
+        entries.addAll(collections.sortedBy { it.getName().toLowerCase(Locale.getDefault()) }
+            .map { ListEntry(it) })
+        entries.addAll(items.sortedBy { it.getTitle().toLowerCase(Locale.getDefault()) }
+            .map { ListEntry(it) })
+
+        view.setTitle("Search Results for ${query}")
+        view.populateEntries(entries)
+    }
+
     override fun attachmentDownloadError() {
         this.makeToastAlert("Error downloading the attachment.")
         view.hideDownloadProgress()
@@ -35,11 +57,16 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
     }
 
     override fun selectItem(item: Item) {
-        view.showItemDialog(item, model.getAttachments(item.ItemKey))
+        if (item.getItemType() == "attachment") {
+            this.openAttachment(item)
+        } else {
+            view.showItemDialog(item, model.getAttachments(item.ItemKey))
+        }
     }
 
     override fun setCollection(collectionName: String) {
         Log.d("zotero", "Got request to change collection to ${collectionName}")
+        model.currentCollection = collectionName
         if (collectionName == "all") {
             view.setTitle("My Library")
             view.populateEntries(model.getLibraryItems().sortedBy {

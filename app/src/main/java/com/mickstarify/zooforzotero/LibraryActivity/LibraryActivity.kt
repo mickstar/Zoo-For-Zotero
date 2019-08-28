@@ -1,6 +1,8 @@
 package com.mickstarify.zooforzotero.LibraryActivity
 
 import android.app.ProgressDialog
+import android.app.SearchManager
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
@@ -13,6 +15,7 @@ import android.widget.Toast
 import androidx.appcompat.app.ActionBarDrawerToggle
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.SearchView
 import androidx.core.content.FileProvider
 import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
@@ -27,7 +30,8 @@ import kotlinx.android.synthetic.main.activity_library.*
 import java.io.File
 
 
-class LibraryActivity : AppCompatActivity(), Contract.View, NavigationView.OnNavigationItemSelectedListener,
+class LibraryActivity : AppCompatActivity(), Contract.View,
+    NavigationView.OnNavigationItemSelectedListener,
     SwipeRefreshLayout.OnRefreshListener,
     ItemViewFragment.OnListFragmentInteractionListener,
     ItemAttachmentEntry.OnAttachmentFragmentInteractionListener {
@@ -56,7 +60,12 @@ class LibraryActivity : AppCompatActivity(), Contract.View, NavigationView.OnNav
 
     override fun initUI() {
         val navigationView = findViewById<NavigationView>(R.id.nav_view_library)
-        collectionsMenu = navigationView.menu.addSubMenu(R.id.group_collections, Menu.NONE, Menu.NONE, "Collections")
+        collectionsMenu = navigationView.menu.addSubMenu(
+            R.id.group_collections,
+            Menu.NONE,
+            Menu.NONE,
+            "Collections"
+        )
 
         val swipeRefresh = findViewById<SwipeRefreshLayout>(R.id.library_swipe_refresh)
         swipeRefresh.setOnRefreshListener(this)
@@ -71,8 +80,39 @@ class LibraryActivity : AppCompatActivity(), Contract.View, NavigationView.OnNav
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         menuInflater.inflate(R.menu.activity_library_actionbar, menu)
 
+        val menuItem = menu.findItem(R.id.search)
+        menuItem.setOnActionExpandListener(object : MenuItem.OnActionExpandListener {
+            override fun onMenuItemActionExpand(item: MenuItem): Boolean {
+                return true
+            }
+
+            override fun onMenuItemActionCollapse(item: MenuItem): Boolean {
+                presenter.closeQuery()
+                return true
+            }
+
+        })
+
+        val searchManager = getSystemService(Context.SEARCH_SERVICE) as SearchManager
+        val searchView = menu.findItem(R.id.search).actionView as SearchView
+        searchView.apply {
+            setSearchableInfo(searchManager.getSearchableInfo(componentName))
+            setOnQueryTextListener(object : SearchView.OnQueryTextListener {
+                override fun onQueryTextSubmit(query: String): Boolean {
+                    return false
+                }
+
+                override fun onQueryTextChange(query: String): Boolean {
+                    presenter.filterEntries(query)
+                    return true
+                }
+
+            })
+        }
+
         return true
     }
+
 
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
         if (item.itemId == R.id.my_library) {
@@ -153,7 +193,7 @@ class LibraryActivity : AppCompatActivity(), Contract.View, NavigationView.OnNav
 
     }
 
-    var progressDialog : ProgressDialog? = null
+    var progressDialog: ProgressDialog? = null
     override fun showDownloadProgress() {
         progressDialog = ProgressDialog(this)
         progressDialog?.setTitle("Downloading")
@@ -175,5 +215,20 @@ class LibraryActivity : AppCompatActivity(), Contract.View, NavigationView.OnNav
     override fun makeToastAlert(message: String) {
         val toast = Toast.makeText(this, message, Toast.LENGTH_LONG)
         toast.show()
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        Log.d(packageName, "got intent ${intent.action}")
+        if (intent.action == LibraryActivity.ACTION_FILTER) {
+            val query = intent.getStringExtra(EXTRA_QUERY) ?: ""
+            Log.d(packageName, "got intent for library filter $query")
+            presenter.filterEntries(query)
+        }
+    }
+
+    companion object {
+        const val ACTION_FILTER = "com.mickstarify.zooforzotero.intent.action.LIBRARY_FILTER_INTENT"
+        const val EXTRA_QUERY = "com.mickstarify.zooforzotero.intent.EXTRA_QUERY_TEXT"
     }
 }
