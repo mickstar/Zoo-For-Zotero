@@ -14,6 +14,14 @@
             android:roundIcon="@mipmap/ic_launcher_round"
             android:supportsRtl="true"
             android:theme="@style/AppTheme">
+        <activity
+                android:name=".SettingsActivity"
+                android:label="@string/title_activity_settings"
+                android:parentActivityName=".LibraryActivity.LibraryActivity">
+            <meta-data
+                    android:name="android.support.PARENT_ACTIVITY"
+                    android:value="com.mickstarify.zooforzotero.LibraryActivity.LibraryActivity" />
+        </activity>
 
         <uses-library
                 android:name="org.apache.http.legacy"
@@ -29,6 +37,7 @@
             <intent-filter>
                 <action android:name="android.intent.action.SEARCH" />
             </intent-filter>
+
             <meta-data
                     android:name="android.app.searchable"
                     android:resource="@xml/searchable" />
@@ -41,8 +50,10 @@
             <meta-data
                     android:name="android.app.searchable"
                     android:resource="@xml/searchable" />
+
             <intent-filter>
                 <action android:name="com.mickstarify.zooforzotero.intent.action.LIBRARY_FILTER_INTENT" />
+
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
@@ -70,7 +81,7 @@
         <activity
                 android:name=".SyncSetup.SyncSetupView"
                 android:label="@string/title_activity_sync_setup"
-                android:theme="@style/AppTheme.NoActionBar"></activity>
+                android:theme="@style/AppTheme.NoActionBar" />
         <activity android:name=".MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

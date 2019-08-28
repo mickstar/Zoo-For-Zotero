@@ -4,9 +4,7 @@ import android.content.Context
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
+import android.view.*
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
@@ -39,6 +37,14 @@ class ItemViewFragment: BottomSheetDialogFragment(), OnFragmentInteractionListen
             item = it.getParcelable<Item>(ARG_ITEM)!!
             attachments = it.getParcelableArrayList<Item>(ARG_ATTACHMENTS)!!
         }
+        setHasOptionsMenu(true) //so we can set custom menu options
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
+        inflater.inflate(R.menu.fragment_library_item_actionbar, menu)
+        // idk why these library activity items are being inflated...
+        menu.removeItem(R.id.settings)
+        menu.removeItem(R.id.search)
     }
 
     override fun onCreateView(
@@ -47,11 +53,9 @@ class ItemViewFragment: BottomSheetDialogFragment(), OnFragmentInteractionListen
     ): View? {
         val view = inflater.inflate(R.layout.fragment_item_main, container, false)
 
-        val toolbar : Toolbar? = view.findViewById(R.id.toolbar)
+        val toolbar: Toolbar? = view.findViewById(R.id.item_fragment_toolbar)
         (activity as AppCompatActivity).setSupportActionBar(toolbar)
         (activity as AppCompatActivity).title = item.getTitle()
-
-        val layout : LinearLayout = view.findViewById(R.id.item_fragment_scrollview_ll_layout)
 
         addTextEntry("Item Type", item.data["itemType"]?:"Unknown")
         addTextEntry("title", item.getTitle())

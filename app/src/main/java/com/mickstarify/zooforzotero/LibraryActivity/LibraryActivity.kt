@@ -24,6 +24,7 @@ import com.google.android.material.navigation.NavigationView
 import com.mickstarify.zooforzotero.LibraryActivity.ItemViewFragment.ItemAttachmentEntry
 import com.mickstarify.zooforzotero.LibraryActivity.ItemViewFragment.ItemViewFragment
 import com.mickstarify.zooforzotero.R
+import com.mickstarify.zooforzotero.SettingsActivity
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Collection
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Item
 import kotlinx.android.synthetic.main.activity_library.*
@@ -77,6 +78,17 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
             .setCheckable(true)
     }
 
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        when (item.itemId) {
+            R.id.settings -> {
+                val intent = Intent(this, SettingsActivity::class.java)
+                startActivity(intent)
+            }
+        }
+        return super.onOptionsItemSelected(item)
+    }
+
+    lateinit var searchView: SearchView
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         menuInflater.inflate(R.menu.activity_library_actionbar, menu)
 
@@ -94,7 +106,7 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
         })
 
         val searchManager = getSystemService(Context.SEARCH_SERVICE) as SearchManager
-        val searchView = menu.findItem(R.id.search).actionView as SearchView
+        searchView = menu.findItem(R.id.search).actionView as SearchView
         searchView.apply {
             setSearchableInfo(searchManager.getSearchableInfo(componentName))
             setOnQueryTextListener(object : SearchView.OnQueryTextListener {
@@ -112,7 +124,6 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
 
         return true
     }
-
 
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
         if (item.itemId == R.id.my_library) {
@@ -224,6 +235,15 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
             val query = intent.getStringExtra(EXTRA_QUERY) ?: ""
             Log.d(packageName, "got intent for library filter $query")
             presenter.filterEntries(query)
+        }
+    }
+
+    override fun onBackPressed() {
+        if (!searchView.isIconified) {
+            searchView.isIconified = true
+            presenter.closeQuery()
+        } else {
+            super.onBackPressed()
         }
     }
 

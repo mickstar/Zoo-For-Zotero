@@ -199,6 +199,17 @@ class ZoteroDB(val context: Context) {
         return sharedPreferences.getInt("ItemsLibraryVersion", -1)
     }
 
+    fun clearItemsVersion() {
+        try {
+            val sharedPreferences = context.getSharedPreferences("zoteroDB", Context.MODE_PRIVATE)
+            val editor = sharedPreferences.edit()
+            editor.remove("ItemsLibraryVersion")
+            editor.apply()
+        } catch (e: Exception) {
+            Log.e(context.packageName, "error clearing items version from local db.")
+        }
+    }
+
     fun getCollectionId(collectionName: String): String? {
         return this.collections?.filter { it.getName() == collectionName }?.getOrNull(0)?.key
     }

@@ -216,6 +216,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                         "Please re-authenticate the application"
             ) { }
             auth.destroyCredentials()
+            zoteroDB.clearItemsVersion()
         }
     }
 }
