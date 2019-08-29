@@ -6,6 +6,8 @@ import com.mickstarify.zooforzotero.SyncSetup.AuthenticationStorage
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Collection
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Item
 import com.mickstarify.zooforzotero.ZoteroAPI.ZoteroAPI
+import com.mickstarify.zooforzotero.ZoteroAPI.ZoteroAPIDownloadCollectionListener
+import com.mickstarify.zooforzotero.ZoteroAPI.ZoteroAPIDownloadItemsListener
 import com.mickstarify.zooforzotero.ZoteroAPI.ZoteroDB
 import org.jetbrains.anko.doAsync
 import org.jetbrains.anko.onComplete
@@ -64,99 +66,125 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
     override fun requestItems(onFinish: () -> (Unit), useCaching: Boolean) {
         loadingItems = true
         itemsDownloadAttempt++
-        zoteroAPI.getItems(useCaching) { statusCode, libraryVersion, items ->
-            when (statusCode) {
-                200 -> {
-                    zoteroDB.items = items
-                    zoteroDB.setItemsVersion(libraryVersion)
-                    zoteroDB.commitItemsToStorage()
-                }
-                304 -> {
+
+        zoteroAPI.getItems(
+            useCaching,
+            zoteroDB.getLibraryVersion(),
+            object : ZoteroAPIDownloadItemsListener {
+                override fun onCachedComplete() {
                     try {
-                        zoteroDB.setItemsVersion(libraryVersion)
                         zoteroDB.loadItemsFromStorage()
                     } catch (e: Exception) {
                         Log.d("zotero", "there was an error loading cached items copy.")
-                        this.requestItems(onFinish, useCaching = false)
+                        presenter.makeToastAlert("There was an error loading the cached copy of your library")
+                        requestItems(onFinish, useCaching = false)
                     }
+                    finishGetItems(onFinish)
                 }
-                404 -> {
+
+                override fun onNetworkFailure() {
                     if (itemsDownloadAttempt < 2) {
                         Log.d("zotero", "attempting another download of items")
-                        this.requestItems(onFinish, useCaching)
+                        requestItems(onFinish, useCaching)
                     } else if (zoteroDB.hasStorage()) {
                         Log.d("zotero", "no internet connection. Using cached copy")
                         presenter.makeToastAlert("No internet connection, using cached copy of library")
                         zoteroDB.loadItemsFromStorage()
                     } else {
-                        if (this.shownNetworkError == false) {
-                            this.shownNetworkError = true
+                        if (shownNetworkError == false) {
+                            shownNetworkError = true
                             presenter.createErrorAlert(
                                 "Network Error",
                                 "There was a problem downloading your library from the Zotero API.\n" +
                                         "Please check your network connection and try again.",
-                                { this.shownNetworkError = false }
+                                { shownNetworkError = false }
                             )
                         }
                         zoteroDB.items = LinkedList()
                     }
+                    finishGetItems(onFinish)
                 }
-            }
-            if (zoteroDB.items != null) {
-                loadingItems = false
-                if (!loadingCollections) {
-                    presenter.stopLoading()
+
+                override fun onDownloadComplete(items: List<Item>, libraryVersion: Int) {
+                    zoteroDB.items = items
+                    zoteroDB.setItemsVersion(libraryVersion)
+                    zoteroDB.commitItemsToStorage()
+                    finishGetItems(onFinish)
                 }
-                onFinish()
+
+                override fun onProgressUpdate(progress: Int, total: Int) {
+                    TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+                }
+
+            })
+    }
+
+    private fun finishGetItems(onFinish: () -> Unit) {
+        if (zoteroDB.items != null) {
+            loadingItems = false
+            if (!loadingCollections) {
+                presenter.stopLoading()
             }
+            onFinish()
         }
     }
 
     override fun requestCollections(onFinish: () -> (Unit), useCaching: Boolean) {
         loadingCollections = true
         collectionsDownloadAttempt++
-        zoteroAPI.getCollections(useCaching) { statusCode, collections ->
-            when (statusCode) {
-                200 -> {
-                    zoteroDB.collections = collections
-                    zoteroDB.commitCollectionsToStorage()
-                }
-                304 -> {
+
+        zoteroAPI.getCollections(
+            useCaching,
+            zoteroDB.getLibraryVersion(),
+            object : ZoteroAPIDownloadCollectionListener {
+                override fun onCachedComplete() {
                     try {
                         zoteroDB.loadCollectionsFromStorage()
                     } catch (e: Exception) {
                         Log.d("zotero", "there was an error loading cached collections copy.")
-                        this.requestCollections(onFinish, useCaching = false)
+                        requestCollections(onFinish, useCaching = false)
                     }
+                    finishGetCollections(onFinish)
                 }
-                404 -> {
+
+
+                override fun onDownloadComplete(collections: List<Collection>) {
+                    zoteroDB.collections = collections
+                    zoteroDB.commitCollectionsToStorage()
+                    finishGetCollections(onFinish)
+                }
+
+                override fun onNetworkFailure() {
                     if (collectionsDownloadAttempt < 2) {
                         Log.d("zotero", "attempting another download of collections")
-                        this.requestCollections(onFinish, useCaching)
+                        requestCollections(onFinish, useCaching)
                     } else if (zoteroDB.hasStorage()) {
                         Log.d("zotero", "no internet connection. Using cached copy")
                         zoteroDB.loadCollectionsFromStorage()
                     } else {
-                        if (this.shownNetworkError == false) {
-                            this.shownNetworkError = true
+                        if (shownNetworkError == false) {
+                            shownNetworkError = true
                             presenter.createErrorAlert(
                                 "Network Error",
                                 "There was a problem downloading your library from the Zotero API.\n" +
                                         "Please check your network connection and try again.",
-                                { this.shownNetworkError = false }
+                                { shownNetworkError = false }
                             )
                         }
                         zoteroDB.collections = LinkedList()
+                        finishGetCollections(onFinish)
                     }
                 }
+            })
+    }
+
+    private fun finishGetCollections(onFinish: () -> Unit) {
+        if (zoteroDB.collections != null) {
+            loadingCollections = false
+            if (!loadingItems) {
+                presenter.stopLoading()
             }
-            if (zoteroDB.collections != null) {
-                loadingCollections = false
-                if (!loadingItems) {
-                    presenter.stopLoading()
-                }
-                onFinish()
-            }
+            onFinish()
         }
     }
 
@@ -221,8 +249,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
             zoteroAPI = ZoteroAPI(
                 auth.getUserKey()!!,
                 auth.getUserID()!!,
-                auth.getUsername()!!,
-                zoteroDB.getItemsVersion()
+                auth.getUsername()!!
             )
         } else {
             presenter.createErrorAlert(

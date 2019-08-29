@@ -15,7 +15,8 @@ interface Contract {
         fun populateEntries(entries: List<ListEntry>)
         fun showItemDialog(item: Item, attachments : List<Item>)
         fun openPDF(attachment: File)
-        fun showDownloadProgress()
+        fun showDownloadProgress(progress: Int = 0, maxProgress: Int = 0)
+        fun updateDownloadProgress(progress: Int, maxProgress: Int)
         fun hideDownloadProgress()
         fun makeToastAlert(message: String)
     }

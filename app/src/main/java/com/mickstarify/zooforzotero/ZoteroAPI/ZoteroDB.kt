@@ -194,7 +194,7 @@ class ZoteroDB(val context: Context) {
         editor.apply()
     }
 
-    fun getItemsVersion(): Int {
+    fun getLibraryVersion(): Int {
         val sharedPreferences = context.getSharedPreferences("zoteroDB", Context.MODE_PRIVATE)
         return sharedPreferences.getInt("ItemsLibraryVersion", -1)
     }

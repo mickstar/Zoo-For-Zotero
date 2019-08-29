@@ -210,10 +210,21 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
     }
 
     var progressDialog: ProgressDialog? = null
-    override fun showDownloadProgress() {
-        progressDialog = ProgressDialog(this)
-        progressDialog?.setTitle("Downloading File")
+    override fun showDownloadProgress(progress: Int, maxProgress: Int) {
+        if (progressDialog == null) {
+            progressDialog = ProgressDialog(this)
+            progressDialog?.setTitle("Downloading File")
+        }
         progressDialog?.show()
+    }
+
+    override fun updateDownloadProgress(progress: Int, maxProgress: Int) {
+        if (maxProgress == 0) {
+            progressDialog?.isIndeterminate = true
+            return
+        }
+        progressDialog?.max = maxProgress
+        progressDialog?.progress = progress
     }
 
     override fun hideDownloadProgress() {
