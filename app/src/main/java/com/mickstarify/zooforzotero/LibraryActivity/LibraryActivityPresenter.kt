@@ -8,6 +8,14 @@ import java.io.File
 import java.util.*
 
 class LibraryActivityPresenter(val view: Contract.View, context: Context) : Contract.Presenter {
+    override fun isShowingContent(): Boolean {
+        return model.isDisplayingItems
+    }
+
+    override fun updateLibraryRefreshProgress(progress: Int, total: Int) {
+        view.updateLibraryLoadingProgress(progress, total)
+    }
+
     override fun closeQuery() {
         this.setCollection(model.currentCollection)
     }
@@ -31,7 +39,7 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
     }
 
     override fun attachmentDownloadError() {
-        view.hideDownloadProgress()
+        view.hideAttachmentDownloadProgress()
         createErrorAlert(
             "Error getting Attachment", "There was an error " +
                     "downloading the attachment from the Zotero Servers.\n" +
@@ -40,23 +48,31 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
     }
 
     override fun openPDF(attachment: File) {
-        view.hideDownloadProgress()
+        view.hideAttachmentDownloadProgress()
         view.openPDF(attachment)
     }
 
     override fun openAttachment(item: Item) {
-        view.showDownloadProgress()
+        view.updateAttachmentDownloadProgress(0, -1)
         model.openAttachment(item)
     }
 
-    override fun stopLoading() {
+    override fun updateAttachmentDownloadProgress(progress: Long, total: Long) {
+        val progressKB = (progress / 1000).toInt()
+        val totalKB = (total / 1000).toInt()
+        view.updateAttachmentDownloadProgress(progressKB, totalKB)
+    }
+
+
+    override fun stopLoadingLibrary() {
         if (!model.loadingCollections && !model.loadingItems) {
             view.hideLoadingAnimation()
+            view.hideLibraryContentDisplay()
         }
     }
 
     override fun requestLibraryRefresh() {
-        view.showLoadingAnimation()
+        view.showLoadingAnimation(showScreen = false)
         model.refreshLibrary()
     }
 
@@ -73,9 +89,11 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
         model.currentCollection = collectionName
         if (collectionName == "all") {
             view.setTitle("My Library")
-            view.populateEntries(model.getLibraryItems().sortedBy {
+            val entries = model.getLibraryItems().sortedBy {
                 it.getTitle().toLowerCase(Locale.getDefault())
-            }.map { ListEntry(it) })
+            }.map { ListEntry(it) }
+            model.isDisplayingItems = entries.size > 0
+            view.populateEntries(entries)
         } else {
             view.setTitle(collectionName)
 
@@ -86,6 +104,7 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
             entries.addAll(model.getItemsFromCollection(collectionName).sortedBy {
                 it.getTitle().toLowerCase(Locale.getDefault())
             }.map { ListEntry(it) })
+            model.isDisplayingItems = entries.size > 0
             view.populateEntries(entries)
         }
     }
@@ -97,7 +116,7 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
     override fun receiveCollections(collections: List<Collection>) {
         for (collection: Collection in collections.filter {
             !it.hasParent()
-        }.sortedBy { it.getName().toLowerCase() }) {
+        }.sortedBy { it.getName().toLowerCase(Locale.getDefault()) }) {
             Log.d("zotero", "Got collection ${collection.getName()}")
             view.addNavigationEntry(collection, "Catalog")
         }
@@ -119,8 +138,14 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
 
     init {
         view.initUI()
-        view.showLoadingAnimation()
-        model.requestCollections({ receiveCollections(model.getCollections()) })
-        model.requestItems({ this.setCollection("all") })
+        view.showLoadingAnimation(true)
+        view.showLibraryContentDisplay("Loading your library content.")
+        if (model.shouldIUpdateLibrary()) {
+            model.requestCollections({ receiveCollections(model.getCollections()) })
+            model.requestItems({ this.setCollection("all") })
+        } else {
+            model.loadCollectionsLocally { receiveCollections(model.getCollections()) }
+            model.loadItemsLocally { this.setCollection("all") }
+        }
     }
 }

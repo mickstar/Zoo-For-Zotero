@@ -13,8 +13,7 @@ interface ZoteroAPIService {
     @GET("users/{user}/items")
     fun getItems (
         @Path("user") user : String,
-        @Query("start") index : Int,
-        @Query("If-Modified-Since-Version") version : Int
+        @Query("start") index: Int
     ) : Call<ResponseBody>
 
     @GET("keys/{key}")

@@ -10,12 +10,16 @@ import android.os.Bundle
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
+import android.view.View
 import android.widget.ListView
+import android.widget.ProgressBar
+import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.ActionBarDrawerToggle
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SearchView
+import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.content.FileProvider
 import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
@@ -38,6 +42,7 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
     ItemViewFragment.OnListFragmentInteractionListener,
     ItemAttachmentEntry.OnAttachmentFragmentInteractionListener {
 
+
     private lateinit var presenter: Contract.Presenter
     private lateinit var firebaseAnalytics: FirebaseAnalytics
 
@@ -46,16 +51,7 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
         setContentView(R.layout.activity_library)
 
         firebaseAnalytics = FirebaseAnalytics.getInstance(this)
-        setSupportActionBar(toolbar)
-        supportActionBar?.setDisplayShowHomeEnabled(false)
-        supportActionBar?.setHomeButtonEnabled(false)
-        val drawer = findViewById<DrawerLayout>(R.id.drawerlayout_library)
-        val toggle = ActionBarDrawerToggle(
-            this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close
-        )
-        drawer.addDrawerListener(toggle)
-        toggle.syncState()
-
+        this.setupActionbar()
         val navigationView = findViewById<NavigationView>(R.id.nav_view_library)
         navigationView.setNavigationItemSelectedListener(this)
 
@@ -76,6 +72,7 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
         val swipeRefresh = findViewById<SwipeRefreshLayout>(R.id.library_swipe_refresh)
         swipeRefresh.setOnRefreshListener(this)
     }
+
 
     override fun addNavigationEntry(collection: Collection, parent: String) {
         collectionsMenu.add(R.id.group_collections, Menu.NONE, Menu.NONE, collection.getName())
@@ -170,17 +167,41 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
         alert.show()
     }
 
-    override fun showLoadingAnimation() {
-        val swipeRefresh = findViewById<SwipeRefreshLayout>(R.id.library_swipe_refresh)
-        swipeRefresh.isRefreshing = true
+    override fun showLoadingAnimation(showScreen: Boolean) {
+        if (showScreen) {
+            this.showLibraryContentDisplay(message = "Downloading your library.")
+            this.updateLibraryLoadingProgress(0)
+        } else {
+            val swipeRefresh = findViewById<SwipeRefreshLayout>(R.id.library_swipe_refresh)
+            swipeRefresh.isRefreshing = true
+        }
     }
 
     override fun hideLoadingAnimation() {
         val swipeRefresh = findViewById<SwipeRefreshLayout>(R.id.library_swipe_refresh)
         swipeRefresh.isRefreshing = false
+        if (presenter.isShowingContent()) {
+            this.hideLibraryContentDisplay()
+        } else {
+            this.showLibraryContentDisplay(message = getString(R.string.library_content_empty_library))
+            progressBar?.visibility = View.INVISIBLE
+        }
+    }
+
+    private fun setupActionbar() {
+        setSupportActionBar(toolbar)
+        supportActionBar?.setDisplayShowHomeEnabled(false)
+        supportActionBar?.setHomeButtonEnabled(false)
+        val drawer = findViewById<DrawerLayout>(R.id.drawerlayout_library)
+        val toggle = ActionBarDrawerToggle(
+            this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close
+        )
+        drawer.addDrawerListener(toggle)
+        toggle.syncState()
     }
 
     override fun setTitle(title: String) {
+        this.setupActionbar()
         this.supportActionBar?.title = title
     }
 
@@ -209,17 +230,36 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
 
     }
 
+    @Suppress("DEPRECATION")
     var progressDialog: ProgressDialog? = null
-    override fun showDownloadProgress() {
-        progressDialog = ProgressDialog(this)
-        progressDialog?.setTitle("Downloading File")
+
+    @Suppress("DEPRECATION")
+    override fun updateAttachmentDownloadProgress(progress: Int, total: Int) {
+        if (progressDialog == null) {
+            progressDialog = ProgressDialog(this)
+            progressDialog?.setTitle("Downloading File")
+        }
+        if (total == 0) {
+            progressDialog?.isIndeterminate = true
+        } else {
+            progressDialog?.isIndeterminate = false
+            progressDialog?.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL)
+            progressDialog?.progress = progress
+            progressDialog?.max = total
+            if (total == -1) {
+                progressDialog?.setMessage("${progress}KB")
+            } else {
+                progressDialog?.setMessage("${progress}KB of ${total}KB")
+            }
+        }
         progressDialog?.show()
     }
 
-    override fun hideDownloadProgress() {
+    override fun hideAttachmentDownloadProgress() {
         progressDialog?.hide()
     }
 
+    /* Is called by the fragment when an attachment is openned by the user. */
     override fun openAttachmentFileListener(item: Item) {
         presenter.openAttachment(item)
     }
@@ -250,6 +290,44 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
         } else {
             super.onBackPressed()
         }
+    }
+
+    var progressBar: ProgressBar? = null
+    override fun updateLibraryLoadingProgress(progress: Int, total: Int) {
+        if (progressBar == null) {
+            progressBar = findViewById(R.id.progressBar_library)
+        }
+        if (progressBar?.visibility == View.INVISIBLE || progressBar?.visibility == View.GONE) {
+            progressBar?.visibility = View.VISIBLE
+        }
+        val textView = findViewById<TextView>(R.id.textView_Library_label)
+
+        progressBar?.progress = progress
+        if (total == -1) {
+            progressBar?.isIndeterminate = true
+            textView.text = "Starting to download your library."
+        } else {
+            progressBar?.max = total
+            progressBar?.isIndeterminate = false
+            textView.text = "Downloading ${progress} of ${total} entries."
+        }
+        progressBar?.isActivated = true
+    }
+
+    override fun showLibraryContentDisplay(message: String) {
+        val constraintLayout = findViewById<ConstraintLayout>(R.id.constraintLayout_library_content)
+        constraintLayout.visibility = View.VISIBLE
+        val textView = findViewById<TextView>(R.id.textView_Library_label)
+        if (message == "") {
+            textView.setText(R.string.library_content_empty_library)
+        } else {
+            textView.setText(message)
+        }
+    }
+
+    override fun hideLibraryContentDisplay() {
+        val constraintLayout = findViewById<ConstraintLayout>(R.id.constraintLayout_library_content)
+        constraintLayout.visibility = View.GONE
     }
 
     companion object {

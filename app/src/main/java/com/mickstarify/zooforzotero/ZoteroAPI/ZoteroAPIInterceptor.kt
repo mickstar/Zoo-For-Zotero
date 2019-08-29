@@ -3,6 +3,7 @@ package com.mickstarify.zooforzotero.ZoteroAPI
 import okhttp3.Interceptor
 import okhttp3.Response
 
+/*dead class will delete*/
 class ZoteroAPIInterceptor (val API_KEY : String): Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response {
         val request = chain.request()
