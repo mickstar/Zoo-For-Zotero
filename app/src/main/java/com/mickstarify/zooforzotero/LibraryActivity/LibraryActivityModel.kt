@@ -27,6 +27,8 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
     private var itemsDownloadAttempt = 0
     private var collectionsDownloadAttempt = 0
 
+    var isDisplayingItems = false
+
     override fun refreshLibrary() {
         this.requestItems({}, useCaching = true)
         this.requestCollections({}, useCaching = true)
@@ -68,8 +70,8 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
         itemsDownloadAttempt++
 
         zoteroAPI.getItems(
-            useCaching,
-            zoteroDB.getLibraryVersion(),
+//            useCaching,
+            false, zoteroDB.getLibraryVersion(),
             object : ZoteroAPIDownloadItemsListener {
                 override fun onCachedComplete() {
                     try {
@@ -113,7 +115,8 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                 }
 
                 override fun onProgressUpdate(progress: Int, total: Int) {
-                    TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+                    Log.d("zotero", "updating items, got $progress of $total")
+                    presenter.updateLibraryRefreshProgress(progress, total)
                 }
 
             })
@@ -123,7 +126,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
         if (zoteroDB.items != null) {
             loadingItems = false
             if (!loadingCollections) {
-                presenter.stopLoading()
+                presenter.stopLoadingLibrary()
             }
             onFinish()
         }
@@ -182,7 +185,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
         if (zoteroDB.collections != null) {
             loadingCollections = false
             if (!loadingItems) {
-                presenter.stopLoading()
+                presenter.stopLoadingLibrary()
             }
             onFinish()
         }

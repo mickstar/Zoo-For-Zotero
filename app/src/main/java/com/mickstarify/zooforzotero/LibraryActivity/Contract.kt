@@ -8,17 +8,20 @@ interface Contract {
     interface View {
         fun initUI ()
         fun createErrorAlert(title: String, message: String, onClick: () -> Unit)
-        fun showLoadingAnimation()
+        fun showLoadingAnimation(showScreen: Boolean)
+        fun updateLibraryLoadingProgress(progress: Int, total: Int = -1)
         fun hideLoadingAnimation()
         fun setTitle(title : String)
         fun addNavigationEntry(collection: Collection, parent: String)
         fun populateEntries(entries: List<ListEntry>)
         fun showItemDialog(item: Item, attachments : List<Item>)
         fun openPDF(attachment: File)
-        fun showDownloadProgress(progress: Int = 0, maxProgress: Int = 0)
-        fun updateDownloadProgress(progress: Int, maxProgress: Int)
-        fun hideDownloadProgress()
+        fun showAttachmentDownloadProgress(progress: Int = 0, maxProgress: Int = 0)
+        fun updateAttachmentDownloadProgress(progress: Int, maxProgress: Int)
+        fun hideAttachmentDownloadProgress()
         fun makeToastAlert(message: String)
+        fun showLibraryContentDisplay(message: String = "")
+        fun hideLibraryContentDisplay()
     }
 
     interface Presenter{
@@ -28,13 +31,15 @@ interface Contract {
         fun setCollection(collectionName: String)
         fun selectItem(item : Item)
         fun requestLibraryRefresh()
-        fun stopLoading()
+        fun stopLoadingLibrary()
         fun openAttachment(item: Item)
         fun openPDF(attachment: File)
         fun makeToastAlert(message: String)
         fun attachmentDownloadError()
         fun filterEntries(query: String)
         fun closeQuery()
+        fun updateLibraryRefreshProgress(progress: Int, total: Int)
+        fun isShowingContent(): Boolean
     }
 
     interface Model {
