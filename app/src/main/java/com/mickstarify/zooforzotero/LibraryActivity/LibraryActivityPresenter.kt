@@ -140,7 +140,12 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
         view.initUI()
         view.showLoadingAnimation(true)
         view.showLibraryContentDisplay("Loading your library content.")
-        model.requestCollections({ receiveCollections(model.getCollections()) })
-        model.requestItems({ this.setCollection("all") })
+        if (model.shouldIUpdateLibrary()) {
+            model.requestCollections({ receiveCollections(model.getCollections()) })
+            model.requestItems({ this.setCollection("all") })
+        } else {
+            model.loadCollectionsLocally { receiveCollections(model.getCollections()) }
+            model.loadItemsLocally { this.setCollection("all") }
+        }
     }
 }

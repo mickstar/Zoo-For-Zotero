@@ -6,8 +6,11 @@ import com.mickstarify.zooforzotero.SyncSetup.AuthenticationStorage
 import com.mickstarify.zooforzotero.ZoteroAPI.*
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Collection
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Item
+import org.jetbrains.anko.doAsync
+import org.jetbrains.anko.onComplete
 import java.io.File
 import java.util.*
+import java.util.concurrent.TimeUnit
 
 class LibraryActivityModel(private val presenter: Contract.Presenter, val context: Context) :
     Contract.Model {
@@ -27,6 +30,19 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
     override fun refreshLibrary() {
         this.requestItems({}, useCaching = true)
         this.requestCollections({}, useCaching = true)
+    }
+
+    fun shouldIUpdateLibrary(): Boolean {
+        if (!zoteroDB.hasStorage()) {
+            return true
+        }
+        val currentTimestamp = System.currentTimeMillis()
+        val lastModified = zoteroDB.getLastModifiedTimestamp()
+
+        if (TimeUnit.MILLISECONDS.toHours(currentTimestamp - lastModified) >= 24) {
+            return true
+        }
+        return false
     }
 
     override fun isLoaded(): Boolean {
@@ -60,6 +76,15 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
+    fun loadItemsLocally(onFinish: () -> Unit) {
+        doAsync {
+            zoteroDB.loadItemsFromStorage()
+            onComplete {
+                finishGetItems(onFinish)
+            }
+        }
+    }
+
     override fun requestItems(onFinish: () -> (Unit), useCaching: Boolean) {
         loadingItems = true
         itemsDownloadAttempt++
@@ -68,7 +93,16 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
             useCaching,
             zoteroDB.getLibraryVersion(),
             object : ZoteroAPIDownloadItemsListener {
+                override fun onDownloadComplete(items: List<Item>, libraryVersion: Int) {
+                    zoteroDB.writeDatabaseUpdatedTimestamp()
+                    zoteroDB.items = items
+                    zoteroDB.setItemsVersion(libraryVersion)
+                    zoteroDB.commitItemsToStorage()
+                    finishGetItems(onFinish)
+                }
+
                 override fun onCachedComplete() {
+                    zoteroDB.writeDatabaseUpdatedTimestamp()
                     try {
                         zoteroDB.loadItemsFromStorage()
                     } catch (e: Exception) {
@@ -102,18 +136,10 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                     finishGetItems(onFinish)
                 }
 
-                override fun onDownloadComplete(items: List<Item>, libraryVersion: Int) {
-                    zoteroDB.items = items
-                    zoteroDB.setItemsVersion(libraryVersion)
-                    zoteroDB.commitItemsToStorage()
-                    finishGetItems(onFinish)
-                }
-
                 override fun onProgressUpdate(progress: Int, total: Int) {
                     Log.d("zotero", "updating items, got $progress of $total")
                     presenter.updateLibraryRefreshProgress(progress, total)
                 }
-
             })
     }
 
@@ -124,6 +150,15 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                 presenter.stopLoadingLibrary()
             }
             onFinish()
+        }
+    }
+
+    override fun loadCollectionsLocally(onFinish: () -> Unit) {
+        doAsync {
+            zoteroDB.loadCollectionsFromStorage()
+            onComplete {
+                finishGetCollections(onFinish)
+            }
         }
     }
 

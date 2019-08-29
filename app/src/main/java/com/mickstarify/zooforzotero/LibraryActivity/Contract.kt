@@ -58,5 +58,6 @@ interface Contract {
         fun filterCollections(query: String): List<Collection>
         fun filterItems(query: String): List<Item>
         fun isLoaded(): Boolean
+        fun loadCollectionsLocally(onFinish: () -> Unit)
     }
 }

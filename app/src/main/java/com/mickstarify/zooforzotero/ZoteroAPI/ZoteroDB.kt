@@ -50,6 +50,20 @@ class ZoteroDB(val context: Context) {
         itemsOut.close()
     }
 
+    fun writeDatabaseUpdatedTimestamp() {
+        val editor = context.getSharedPreferences("zoteroDB", Context.MODE_PRIVATE).edit()
+        val timestamp = System.currentTimeMillis() //timestamp in milliseconds.
+        editor.putLong("lastModified", timestamp)
+        editor.apply()
+    }
+
+    /* Returns the timestamp in milliseconds of when the database was last updated.*/
+    fun getLastModifiedTimestamp(): Long {
+        val sp = context.getSharedPreferences("zoteroDB", Context.MODE_PRIVATE)
+        val timestamp = sp.getLong("lastModified", 0L)
+        return timestamp
+    }
+
     fun commitCollectionsToStorage() {
         if (collections == null) {
             throw Exception("Error, ZoteroDB not initialized. Cannot Commit to storage.")

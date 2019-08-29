@@ -51,16 +51,7 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
         setContentView(R.layout.activity_library)
 
         firebaseAnalytics = FirebaseAnalytics.getInstance(this)
-        setSupportActionBar(toolbar)
-        supportActionBar?.setDisplayShowHomeEnabled(false)
-        supportActionBar?.setHomeButtonEnabled(false)
-        val drawer = findViewById<DrawerLayout>(R.id.drawerlayout_library)
-        val toggle = ActionBarDrawerToggle(
-            this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close
-        )
-        drawer.addDrawerListener(toggle)
-        toggle.syncState()
-
+        this.setupActionbar()
         val navigationView = findViewById<NavigationView>(R.id.nav_view_library)
         navigationView.setNavigationItemSelectedListener(this)
 
@@ -197,7 +188,20 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
         }
     }
 
+    private fun setupActionbar() {
+        setSupportActionBar(toolbar)
+        supportActionBar?.setDisplayShowHomeEnabled(false)
+        supportActionBar?.setHomeButtonEnabled(false)
+        val drawer = findViewById<DrawerLayout>(R.id.drawerlayout_library)
+        val toggle = ActionBarDrawerToggle(
+            this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close
+        )
+        drawer.addDrawerListener(toggle)
+        toggle.syncState()
+    }
+
     override fun setTitle(title: String) {
+        this.setupActionbar()
         this.supportActionBar?.title = title
     }
 
