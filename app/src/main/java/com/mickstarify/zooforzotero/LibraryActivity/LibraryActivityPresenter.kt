@@ -53,9 +53,16 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
     }
 
     override fun openAttachment(item: Item) {
-        view.showAttachmentDownloadProgress()
+        view.updateAttachmentDownloadProgress(0, -1)
         model.openAttachment(item)
     }
+
+    override fun updateAttachmentDownloadProgress(progress: Long, total: Long) {
+        val progressKB = (progress / 1000).toInt()
+        val totalKB = (total / 1000).toInt()
+        view.updateAttachmentDownloadProgress(progressKB, totalKB)
+    }
+
 
     override fun stopLoadingLibrary() {
         if (!model.loadingCollections && !model.loadingItems) {

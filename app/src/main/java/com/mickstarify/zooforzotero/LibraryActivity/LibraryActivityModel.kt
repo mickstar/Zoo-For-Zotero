@@ -3,14 +3,9 @@ package com.mickstarify.zooforzotero.LibraryActivity
 import android.content.Context
 import android.util.Log
 import com.mickstarify.zooforzotero.SyncSetup.AuthenticationStorage
+import com.mickstarify.zooforzotero.ZoteroAPI.*
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Collection
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Item
-import com.mickstarify.zooforzotero.ZoteroAPI.ZoteroAPI
-import com.mickstarify.zooforzotero.ZoteroAPI.ZoteroAPIDownloadCollectionListener
-import com.mickstarify.zooforzotero.ZoteroAPI.ZoteroAPIDownloadItemsListener
-import com.mickstarify.zooforzotero.ZoteroAPI.ZoteroDB
-import org.jetbrains.anko.doAsync
-import org.jetbrains.anko.onComplete
 import java.io.File
 import java.util.*
 
@@ -70,8 +65,8 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
         itemsDownloadAttempt++
 
         zoteroAPI.getItems(
-//            useCaching,
-            false, zoteroDB.getLibraryVersion(),
+            useCaching,
+            zoteroDB.getLibraryVersion(),
             object : ZoteroAPIDownloadItemsListener {
                 override fun onCachedComplete() {
                     try {
@@ -226,24 +221,25 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
     }
 
     override fun openAttachment(item: Item) {
-        var attachment: File? = null
-        doAsync {
-            try {
-                attachment = zoteroAPI.downloadItem(context, item)
-            } catch (exception: Exception) {
-                Log.e(
-                    "zotero",
-                    "there was an error downloading the attachment message: ${exception.message}"
-                )
+        zoteroAPI.downloadItem(context, item, object : ZoteroAPIDownloadAttachmentListener {
+            override fun onNetworkFailure() {
+                presenter.attachmentDownloadError()
             }
-            onComplete {
-                if (attachment != null) {
-                    presenter.openPDF(attachment!!)
-                } else {
-                    presenter.attachmentDownloadError()
-                }
+
+            override fun onComplete(attachment: File) {
+                presenter.openPDF(attachment)
+
             }
-        }
+
+            override fun onFailure() {
+                presenter.attachmentDownloadError()
+            }
+
+            override fun onProgressUpdate(progress: Long, total: Long) {
+                Log.d("zotero", "Downloading attachment. got $progress of $total")
+                presenter.updateAttachmentDownloadProgress(progress, total)
+            }
+        })
     }
 
     init {

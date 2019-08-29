@@ -13,6 +13,9 @@ import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.ResponseBody
 import okhttp3.logging.HttpLoggingInterceptor
+import org.jetbrains.anko.doAsync
+import org.jetbrains.anko.onComplete
+import org.jetbrains.anko.runOnUiThread
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -110,38 +113,61 @@ class ZoteroAPI(
         return false
     }
 
-    fun downloadItem(context: Context, item: Item): File? {
+    fun downloadItem(
+        context: Context,
+        item: Item,
+        listener: ZoteroAPIDownloadAttachmentListener
+    ) {
         if (item.getItemType() != "attachment") {
             Log.d("zotero", "got download request for item that isn't attachment")
         }
 
         val outputFile = getFileForDownload(context, item)
         if (checkIfFileExists(outputFile, item)) {
-            return outputFile
+            listener.onComplete(outputFile)
         }
 
         val zoteroAPI = buildZoteroAPI(useCaching = false, libraryVersion = -1)
 
         val call: Call<ResponseBody> = zoteroAPI.getItemFile(userID, item.ItemKey)
-        val response: Response<ResponseBody> = call.execute()
-        Log.d("zotero", "downloadItem() got response code ${response.code()}")
-        val inputStream = response.body()?.byteStream()
-        if (inputStream == null) {
-            throw Exception("network error inputstream is null")
-        }
-        val outputFileStream = outputFile.outputStream()
-        val buffer = ByteArray(32768)
-        var read = inputStream.read(buffer)
-        while (read > 0) {
-            outputFileStream.write(buffer, 0, read)
-            read = inputStream.read(buffer)
-        }
-        outputFileStream.close()
-        inputStream.close()
-        if (checkIfFileExists(outputFile, item)) {
-            return outputFile
-        }
-        return outputFile
+        call.enqueue(object : Callback<ResponseBody> {
+            override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
+                if (response.code() == 200) {
+                    val inputStream = response.body()?.byteStream()
+                    val fileSize = response.body()?.contentLength() ?: 0
+                    if (inputStream == null) {
+                        listener.onNetworkFailure()
+                        return
+                    }
+                    doAsync {
+                        val outputFileStream = outputFile.outputStream()
+                        val buffer = ByteArray(32768)
+                        var read = inputStream.read(buffer)
+                        var progress: Long = 0
+                        while (read > 0) {
+                            // I Should just bite the bullet and implement rxJava...
+                            context.runOnUiThread {
+                                listener.onProgressUpdate(progress, fileSize)
+                            }
+                            outputFileStream.write(buffer, 0, read)
+                            read = inputStream.read(buffer)
+                            progress += read
+                        }
+
+                        onComplete {
+                            outputFileStream.close()
+                            inputStream.close()
+                            listener.onComplete(outputFile)
+                        }
+                    }
+
+                }
+            }
+
+            override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
+                listener.onNetworkFailure()
+            }
+        })
     }
 
     fun testConnection(callback: (success: Boolean, message: String) -> (Unit)) {

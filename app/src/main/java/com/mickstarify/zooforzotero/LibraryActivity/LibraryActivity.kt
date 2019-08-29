@@ -226,22 +226,29 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
 
     }
 
+    @Suppress("DEPRECATION")
     var progressDialog: ProgressDialog? = null
-    override fun showAttachmentDownloadProgress(progress: Int, maxProgress: Int) {
+
+    @Suppress("DEPRECATION")
+    override fun updateAttachmentDownloadProgress(progress: Int, total: Int) {
         if (progressDialog == null) {
             progressDialog = ProgressDialog(this)
             progressDialog?.setTitle("Downloading File")
         }
-        progressDialog?.show()
-    }
-
-    override fun updateAttachmentDownloadProgress(progress: Int, maxProgress: Int) {
-        if (maxProgress == 0) {
+        if (total == 0) {
             progressDialog?.isIndeterminate = true
-            return
+        } else {
+            progressDialog?.isIndeterminate = false
+            progressDialog?.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL)
+            progressDialog?.progress = progress
+            progressDialog?.max = total
+            if (total == -1) {
+                progressDialog?.setMessage("${progress}KB")
+            } else {
+                progressDialog?.setMessage("${progress}KB of ${total}KB")
+            }
         }
-        progressDialog?.max = maxProgress
-        progressDialog?.progress = progress
+        progressDialog?.show()
     }
 
     override fun hideAttachmentDownloadProgress() {
