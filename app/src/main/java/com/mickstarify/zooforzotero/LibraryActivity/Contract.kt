@@ -40,6 +40,7 @@ interface Contract {
         fun closeQuery()
         fun updateLibraryRefreshProgress(progress: Int, total: Int)
         fun isShowingContent(): Boolean
+        fun cancelAttachmentDownload()
     }
 
     interface Model {
@@ -54,6 +55,7 @@ interface Contract {
         fun getCollections(): List<Collection>
         fun getAttachments(itemKey: String): List<Item>
         fun openAttachment(item: Item)
+        fun cancelAttachmentDownload()
         fun getSubCollections(collectionName: String): List<Collection>
         fun filterCollections(query: String): List<Collection>
         fun filterItems(query: String): List<Item>
