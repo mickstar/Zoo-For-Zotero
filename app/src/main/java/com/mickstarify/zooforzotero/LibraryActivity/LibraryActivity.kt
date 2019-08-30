@@ -11,10 +11,7 @@ import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
-import android.widget.ListView
-import android.widget.ProgressBar
-import android.widget.TextView
-import android.widget.Toast
+import android.widget.*
 import androidx.appcompat.app.ActionBarDrawerToggle
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -154,26 +151,26 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
 
         val swipeRefreshLayout = findViewById<SwipeRefreshLayout>(R.id.library_swipe_refresh)
 
-//        listView.setOnScrollListener(object : AbsListView.OnScrollListener {
-//            override fun onScroll(
-//                view: AbsListView,
-//                firstVisibleItem: Int,
-//                visibleItemCount: Int,
-//                totalItemCount: Int
-//            ) {
-//                if (listView.getChildAt(0) != null) {
-//                    swipeRefreshLayout.setEnabled(
-//                        listView.getFirstVisiblePosition() == 0 && listView.getChildAt(
-//                            0
-//                        ).getTop() == 0
-//                    )
-//                }
-//            }
-//
-//            override fun onScrollStateChanged(p0: AbsListView?, p1: Int) {
-//            }
-//
-//        })
+        listView.setOnScrollListener(object : AbsListView.OnScrollListener {
+            override fun onScroll(
+                view: AbsListView,
+                firstVisibleItem: Int,
+                visibleItemCount: Int,
+                totalItemCount: Int
+            ) {
+                if (listView.getChildAt(0) != null) {
+                    swipeRefreshLayout.setEnabled(
+                        listView.getFirstVisiblePosition() == 0 && listView.getChildAt(
+                            0
+                        ).getTop() == 0
+                    )
+                }
+            }
+
+            override fun onScrollStateChanged(p0: AbsListView?, p1: Int) {
+            }
+
+        })
     }
 
     override fun onRefresh() {
