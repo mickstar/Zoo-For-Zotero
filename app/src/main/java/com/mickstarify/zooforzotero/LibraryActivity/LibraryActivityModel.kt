@@ -10,6 +10,7 @@ import org.jetbrains.anko.doAsync
 import org.jetbrains.anko.onComplete
 import java.io.File
 import java.util.*
+import java.util.concurrent.Future
 import java.util.concurrent.TimeUnit
 
 class LibraryActivityModel(private val presenter: Contract.Presenter, val context: Context) :
@@ -255,26 +256,54 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
         } ?: LinkedList()
     }
 
+    var isDownloading: Boolean = false
+    var downloadInteruptor: ZoteroAPI.Companion.DownloadInteruptor? = null
+    var task: Future<Unit>? = null
     override fun openAttachment(item: Item) {
-        zoteroAPI.downloadItem(context, item, object : ZoteroAPIDownloadAttachmentListener {
-            override fun onNetworkFailure() {
-                presenter.attachmentDownloadError()
-            }
+        if (isDownloading) {
+            Log.d("zotero", "not downloading ${item.getTitle()} because i am already downloading.")
+            return
+        }
+        isDownloading = true
 
-            override fun onComplete(attachment: File) {
-                presenter.openPDF(attachment)
+        zoteroAPI.downloadItem(context,
+            item,
+            object : ZoteroAPIDownloadAttachmentListener {
+                override fun receiveTask(_task: Future<Unit>) {
+                    task = _task
+                    // we have to check if the user has stopped the download before this task has come back.
+                    if (isDownloading == false) {
+                        cancelAttachmentDownload()
+                    }
+                }
 
-            }
+                override fun onNetworkFailure() {
+                    presenter.attachmentDownloadError()
+                    isDownloading = false
+                }
 
-            override fun onFailure() {
-                presenter.attachmentDownloadError()
-            }
+                override fun onComplete(attachment: File) {
+                    isDownloading = false
+                    presenter.openPDF(attachment)
+                }
 
-            override fun onProgressUpdate(progress: Long, total: Long) {
-                Log.d("zotero", "Downloading attachment. got $progress of $total")
-                presenter.updateAttachmentDownloadProgress(progress, total)
-            }
-        })
+                override fun onFailure() {
+                    presenter.attachmentDownloadError()
+                    isDownloading = false
+                }
+
+                override fun onProgressUpdate(progress: Long, total: Long) {
+                    if (task?.isCancelled != true) {
+                        Log.d("zotero", "Downloading attachment. got $progress of $total")
+                        presenter.updateAttachmentDownloadProgress(progress, total)
+                    }
+                }
+            })
+    }
+
+    override fun cancelAttachmentDownload() {
+        this.isDownloading = false
+        task?.cancel(true)
     }
 
     init {

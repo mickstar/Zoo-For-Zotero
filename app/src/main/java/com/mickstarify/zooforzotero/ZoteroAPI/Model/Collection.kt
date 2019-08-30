@@ -30,11 +30,8 @@ class Collection(
     }
 
     fun addSubCollection(collection: Collection) {
-
-        if (subCollections == null) {
-            subCollections = LinkedList<Collection>()
-        }
-        if (!this.subCollections.contains(collection)) {
+        // check so we don't add duplicate collections.
+        if (this.subCollections.filter { it.key == collection.key }.isEmpty()) {
             subCollections.add(collection)
         }
     }

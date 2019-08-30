@@ -113,6 +113,7 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
             setSearchableInfo(searchManager.getSearchableInfo(componentName))
             setOnQueryTextListener(object : SearchView.OnQueryTextListener {
                 override fun onQueryTextSubmit(query: String): Boolean {
+                    setTitle("Search results for $query")
                     return false
                 }
 
@@ -150,6 +151,29 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
                 presenter.selectItem(entry.getItem())
             }
         }
+
+        val swipeRefreshLayout = findViewById<SwipeRefreshLayout>(R.id.library_swipe_refresh)
+
+//        listView.setOnScrollListener(object : AbsListView.OnScrollListener {
+//            override fun onScroll(
+//                view: AbsListView,
+//                firstVisibleItem: Int,
+//                visibleItemCount: Int,
+//                totalItemCount: Int
+//            ) {
+//                if (listView.getChildAt(0) != null) {
+//                    swipeRefreshLayout.setEnabled(
+//                        listView.getFirstVisiblePosition() == 0 && listView.getChildAt(
+//                            0
+//                        ).getTop() == 0
+//                    )
+//                }
+//            }
+//
+//            override fun onScrollStateChanged(p0: AbsListView?, p1: Int) {
+//            }
+//
+//        })
     }
 
     override fun onRefresh() {
@@ -238,6 +262,9 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
         if (progressDialog == null) {
             progressDialog = ProgressDialog(this)
             progressDialog?.setTitle("Downloading File")
+            progressDialog?.setButton("Cancel") { dialogInterface, i ->
+                presenter.cancelAttachmentDownload()
+            }
         }
         if (total == 0) {
             progressDialog?.isIndeterminate = true
@@ -247,7 +274,7 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
             progressDialog?.progress = progress
             progressDialog?.max = total
             if (total == -1) {
-                progressDialog?.setMessage("${progress}KB")
+                progressDialog?.setMessage("We are connecting to the zotero servers and requesting the file.")
             } else {
                 progressDialog?.setMessage("${progress}KB of ${total}KB")
             }
@@ -257,6 +284,7 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
 
     override fun hideAttachmentDownloadProgress() {
         progressDialog?.hide()
+        progressDialog = null
     }
 
     /* Is called by the fragment when an attachment is openned by the user. */

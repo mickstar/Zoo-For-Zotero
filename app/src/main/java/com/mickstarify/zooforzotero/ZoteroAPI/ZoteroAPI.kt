@@ -125,6 +125,7 @@ class ZoteroAPI(
         val outputFile = getFileForDownload(context, item)
         if (checkIfFileExists(outputFile, item)) {
             listener.onComplete(outputFile)
+            return
         }
 
         val zoteroAPI = buildZoteroAPI(useCaching = false, libraryVersion = -1)
@@ -139,28 +140,41 @@ class ZoteroAPI(
                         listener.onNetworkFailure()
                         return
                     }
-                    doAsync {
+                    val task = doAsync {
                         val outputFileStream = outputFile.outputStream()
                         val buffer = ByteArray(32768)
                         var read = inputStream.read(buffer)
                         var progress: Long = 0
+                        var failure = false
                         while (read > 0) {
                             // I Should just bite the bullet and implement rxJava...
                             context.runOnUiThread {
                                 listener.onProgressUpdate(progress, fileSize)
                             }
-                            outputFileStream.write(buffer, 0, read)
-                            read = inputStream.read(buffer)
+                            try {
+                                outputFileStream.write(buffer, 0, read)
+                                read = inputStream.read(buffer)
+                            } catch (e: java.io.InterruptedIOException) {
+                                outputFileStream.close()
+                                inputStream.close()
+                                failure = true
+                                break
+                            }
                             progress += read
+                        }
+                        if (read > 0) {
+                            failure = true
                         }
 
                         onComplete {
                             outputFileStream.close()
                             inputStream.close()
-                            listener.onComplete(outputFile)
+                            if (failure == false) {
+                                listener.onComplete(outputFile)
+                            }
                         }
                     }
-
+                    listener.receiveTask(task)
                 }
             }
 
@@ -260,6 +274,12 @@ class ZoteroAPI(
                 listener.onNetworkFailure()
             }
         })
+    }
+
+    companion object {
+        interface DownloadInteruptor {
+            var shouldKill: Boolean
+        }
     }
 
 }

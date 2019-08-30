@@ -8,6 +8,11 @@ import java.io.File
 import java.util.*
 
 class LibraryActivityPresenter(val view: Contract.View, context: Context) : Contract.Presenter {
+    override fun cancelAttachmentDownload() {
+        model.cancelAttachmentDownload()
+        view.hideAttachmentDownloadProgress()
+    }
+
     override fun isShowingContent(): Boolean {
         return model.isDisplayingItems
     }
@@ -34,7 +39,6 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
         entries.addAll(items.sortedBy { it.getTitle().toLowerCase(Locale.getDefault()) }
             .map { ListEntry(it) })
 
-        view.setTitle("Search Results for ${query}")
         view.populateEntries(entries)
     }
 

@@ -19,7 +19,7 @@ class ZoteroDB(val context: Context) {
     var collections: List<Collection>? = null
         set(value) {
             field = value
-            this.populateCollectionChilren()
+            this.populateCollectionChildren()
             this.createCollectionItemMap()
         }
     var items: List<Item>? = null
@@ -100,8 +100,6 @@ class ZoteroDB(val context: Context) {
                 InputStreamReader(context.openFileInput(COLLECTIONS_FILENAME))
             this.collections = gson.fromJson(collectionsJsonReader, typeToken)
             collectionsJsonReader.close()
-            this.createCollectionItemMap()
-            this.populateCollectionChilren()
         } catch (e: Exception) {
             Log.e("zotero", "error loading collections from storage, deleting file.")
             this.deleteLocalStorage()
@@ -178,13 +176,13 @@ class ZoteroDB(val context: Context) {
     }
 
     /*we will do O(n^2) because I'm not bothered to create a map for what i presume is a small list.*/
-    fun populateCollectionChilren() {
+    fun populateCollectionChildren() {
         if (collections == null) {
             throw Exception("called populate collections with no collections!")
         }
         for (collection in collections!!) {
             if (collection.hasParent()) {
-                collections!!.filter { it.key == collection.getParent() }.firstOrNull()
+                collections?.filter { it.key == collection.getParent() }?.firstOrNull()
                     ?.addSubCollection(collection)
             }
         }
