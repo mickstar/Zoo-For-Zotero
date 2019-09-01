@@ -11,7 +11,7 @@ class Collection(
     @SerializedName("data")
     val collectionData: CollectionData
 ) {
-    private var subCollections: MutableList<Collection> = LinkedList()
+    private var subCollections: MutableList<Collection>? = LinkedList()
 
     fun getName(): String {
         return collectionData.name
@@ -26,18 +26,21 @@ class Collection(
     }
 
     fun hasChildren(): Boolean {
-        return subCollections.isEmpty()
+        return subCollections?.isEmpty() ?: false
     }
 
     fun addSubCollection(collection: Collection) {
+        if (this.subCollections == null) {
+            subCollections = LinkedList()
+        }
         // check so we don't add duplicate collections.
-        if (this.subCollections.filter { it.key == collection.key }.isEmpty()) {
-            subCollections.add(collection)
+        if (this.subCollections?.filter { it.key == collection.key }?.isEmpty() == true) {
+            subCollections?.add(collection)
         }
     }
 
     fun getSubCollections(): List<Collection> {
-        return this.subCollections
+        return this.subCollections ?: LinkedList()
     }
 
 }
