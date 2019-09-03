@@ -6,6 +6,7 @@ import com.mickstarify.zooforzotero.SyncSetup.AuthenticationStorage
 import com.mickstarify.zooforzotero.ZoteroAPI.*
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Collection
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Item
+import com.mickstarify.zooforzotero.ZoteroAPI.Model.Note
 import org.jetbrains.anko.doAsync
 import org.jetbrains.anko.onComplete
 import java.io.File
@@ -236,6 +237,10 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
 
     override fun getAttachments(itemKey: String): List<Item> {
         return zoteroDB.getAttachments(itemKey)
+    }
+
+    override fun getNotes(itemKey: String): List<Note> {
+        return zoteroDB.getNotes(itemKey)
     }
 
     override fun filterCollections(query: String): List<Collection> {

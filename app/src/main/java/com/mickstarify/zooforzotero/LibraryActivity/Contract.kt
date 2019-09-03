@@ -2,6 +2,7 @@ package com.mickstarify.zooforzotero.LibraryActivity
 
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Collection
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Item
+import com.mickstarify.zooforzotero.ZoteroAPI.Model.Note
 import java.io.File
 
 interface Contract {
@@ -14,7 +15,7 @@ interface Contract {
         fun setTitle(title : String)
         fun addNavigationEntry(collection: Collection, parent: String)
         fun populateEntries(entries: List<ListEntry>)
-        fun showItemDialog(item: Item, attachments : List<Item>)
+        fun showItemDialog(item: Item, attachments: List<Item>, notes: List<Note>)
         fun openPDF(attachment: File)
         fun updateAttachmentDownloadProgress(progress: Int, total: Int)
         fun hideAttachmentDownloadProgress()
@@ -61,5 +62,6 @@ interface Contract {
         fun filterItems(query: String): List<Item>
         fun isLoaded(): Boolean
         fun loadCollectionsLocally(onFinish: () -> Unit)
+        fun getNotes(itemKey: String): List<Note>
     }
 }

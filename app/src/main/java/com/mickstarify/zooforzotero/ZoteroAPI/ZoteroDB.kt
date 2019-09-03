@@ -2,11 +2,13 @@ package com.mickstarify.zooforzotero.ZoteroAPI
 
 import android.content.Context
 import android.content.Context.MODE_PRIVATE
+import android.util.ArrayMap
 import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Collection
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Item
+import com.mickstarify.zooforzotero.ZoteroAPI.Model.Note
 import java.io.File
 import java.io.InputStreamReader
 import java.io.OutputStreamWriter
@@ -15,7 +17,6 @@ import kotlin.collections.HashMap
 
 
 class ZoteroDB(val context: Context) {
-    private var itemsFromCollections: HashMap<String, MutableList<Item>>? = null
     var collections: List<Collection>? = null
         set(value) {
             field = value
@@ -27,10 +28,12 @@ class ZoteroDB(val context: Context) {
             field = value
             this.createAttachmentsMap()
             this.createCollectionItemMap()
+            this.createNotesMap()
         }
 
     var attachments: MutableMap<String, MutableList<Item>>? = null
-
+    private var notes: MutableMap<String, MutableList<Note>>? = null
+    private var itemsFromCollections: HashMap<String, MutableList<Item>>? = null
     val COLLECTIONS_FILENAME = "collections.json"
     val ITEMS_FILENAME = "items.json"
 
@@ -159,6 +162,27 @@ class ZoteroDB(val context: Context) {
         }
     }
 
+    fun createNotesMap() {
+        if (!isPopulated()) {
+            return
+        }
+
+        this.notes = ArrayMap()
+        items?.forEach { item: Item ->
+            if (item.getItemType() == "note") {
+                try {
+                    val note = Note(item)
+                    if (notes?.containsKey(note.parent) == false) {
+                        notes!![note.parent] = LinkedList<Note>()
+                    }
+                    notes!![note.parent]!!.add(note)
+                } catch (e: ExceptionInInitializerError) {
+                    Log.e("zotero", "error loading note ${item.ItemKey} error:${e.message}")
+                }
+            }
+        }
+    }
+
     fun createCollectionItemMap() {
         /*all non-nullable assumptions are valid here*/
         if (!isPopulated()) {
@@ -229,5 +253,12 @@ class ZoteroDB(val context: Context) {
     fun getSubCollectionsFor(collectionKey: String): List<Collection> {
         return collections?.filter { it.key == collectionKey }?.firstOrNull()?.getSubCollections()
             ?: LinkedList()
+    }
+
+    fun getNotes(itemKey: String): List<Note> {
+        if (notes?.containsKey(itemKey) == true) {
+            return notes!![itemKey] as List<Note>
+        }
+        return LinkedList()
     }
 }
