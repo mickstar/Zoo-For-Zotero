@@ -29,6 +29,7 @@ import com.mickstarify.zooforzotero.R
 import com.mickstarify.zooforzotero.SettingsActivity
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Collection
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Item
+import com.mickstarify.zooforzotero.ZoteroAPI.Model.Note
 import kotlinx.android.synthetic.main.activity_library.*
 import java.io.File
 
@@ -226,8 +227,8 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
         this.supportActionBar?.title = title
     }
 
-    override fun showItemDialog(item: Item, attachments: List<Item>) {
-        val myBottomSheet = ItemViewFragment.newInstance(item, attachments)
+    override fun showItemDialog(item: Item, attachments: List<Item>, notes: List<Note>) {
+        val myBottomSheet = ItemViewFragment.newInstance(item, attachments, notes)
         val fm = supportFragmentManager
         myBottomSheet.show(fm, "hello world")
     }

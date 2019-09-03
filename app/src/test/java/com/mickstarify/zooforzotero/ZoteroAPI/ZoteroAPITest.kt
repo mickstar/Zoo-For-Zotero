@@ -1,9 +1,8 @@
 package com.mickstarify.zooforzotero.ZoteroAPI
 
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
-
-import org.junit.Assert.*
 
 class ZoteroAPITest {
 
@@ -12,7 +11,8 @@ class ZoteroAPITest {
     fun setUp() {
         zoteroAPI = ZoteroAPI("QcWNZkKsdASUw4ncExhoErIp"
             ,"5884121",
-            "testacc1", 0)
+            "testacc1"
+        )
     }
 
     @Test

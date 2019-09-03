@@ -4,6 +4,7 @@ import android.content.Context
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import android.view.*
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -15,6 +16,7 @@ import com.mickstarify.zooforzotero.LibraryActivity.ItemViewFragment.ItemAuthors
 import com.mickstarify.zooforzotero.R
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Creator
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Item
+import com.mickstarify.zooforzotero.ZoteroAPI.Model.Note
 import java.util.*
 
 /**
@@ -29,6 +31,7 @@ class ItemViewFragment: BottomSheetDialogFragment(), OnFragmentInteractionListen
 
     private lateinit var item : Item
     private lateinit var attachments : List<Item>
+    private lateinit var notes: List<Note>
     private var listener: OnListFragmentInteractionListener? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -36,6 +39,7 @@ class ItemViewFragment: BottomSheetDialogFragment(), OnFragmentInteractionListen
         arguments?.let {
             item = it.getParcelable<Item>(ARG_ITEM)!!
             attachments = it.getParcelableArrayList<Item>(ARG_ATTACHMENTS)!!
+            notes = it.getParcelableArrayList<Note>(ARG_NOTES)!!
         }
         setHasOptionsMenu(true) //so we can set custom menu options
     }
@@ -78,13 +82,30 @@ class ItemViewFragment: BottomSheetDialogFragment(), OnFragmentInteractionListen
             }
         })
         this.addAttachments(attachments)
+        this.addNotes(notes)
 
         return view
+    }
+
+    private fun addNotes(notes: List<Note>) {
+        if (notes.isEmpty()) {
+            return
+        }
+        val fmt = this.childFragmentManager.beginTransaction()
+        for (note in notes) {
+            fmt.add(
+                R.id.item_fragment_scrollview_ll_notes,
+                ItemNoteEntry.newInstance(note)
+            )
+        }
+        fmt.commit()
+
     }
 
     private fun addAttachments(attachments: List<Item>){
         val fmt = this.childFragmentManager.beginTransaction()
         for (attachment in attachments) {
+            Log.d("zotero", "adding ${attachment.getTitle()}")
             fmt.add(
                 R.id.item_fragment_scrollview_ll_attachments,
                 ItemAttachmentEntry.newInstance(attachment)
@@ -144,13 +165,15 @@ class ItemViewFragment: BottomSheetDialogFragment(), OnFragmentInteractionListen
     companion object {
         const val ARG_ITEM = "item"
         const val ARG_ATTACHMENTS = "attachments"
+        const val ARG_NOTES = "notes"
 
         @JvmStatic
-        fun newInstance(item : Item, attachments : List<Item>) =
+        fun newInstance(item: Item, attachments: List<Item>, notes: List<Note>) =
             ItemViewFragment().apply {
                 arguments = Bundle().apply {
                     putParcelable(ARG_ITEM, item)
                     putParcelableArrayList(ARG_ATTACHMENTS, ArrayList(attachments))
+                    putParcelableArrayList(ARG_NOTES, ArrayList(notes))
                 }
             }
     }

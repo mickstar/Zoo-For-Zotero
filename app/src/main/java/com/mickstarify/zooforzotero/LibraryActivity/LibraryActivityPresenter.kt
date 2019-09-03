@@ -83,8 +83,14 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
     override fun selectItem(item: Item) {
         if (item.getItemType() == "attachment") {
             this.openAttachment(item)
+        } else if (item.getItemType() == "note") {
+            //ignore
         } else {
-            view.showItemDialog(item, model.getAttachments(item.ItemKey))
+            view.showItemDialog(
+                item,
+                model.getAttachments(item.ItemKey),
+                model.getNotes(item.ItemKey)
+            )
         }
     }
 
