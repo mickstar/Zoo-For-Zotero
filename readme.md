@@ -1,4 +1,4 @@
-# Zoo for Zotero
+# Zoo for Zotero [![Build Status](https://travis-ci.org/mickstar/Zoo-For-Zotero.svg?branch=master)](https://travis-ci.org/mickstar/Zoo-For-Zotero)
 
 [<img src="https://play.google.com/intl/en_us/badges/images/generic/en_badge_web_generic.png" 
       alt="Download from Google Play" 

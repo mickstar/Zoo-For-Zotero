@@ -1,16 +1,16 @@
 language: android
 dist: trusty
 android:
-    components:
-        - tools
-        - platform-tools
+  components:
+    - tools
+    - platform-tools
 
-        - build-tools-29.0.2
-        - android-29
-        - extra
-      licenses:
-        - android-sdk-license-.+
+    - build-tools-29.0.2
+    - android-29
+    - extra
+  licenses:
+    - android-sdk-license-.+
 
 before_script:
-    - chmod a+x gradlew
+  - chmod a+x gradlew
 script: ./gradlew build
