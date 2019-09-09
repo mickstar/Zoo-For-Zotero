@@ -262,7 +262,6 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
     }
 
     var isDownloading: Boolean = false
-    var downloadInteruptor: ZoteroAPI.Companion.DownloadInteruptor? = null
     var task: Future<Unit>? = null
     override fun openAttachment(item: Item) {
         if (isDownloading) {
@@ -289,7 +288,11 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
 
                 override fun onComplete(attachment: File) {
                     isDownloading = false
-                    presenter.openPDF(attachment)
+                    if (attachment.exists()) {
+                        presenter.openPDF(attachment)
+                    } else {
+                        presenter.attachmentDownloadError()
+                    }
                 }
 
                 override fun onFailure() {

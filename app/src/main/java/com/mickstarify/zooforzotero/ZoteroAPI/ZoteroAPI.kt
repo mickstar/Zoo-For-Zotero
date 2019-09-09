@@ -92,7 +92,7 @@ class ZoteroAPI(
     }
 
     fun getFileForDownload(context: Context, item: Item): File {
-        val filename = item.data["filename"] ?: "unknown"
+        val name = item.ItemKey.toUpperCase(Locale.getDefault())
         val outputDir = context.externalCacheDir
 
         var extension = when (item.data["contentType"]) {
@@ -100,6 +100,8 @@ class ZoteroAPI(
             "text/html" -> "html"
             else -> ""
         }
+        val filename = "${name}.${extension}"
+
         val file = File(outputDir, filename)
         return file
     }
@@ -275,11 +277,4 @@ class ZoteroAPI(
             }
         })
     }
-
-    companion object {
-        interface DownloadInteruptor {
-            var shouldKill: Boolean
-        }
-    }
-
 }
