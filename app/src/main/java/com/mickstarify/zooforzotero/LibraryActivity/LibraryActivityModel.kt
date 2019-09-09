@@ -252,12 +252,8 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
     }
 
     override fun filterItems(query: String): List<Item> {
-        val queryUpper = query.toUpperCase(Locale.getDefault())
         return zoteroDB.items?.filter {
-            (it.ItemKey.toUpperCase(Locale.getDefault()).contains(queryUpper) ||
-                    it.getTitle().toUpperCase(Locale.getDefault()).contains(queryUpper) ||
-                    it.getItemType().toUpperCase(Locale.getDefault()).contains(queryUpper) ||
-                    it.tags.joinToString("_").toUpperCase(Locale.getDefault()).contains(query))
+            it.query(query)
 
         } ?: LinkedList()
     }

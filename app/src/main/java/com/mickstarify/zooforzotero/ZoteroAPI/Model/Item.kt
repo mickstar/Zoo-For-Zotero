@@ -3,41 +3,41 @@ package com.mickstarify.zooforzotero.ZoteroAPI.Model
 import android.os.Parcelable
 import com.google.gson.annotations.SerializedName
 import kotlinx.android.parcel.Parcelize
+import java.util.*
 
 @Parcelize
-open class Item (
+open class Item(
     @SerializedName("ItemKey")
-    var ItemKey : String,
+    var ItemKey: String,
     @SerializedName("version")
-    var version : Int,
+    var version: Int,
     @SerializedName("data")
-    var data : Map<String, String>,
+    var data: Map<String, String>,
     @SerializedName("tags")
-    var tags : List<String>,
+    var tags: List<String>,
     val creators: List<Creator>,
     val collections: List<String>,
     var mtime: Double = 0.0
 ) : Parcelable {
 
-    fun getValue(key : String) : Any? {
-        when(key){
+    fun getValue(key: String): Any? {
+        when (key) {
             "key" -> return this.ItemKey
             "version" -> return this.version
             "tags" -> return this.tags
             "mtime" -> return this.mtime.toString()
             else -> {
-                if (key in data){
-                    when (key){
+                if (key in data) {
+                    when (key) {
                         "creators" -> return creators
                         else -> {
-                            if (data[key] is String){
-                                return data[key]?:""
+                            if (data[key] is String) {
+                                return data[key] ?: ""
                             }
                             return null
                         }
                     }
-                }
-                else {
+                } else {
                     return null
                 }
             }
@@ -45,28 +45,39 @@ open class Item (
     }
 
     fun getTitle(): String {
-        return (this.getValue("title")?:"unknown") as String
+        return (this.getValue("title") ?: "unknown") as String
     }
 
     fun getItemType(): String {
         return if ("itemType" in data) {
             (data["itemType"] as String)
-        }else {
+        } else {
             "error"
         }
     }
 
     fun getAuthor(): CharSequence {
-        return when (creators.size){
+        return when (creators.size) {
             0 -> ""
             1 -> creators[0].lastName
             else -> "${creators[0].lastName} et al."
         }
     }
+
+    /* Matches the query text against the metadata stored in item,
+    * checks to see if we can find the text anywhere. Useful for search. */
+    fun query(queryText: String): Boolean {
+        val queryUpper = queryText.toUpperCase(Locale.getDefault())
+        return this.ItemKey.toUpperCase(Locale.getDefault()).contains(queryUpper) ||
+                this.tags.joinToString("_").toUpperCase(Locale.getDefault()).contains(queryUpper) ||
+                this.data.values.joinToString("_").toUpperCase(Locale.getDefault()).contains(
+                    queryUpper
+                )
+    }
 }
 
 /* Maps itemType name to Localized name */
-val itemTypes : HashMap<String, String> = hashMapOf(
+val itemTypes: HashMap<String, String> = hashMapOf(
     "artwork" to "Artwork",
     "audioRecording" to "Audio Recording",
     "bill" to "Bill",
