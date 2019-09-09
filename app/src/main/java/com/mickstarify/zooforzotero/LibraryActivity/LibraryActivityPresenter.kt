@@ -95,6 +95,11 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
     }
 
     override fun setCollection(collectionName: String) {
+        if (!model.isLoaded()) {
+            Log.d("zotero", "tried to change collection before fully loaded!")
+            this.makeToastAlert("Still loading your library")
+        }
+
         Log.d("zotero", "Got request to change collection to ${collectionName}")
         model.currentCollection = collectionName
         if (collectionName == "all") {

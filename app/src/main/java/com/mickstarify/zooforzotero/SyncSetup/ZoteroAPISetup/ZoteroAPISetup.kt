@@ -8,6 +8,7 @@ import android.view.View
 import android.webkit.URLUtil
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.constraintlayout.widget.ConstraintLayout
 import com.google.firebase.analytics.FirebaseAnalytics
@@ -37,7 +38,12 @@ class ZoteroAPISetup : AppCompatActivity(), Contract.View {
     }
 
     override fun makeErrorAlert(title: String, message: String) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        val alert = AlertDialog.Builder(this)
+        alert.setIcon(R.drawable.ic_error_black_24dp)
+        alert.setTitle(title)
+        alert.setMessage(message)
+        alert.setPositiveButton("Ok") { _, _ -> }
+        alert.show()
     }
 
     override fun loadURL(url: String) {

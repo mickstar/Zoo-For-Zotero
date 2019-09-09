@@ -49,8 +49,12 @@ class ZoteroDB(val context: Context) {
         val gson = Gson()
 
         val itemsOut = OutputStreamWriter(context.openFileOutput(ITEMS_FILENAME, MODE_PRIVATE))
-        itemsOut.write(gson.toJson(items))
-        itemsOut.close()
+        try {
+            itemsOut.write(gson.toJson(items))
+            itemsOut.close()
+        } catch (exception: OutOfMemoryError) {
+            Log.d("zotero", "could not cache items, user has not enough space.")
+        }
     }
 
     fun writeDatabaseUpdatedTimestamp() {
@@ -76,8 +80,12 @@ class ZoteroDB(val context: Context) {
 
         val collectionsOut =
             OutputStreamWriter(context.openFileOutput(COLLECTIONS_FILENAME, MODE_PRIVATE))
-        collectionsOut.write(gson.toJson(collections))
-        collectionsOut.close()
+        try {
+            collectionsOut.write(gson.toJson(collections))
+            collectionsOut.close()
+        } catch (exception: OutOfMemoryError) {
+            Log.d("zotero", "could not cache collections, user has not enough space.")
+        }
     }
 
     fun loadItemsFromStorage() {
@@ -220,7 +228,7 @@ class ZoteroDB(val context: Context) {
         if (this.itemsFromCollections == null) {
             this.createCollectionItemMap()
         }
-        return this.itemsFromCollections!![collection] ?: LinkedList<Item>() as List<Item>
+        return this.itemsFromCollections?.get(collection) ?: LinkedList<Item>() as List<Item>
     }
 
     fun setItemsVersion(libraryVersion: Int) {
@@ -237,7 +245,8 @@ class ZoteroDB(val context: Context) {
 
     fun clearItemsVersion() {
         try {
-            val sharedPreferences = context.getSharedPreferences("zoteroDB", Context.MODE_PRIVATE)
+            val sharedPreferences =
+                context.getSharedPreferences("zoteroDB", Context.MODE_PRIVATE)
             val editor = sharedPreferences.edit()
             editor.remove("ItemsLibraryVersion")
             editor.apply()

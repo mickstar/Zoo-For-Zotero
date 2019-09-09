@@ -1,5 +1,6 @@
 package com.mickstarify.zooforzotero.LibraryActivity
 
+import android.app.Activity
 import android.content.Context
 import android.util.Log
 import com.mickstarify.zooforzotero.SyncSetup.AuthenticationStorage
@@ -327,7 +328,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                 "Error with stored API",
                 "The API Key we have stored in the application is invalid!" +
                         "Please re-authenticate the application"
-            ) { }
+            ) { (context as Activity).finish() }
             auth.destroyCredentials()
             zoteroDB.clearItemsVersion()
         }
