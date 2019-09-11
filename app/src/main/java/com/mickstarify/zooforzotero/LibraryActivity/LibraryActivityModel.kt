@@ -3,6 +3,8 @@ package com.mickstarify.zooforzotero.LibraryActivity
 import android.app.Activity
 import android.content.Context
 import android.util.Log
+import com.mickstarify.zooforzotero.PreferenceManager
+import com.mickstarify.zooforzotero.SortMethod
 import com.mickstarify.zooforzotero.SyncSetup.AuthenticationStorage
 import com.mickstarify.zooforzotero.ZoteroAPI.*
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Collection
@@ -30,6 +32,8 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
 
     var isDisplayingItems = false
 
+    val preferences = PreferenceManager(context)
+
     override fun refreshLibrary() {
         this.requestItems({}, useCaching = true)
         this.requestCollections({}, useCaching = true)
@@ -48,18 +52,36 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
         return false
     }
 
+    private fun sortMethod(item: Item): String {
+        return when (preferences.getSortMethod()) {
+            SortMethod.TITLE -> item.getTitle().toLowerCase(Locale.getDefault())
+            SortMethod.DATE -> item.getSortableDateString()
+            SortMethod.AUTHOR -> item.getAuthor().toLowerCase(Locale.getDefault())
+            SortMethod.DATE_ADDED -> item.getSortableDateAddedString()
+        }
+    }
+
+    val sortMethod = compareBy<Item> {
+        when (preferences.getSortMethod()) {
+            SortMethod.TITLE -> it.getTitle().toLowerCase(Locale.getDefault())
+            SortMethod.DATE -> it.getSortableDateString()
+            SortMethod.AUTHOR -> it.getAuthor().toLowerCase(Locale.getDefault())
+            SortMethod.DATE_ADDED -> it.getSortableDateAddedString()
+        }
+    }.thenBy { it.getTitle().toLowerCase(Locale.getDefault()) }
+
     override fun isLoaded(): Boolean {
         return !(zoteroDB.items == null || zoteroDB.collections == null)
     }
 
     override fun getLibraryItems(): List<Item> {
-        return zoteroDB.getDisplayableItems()
+        return zoteroDB.getDisplayableItems().sortedWith(sortMethod)
     }
 
     override fun getItemsFromCollection(collectionName: String): List<Item> {
         val collectionKey = zoteroDB.getCollectionId(collectionName)
         if (collectionKey != null) {
-            return zoteroDB.getItemsFromCollection(collectionKey)
+            return zoteroDB.getItemsFromCollection(collectionKey).sortedWith(sortMethod)
         }
         throw (Exception("Error, could not find collection with name ${collectionName}"))
     }
@@ -74,10 +96,6 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
 
     private lateinit var zoteroAPI: ZoteroAPI
     private var zoteroDB = ZoteroDB(context)
-
-    override fun requestTestConnection() {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-    }
 
     fun loadItemsLocally(onFinish: () -> Unit) {
         doAsync {
@@ -228,14 +246,6 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
         return zoteroDB.collections ?: LinkedList()
     }
 
-    override fun requestItemsForCollection(collectionKey: String) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-    }
-
-    override fun requestItem() {
-        TODO("bro")
-    }
-
     override fun getAttachments(itemKey: String): List<Item> {
         return zoteroDB.getAttachments(itemKey)
     }
@@ -252,10 +262,14 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
     }
 
     override fun filterItems(query: String): List<Item> {
-        return zoteroDB.items?.filter {
+        val items = zoteroDB.items?.filter {
             it.query(query)
 
         } ?: LinkedList()
+
+        items.sortedWith(sortMethod)
+
+        return items
     }
 
     var isDownloading: Boolean = false
@@ -270,8 +284,8 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
         zoteroAPI.downloadItem(context,
             item,
             object : ZoteroAPIDownloadAttachmentListener {
-                override fun receiveTask(_task: Future<Unit>) {
-                    task = _task
+                override fun receiveTask(task: Future<Unit>) {
+                    this@LibraryActivityModel.task = task
                     // we have to check if the user has stopped the download before this task has come back.
                     if (isDownloading == false) {
                         cancelAttachmentDownload()

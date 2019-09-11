@@ -26,12 +26,21 @@
                 app:title="@string/sync_method"
                 app:useSimpleSummaryProvider="true" />
 
-        <SwitchPreferenceCompat
-                app:defaultValue="true"
-                app:key="sync_only_new"
-                app:summaryOff="@string/sync_only_new_summary_off"
-                app:summaryOn="@string/sync_only_new_summary_on"
-                app:title="@string/sync_only_new" />
+        <!--        <SwitchPreferenceCompat-->
+        <!--                app:defaultValue="true"-->
+        <!--                app:key="sync_only_new"-->
+        <!--                app:summaryOff="@string/sync_only_new_summary_off"-->
+        <!--                app:summaryOn="@string/sync_only_new_summary_on"-->
+        <!--                app:title="@string/sync_only_new" />-->
 
+    </PreferenceCategory>
+    <PreferenceCategory app:title="@string/library_header">
+        <ListPreference
+                app:defaultValue="TITLE"
+                app:entries="@array/sort_options_entries"
+                app:entryValues="@array/sort_options_values"
+                app:key="sort_method"
+                app:title="@string/sort_method_title"
+                app:useSimpleSummaryProvider="true" />
     </PreferenceCategory>
 </PreferenceScreen>

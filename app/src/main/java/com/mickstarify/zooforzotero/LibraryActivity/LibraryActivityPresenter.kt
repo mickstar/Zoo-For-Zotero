@@ -8,6 +8,14 @@ import java.io.File
 import java.util.*
 
 class LibraryActivityPresenter(val view: Contract.View, context: Context) : Contract.Presenter {
+    override fun redisplayItems() {
+        if (model.isLoaded()) {
+            if (model.currentCollection != "unset") {
+                setCollection(model.currentCollection)
+            }
+        }
+    }
+
     override fun cancelAttachmentDownload() {
         model.cancelAttachmentDownload()
         view.hideAttachmentDownloadProgress()
@@ -36,7 +44,8 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
         val entries = LinkedList<ListEntry>()
         entries.addAll(collections.sortedBy { it.getName().toLowerCase(Locale.getDefault()) }
             .map { ListEntry(it) })
-        entries.addAll(items.sortedBy { it.getTitle().toLowerCase(Locale.getDefault()) }
+        entries.addAll(
+            items
             .map { ListEntry(it) })
 
         view.populateEntries(entries)
@@ -97,16 +106,14 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
     override fun setCollection(collectionName: String) {
         if (!model.isLoaded()) {
             Log.d("zotero", "tried to change collection before fully loaded!")
-            this.makeToastAlert("Still loading your library")
+            return
         }
 
         Log.d("zotero", "Got request to change collection to ${collectionName}")
         model.currentCollection = collectionName
         if (collectionName == "all") {
             view.setTitle("My Library")
-            val entries = model.getLibraryItems().sortedBy {
-                it.getTitle().toLowerCase(Locale.getDefault())
-            }.map { ListEntry(it) }
+            val entries = model.getLibraryItems().map { ListEntry(it) }
             model.isDisplayingItems = entries.size > 0
             view.populateEntries(entries)
         } else {
@@ -116,9 +123,7 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
             entries.addAll(model.getSubCollections(collectionName).sortedBy {
                 it.getName().toLowerCase(Locale.getDefault())
             }.map { ListEntry(it) })
-            entries.addAll(model.getItemsFromCollection(collectionName).sortedBy {
-                it.getTitle().toLowerCase(Locale.getDefault())
-            }.map { ListEntry(it) })
+            entries.addAll(model.getItemsFromCollection(collectionName).map { ListEntry(it) })
             model.isDisplayingItems = entries.size > 0
             view.populateEntries(entries)
         }

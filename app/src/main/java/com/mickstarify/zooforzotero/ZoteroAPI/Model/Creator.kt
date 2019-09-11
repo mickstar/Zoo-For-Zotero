@@ -8,4 +8,9 @@ data class Creator (
     val creatorType : String,
     val firstName : String,
     val lastName : String
-) : Parcelable
+) : Parcelable {
+
+    fun makeString(): String {
+        return "${firstName} ${lastName}"
+    }
+}

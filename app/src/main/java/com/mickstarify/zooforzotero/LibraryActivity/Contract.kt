@@ -42,14 +42,12 @@ interface Contract {
         fun updateLibraryRefreshProgress(progress: Int, total: Int)
         fun isShowingContent(): Boolean
         fun cancelAttachmentDownload()
+        fun redisplayItems()
     }
 
     interface Model {
-        fun requestTestConnection()
         fun requestItems(onFinish: () -> (Unit), useCaching: Boolean = true)
         fun requestCollections(onFinish: () -> (Unit), useCaching: Boolean = true)
-        fun requestItemsForCollection(collectionKey : String)
-        fun requestItem()
         fun getLibraryItems() : List<Item>
         fun getItemsFromCollection(collectionName : String) : List<Item>
         fun refreshLibrary()

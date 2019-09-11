@@ -56,7 +56,7 @@ open class Item(
         }
     }
 
-    fun getAuthor(): CharSequence {
+    fun getAuthor(): String {
         return when (creators.size) {
             0 -> ""
             1 -> creators[0].lastName
@@ -73,6 +73,18 @@ open class Item(
                 this.data.values.joinToString("_").toUpperCase(Locale.getDefault()).contains(
                     queryUpper
                 )
+    }
+
+    fun getSortableDateString(): String {
+        val date = data["date"] ?: ""
+        if (date == "") {
+            return "ZZZZ"
+        }
+        return date
+    }
+
+    fun getSortableDateAddedString(): String {
+        return data["dateAdded"] ?: "XXXX-XX-XX"
     }
 }
 

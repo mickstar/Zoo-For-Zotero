@@ -236,7 +236,7 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
     override fun openPDF(attachment: File) {
         var intent = Intent(Intent.ACTION_VIEW)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            var uri: Uri? = null
+            var uri: Uri?
             try {
                 uri = FileProvider.getUriForFile(this, "$packageName.fileprovider", attachment)
             } catch (exception: IllegalArgumentException) {
@@ -363,6 +363,11 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
     override fun hideLibraryContentDisplay() {
         val constraintLayout = findViewById<ConstraintLayout>(R.id.constraintLayout_library_content)
         constraintLayout.visibility = View.GONE
+    }
+
+    override fun onResume() {
+        super.onResume()
+        presenter.redisplayItems()
     }
 
     companion object {

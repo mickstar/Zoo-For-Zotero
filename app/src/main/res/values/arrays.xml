@@ -1,8 +1,20 @@
 <resources>
     <string-array name="sync_options_entries">
-        <item>Zotero Account Sync</item>>
+        <item>Zotero Account Sync</item>
     </string-array>
     <string-array name="sync_options_values">
         <item>zoteroapi</item>
+    </string-array>
+    <string-array name="sort_options_entries">
+        <item>By Title</item>
+        <item>By Author</item>
+        <item>By Date</item>
+        <item>By Date Added</item>
+    </string-array>
+    <string-array name="sort_options_values">
+        <item>TITLE</item>
+        <item>AUTHOR</item>
+        <item>DATE</item>
+        <item>DATE_ADDED</item>
     </string-array>
 </resources>

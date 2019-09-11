@@ -34,4 +34,6 @@
     <string name="title">Title</string>
     <string name="author">Author</string>
     <string name="library_content_empty_library">This catalog is currently empty.\nPlease refresh your library.</string>
+    <string name="sort_method_title">Library Sorting</string>
+    <string name="library_header">Library</string>
 </resources>

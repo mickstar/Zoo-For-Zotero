@@ -58,7 +58,7 @@ class ZoteroDB(val context: Context) {
     }
 
     fun writeDatabaseUpdatedTimestamp() {
-        val editor = context.getSharedPreferences("zoteroDB", Context.MODE_PRIVATE).edit()
+        val editor = context.getSharedPreferences("zoteroDB", MODE_PRIVATE).edit()
         val timestamp = System.currentTimeMillis() //timestamp in milliseconds.
         editor.putLong("lastModified", timestamp)
         editor.apply()
@@ -66,7 +66,7 @@ class ZoteroDB(val context: Context) {
 
     /* Returns the timestamp in milliseconds of when the database was last updated.*/
     fun getLastModifiedTimestamp(): Long {
-        val sp = context.getSharedPreferences("zoteroDB", Context.MODE_PRIVATE)
+        val sp = context.getSharedPreferences("zoteroDB", MODE_PRIVATE)
         val timestamp = sp.getLong("lastModified", 0L)
         return timestamp
     }
@@ -221,7 +221,12 @@ class ZoteroDB(val context: Context) {
     }
 
     fun getDisplayableItems(): List<Item> {
-        return items!!.filter { it.getItemType() != "attachment" && it.getItemType() != "note" }
+        if (items != null) {
+            return items!!.filter { it.getItemType() != "attachment" && it.getItemType() != "note" }
+        } else {
+            Log.e("zotero", "error. got request for getDisplayableItems() before items has loaded.")
+            return LinkedList()
+        }
     }
 
     fun getItemsFromCollection(collection: String): List<Item> {
@@ -232,21 +237,21 @@ class ZoteroDB(val context: Context) {
     }
 
     fun setItemsVersion(libraryVersion: Int) {
-        val sharedPreferences = context.getSharedPreferences("zoteroDB", Context.MODE_PRIVATE)
+        val sharedPreferences = context.getSharedPreferences("zoteroDB", MODE_PRIVATE)
         val editor = sharedPreferences.edit()
         editor.putInt("ItemsLibraryVersion", libraryVersion)
         editor.apply()
     }
 
     fun getLibraryVersion(): Int {
-        val sharedPreferences = context.getSharedPreferences("zoteroDB", Context.MODE_PRIVATE)
+        val sharedPreferences = context.getSharedPreferences("zoteroDB", MODE_PRIVATE)
         return sharedPreferences.getInt("ItemsLibraryVersion", -1)
     }
 
     fun clearItemsVersion() {
         try {
             val sharedPreferences =
-                context.getSharedPreferences("zoteroDB", Context.MODE_PRIVATE)
+                context.getSharedPreferences("zoteroDB", MODE_PRIVATE)
             val editor = sharedPreferences.edit()
             editor.remove("ItemsLibraryVersion")
             editor.apply()
