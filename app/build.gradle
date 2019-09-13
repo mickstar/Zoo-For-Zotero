@@ -15,8 +15,8 @@ android {
         applicationId "com.mickstarify.zooforzotero"
         minSdkVersion 21
         targetSdkVersion 29
-        versionCode 6
-        versionName "1.1d"
+        versionCode 7
+        versionName "1.2"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "zotero_api_key", apikeyProperties['zotero_api_key'])
         buildConfigField("String", "zotero_api_secret", apikeyProperties['zotero_api_secret'])
