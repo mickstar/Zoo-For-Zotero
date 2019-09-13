@@ -1,4 +1,4 @@
-package com.mickstarify.zooforzotero.LibraryActivity.ItemViewFragment
+package com.mickstarify.zooforzotero.LibraryActivity.ItemView
 
 import android.content.Context
 import android.net.Uri

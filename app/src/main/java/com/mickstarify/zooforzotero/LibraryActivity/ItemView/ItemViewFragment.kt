@@ -1,4 +1,4 @@
-package com.mickstarify.zooforzotero.LibraryActivity.ItemViewFragment
+package com.mickstarify.zooforzotero.LibraryActivity.ItemView
 
 import android.content.Context
 import android.net.Uri
@@ -12,7 +12,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import androidx.fragment.app.Fragment
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
-import com.mickstarify.zooforzotero.LibraryActivity.ItemViewFragment.ItemAuthorsEntry.OnFragmentInteractionListener
+import com.mickstarify.zooforzotero.LibraryActivity.ItemView.ItemAuthorsEntry.OnFragmentInteractionListener
 import com.mickstarify.zooforzotero.R
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Creator
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Item
@@ -24,15 +24,15 @@ import java.util.*
  * Activities containing this fragment MUST implement the
  * [ItemViewFragment.OnListFragmentInteractionListener] interface.
  */
-class ItemViewFragment: BottomSheetDialogFragment(), OnFragmentInteractionListener{
+class ItemViewFragment : BottomSheetDialogFragment(), OnFragmentInteractionListener {
     override fun onFragmentInteraction(uri: Uri) {
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
-    private lateinit var item : Item
-    private lateinit var attachments : List<Item>
+    private lateinit var item: Item
+    private lateinit var attachments: List<Item>
     private lateinit var notes: List<Note>
-    private var listener: OnListFragmentInteractionListener? = null
+    private var listener: OnItemFragmentInteractionListener? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -51,6 +51,34 @@ class ItemViewFragment: BottomSheetDialogFragment(), OnFragmentInteractionListen
         menu.removeItem(R.id.search)
     }
 
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        when (item.itemId) {
+            R.id.add_note -> {
+                this.showCreateNoteDialog()
+            }
+            else -> {
+                Log.d("zotero", "item fragmenmt menu item clicked")
+            }
+        }
+
+        return super.onOptionsItemSelected(item)
+    }
+
+    private fun showCreateNoteDialog() {
+        EditNoteDialog().show(context, object : onEditNoteChangeListener {
+            override fun onCancel() {
+            }
+
+            override fun onSubmit(noteText: String) {
+                Log.d("zotero", "got note $noteText")
+                val note = Note(noteText, item.ItemKey)
+                listener?.onNoteCreate(note)
+
+            }
+
+        })
+    }
+
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
@@ -61,20 +89,20 @@ class ItemViewFragment: BottomSheetDialogFragment(), OnFragmentInteractionListen
         (activity as AppCompatActivity).setSupportActionBar(toolbar)
         (activity as AppCompatActivity).title = item.getTitle()
 
-        addTextEntry("Item Type", item.data["itemType"]?:"Unknown")
+        addTextEntry("Item Type", item.data["itemType"] ?: "Unknown")
         addTextEntry("title", item.getTitle())
-        if (item.creators.isNotEmpty()){
+        if (item.creators.isNotEmpty()) {
             this.addCreators(item.creators)
-        }
-        else{
+        } else {
             this.addCreators(listOf(Creator("Author", "", "")))
         }
-        for ((key,value) in item.data){
-            if (key != "itemType" && key != "title"){
-                addTextEntry(key,value)
+        for ((key, value) in item.data) {
+            if (key != "itemType" && key != "title") {
+                addTextEntry(key, value)
             }
         }
-        val attachmentsLayout = view.findViewById<LinearLayout>(R.id.item_fragment_scrollview_ll_attachments)
+        val attachmentsLayout =
+            view.findViewById<LinearLayout>(R.id.item_fragment_scrollview_ll_attachments)
         attachmentsLayout.addView(TextView(context).apply {
             this.text = "Attachments"
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -82,12 +110,12 @@ class ItemViewFragment: BottomSheetDialogFragment(), OnFragmentInteractionListen
             }
         })
         this.addAttachments(attachments)
-        this.addNotes(notes)
+        this.populateNotes(notes)
 
         return view
     }
 
-    private fun addNotes(notes: List<Note>) {
+    private fun populateNotes(notes: List<Note>) {
         if (notes.isEmpty()) {
             return
         }
@@ -102,7 +130,7 @@ class ItemViewFragment: BottomSheetDialogFragment(), OnFragmentInteractionListen
 
     }
 
-    private fun addAttachments(attachments: List<Item>){
+    private fun addAttachments(attachments: List<Item>) {
         val fmt = this.childFragmentManager.beginTransaction()
         for (attachment in attachments) {
             Log.d("zotero", "adding ${attachment.getTitle()}")
@@ -114,14 +142,16 @@ class ItemViewFragment: BottomSheetDialogFragment(), OnFragmentInteractionListen
         fmt.commit()
     }
 
-    private fun addTextEntry(label: String, content : String) {
+    private fun addTextEntry(label: String, content: String) {
         val fmt = this.childFragmentManager.beginTransaction()
-        fmt.add(R.id.item_fragment_scrollview_ll_layout,
-            ItemTextEntry.newInstance(label, content) as Fragment)
+        fmt.add(
+            R.id.item_fragment_scrollview_ll_layout,
+            ItemTextEntry.newInstance(label, content) as Fragment
+        )
         fmt.commit()
     }
 
-    private fun addCreators(creators : List<Creator>) {
+    private fun addCreators(creators: List<Creator>) {
         val fmt = this.childFragmentManager.beginTransaction()
         for (creator in creators) {
             fmt.add(
@@ -134,10 +164,10 @@ class ItemViewFragment: BottomSheetDialogFragment(), OnFragmentInteractionListen
 
     override fun onAttach(context: Context) {
         super.onAttach(context)
-        if (context is OnListFragmentInteractionListener) {
+        if (context is OnItemFragmentInteractionListener) {
             listener = context
         } else {
-            throw RuntimeException(context.toString() + " must implement OnListFragmentInteractionListener")
+            throw RuntimeException(context.toString() + " must implement OnItemFragmentInteractionListener")
         }
     }
 
@@ -157,9 +187,9 @@ class ItemViewFragment: BottomSheetDialogFragment(), OnFragmentInteractionListen
      * [Communicating with Other Fragments](http://developer.android.com/training/basics/fragments/communicating.html)
      * for more information.
      */
-    interface OnListFragmentInteractionListener {
-        // TODO: Update argument type and name
+    interface OnItemFragmentInteractionListener {
         fun onListFragmentInteraction(item: Item?)
+        fun onNoteCreate(note: Note)
     }
 
     companion object {

@@ -35,6 +35,13 @@ class NoteTest {
         }
     }
 
+    @Test
+    fun testJson() {
+        val note = Note("note text", "F#F#F#F")
+        val jsonArray = note.writeToZoteroJson()
+        assert(jsonArray.toString() == "[{\"itemType\":\"note\",\"note\":\"note text\",\"parentItem\":\"F#F#F#F\",\"tags\":[],\"collections\":[],\"relations\":[]}]")
+    }
+
     val json = """[{
         "key": "GANIKZC7",
         "version": 7,

@@ -23,8 +23,8 @@ import androidx.drawerlayout.widget.DrawerLayout
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.google.android.material.navigation.NavigationView
 import com.google.firebase.analytics.FirebaseAnalytics
-import com.mickstarify.zooforzotero.LibraryActivity.ItemViewFragment.ItemAttachmentEntry
-import com.mickstarify.zooforzotero.LibraryActivity.ItemViewFragment.ItemViewFragment
+import com.mickstarify.zooforzotero.LibraryActivity.ItemView.ItemAttachmentEntry
+import com.mickstarify.zooforzotero.LibraryActivity.ItemView.ItemViewFragment
 import com.mickstarify.zooforzotero.R
 import com.mickstarify.zooforzotero.SettingsActivity
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Collection
@@ -37,9 +37,8 @@ import java.io.File
 class LibraryActivity : AppCompatActivity(), Contract.View,
     NavigationView.OnNavigationItemSelectedListener,
     SwipeRefreshLayout.OnRefreshListener,
-    ItemViewFragment.OnListFragmentInteractionListener,
+    ItemViewFragment.OnItemFragmentInteractionListener,
     ItemAttachmentEntry.OnAttachmentFragmentInteractionListener {
-
 
     private lateinit var presenter: Contract.Presenter
     private lateinit var firebaseAnalytics: FirebaseAnalytics
@@ -368,6 +367,10 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
     override fun onResume() {
         super.onResume()
         presenter.redisplayItems()
+    }
+
+    override fun onNoteCreate(note: Note) {
+        presenter.createNote(note)
     }
 
     companion object {

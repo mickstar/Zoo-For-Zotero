@@ -1,2 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<menu></menu>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item
+            android:id="@+id/add_note"
+            android:icon="@drawable/toolbar_note_add_2x"
+            android:title="Add Note"
+            app:showAsAction="collapseActionView|ifRoom" />
+</menu>

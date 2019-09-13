@@ -8,7 +8,7 @@
         android:clickable="true"
         android:focusable="true"
         android:background="?android:attr/selectableItemBackground"
-        tools:context=".LibraryActivity.ItemViewFragment.ItemAttachmentEntry">
+        tools:context=".LibraryActivity.ItemView.ItemAttachmentEntry">
 
     <ImageView
             android:src="@drawable/treeitem_attachment_link_2x"

@@ -1,13 +1,11 @@
 package com.mickstarify.zooforzotero.ZoteroAPI
 
+import com.google.gson.JsonArray
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Collection
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.KeyInfo
 import okhttp3.ResponseBody
 import retrofit2.Call
-import retrofit2.http.GET
-import retrofit2.http.Path
-import retrofit2.http.Query
-import retrofit2.http.Streaming
+import retrofit2.http.*
 
 interface ZoteroAPIService {
     @GET("users/{user}/items")
@@ -32,4 +30,11 @@ interface ZoteroAPIService {
         @Path("user") user : String,
         @Path("itemKey") itemKey : String
     ) : Call<ResponseBody>
+
+
+    @POST("users/{user}/items")
+    fun writeItem(
+        @Path("user") user: String,
+        @Body json: JsonArray
+    ): Call<ResponseBody>
 }

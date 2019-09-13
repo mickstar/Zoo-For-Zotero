@@ -19,6 +19,7 @@ import java.util.concurrent.TimeUnit
 
 class LibraryActivityModel(private val presenter: Contract.Presenter, val context: Context) :
     Contract.Model {
+
     // just a flag to store whether we have shown the user a network error so that we don't
     // do it twice (from getCatalog & getItems
     private var shownNetworkError: Boolean = false
@@ -52,15 +53,6 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
         return false
     }
 
-    private fun sortMethod(item: Item): String {
-        return when (preferences.getSortMethod()) {
-            SortMethod.TITLE -> item.getTitle().toLowerCase(Locale.getDefault())
-            SortMethod.DATE -> item.getSortableDateString()
-            SortMethod.AUTHOR -> item.getAuthor().toLowerCase(Locale.getDefault())
-            SortMethod.DATE_ADDED -> item.getSortableDateAddedString()
-        }
-    }
-
     val sortMethod = compareBy<Item> {
         when (preferences.getSortMethod()) {
             SortMethod.TITLE -> it.getTitle().toLowerCase(Locale.getDefault())
@@ -71,7 +63,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
     }.thenBy { it.getTitle().toLowerCase(Locale.getDefault()) }
 
     override fun isLoaded(): Boolean {
-        return !(zoteroDB.items == null || zoteroDB.collections == null)
+        return zoteroDB.isPopulated()
     }
 
     override fun getLibraryItems(): List<Item> {
@@ -226,8 +218,8 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                             )
                         }
                         zoteroDB.collections = LinkedList()
-                        finishGetCollections(onFinish)
                     }
+                    finishGetCollections(onFinish)
                 }
             })
     }
@@ -324,6 +316,11 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
         this.isDownloading = false
         task?.cancel(true)
     }
+
+    override fun createNote(note: Note) {
+        zoteroAPI.uploadNote(note)
+    }
+
 
     init {
         val auth = AuthenticationStorage(context)

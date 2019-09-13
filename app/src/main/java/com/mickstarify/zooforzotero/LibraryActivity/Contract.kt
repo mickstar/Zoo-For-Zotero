@@ -43,6 +43,7 @@ interface Contract {
         fun isShowingContent(): Boolean
         fun cancelAttachmentDownload()
         fun redisplayItems()
+        fun createNote(note: Note)
     }
 
     interface Model {
@@ -61,5 +62,6 @@ interface Contract {
         fun isLoaded(): Boolean
         fun loadCollectionsLocally(onFinish: () -> Unit)
         fun getNotes(itemKey: String): List<Note>
+        fun createNote(note: Note)
     }
 }

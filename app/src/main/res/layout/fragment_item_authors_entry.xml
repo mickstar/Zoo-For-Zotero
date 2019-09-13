@@ -6,7 +6,7 @@
         android:orientation="horizontal"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        tools:context=".LibraryActivity.ItemViewFragment.ItemAuthorsEntry">
+        tools:context=".LibraryActivity.ItemView.ItemAuthorsEntry">
 
 
     <Spinner

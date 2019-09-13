@@ -8,7 +8,7 @@
         android:background="?android:attr/selectableItemBackground"
         android:clickable="true"
         android:focusable="true"
-        tools:context=".LibraryActivity.ItemViewFragment.ItemNoteEntry">
+        tools:context=".LibraryActivity.ItemView.ItemNoteEntry">
 
     <ImageView
             android:id="@+id/imageView_note_icon"

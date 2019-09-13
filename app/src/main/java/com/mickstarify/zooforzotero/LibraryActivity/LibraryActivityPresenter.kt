@@ -4,10 +4,17 @@ import android.content.Context
 import android.util.Log
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Collection
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Item
+import com.mickstarify.zooforzotero.ZoteroAPI.Model.Note
 import java.io.File
 import java.util.*
 
 class LibraryActivityPresenter(val view: Contract.View, context: Context) : Contract.Presenter {
+    override fun createNote(note: Note) {
+        if (note.note.trim() != "") {
+            model.createNote(note)
+        }
+    }
+
     override fun redisplayItems() {
         if (model.isLoaded()) {
             if (model.currentCollection != "unset") {

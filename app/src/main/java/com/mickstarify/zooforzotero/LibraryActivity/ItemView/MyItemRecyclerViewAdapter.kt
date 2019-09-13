@@ -1,4 +1,4 @@
-package com.mickstarify.zooforzotero.LibraryActivity.ItemViewFragment
+package com.mickstarify.zooforzotero.LibraryActivity.ItemView
 
 
 import android.view.LayoutInflater
@@ -6,7 +6,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
-import com.mickstarify.zooforzotero.LibraryActivity.ItemViewFragment.ItemViewFragment.OnListFragmentInteractionListener
+import com.mickstarify.zooforzotero.LibraryActivity.ItemView.ItemViewFragment.OnItemFragmentInteractionListener
 import com.mickstarify.zooforzotero.R
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Item
 import kotlinx.android.synthetic.main.fragment_item_text_entry.view.*
@@ -14,7 +14,7 @@ import kotlinx.android.synthetic.main.fragment_item_text_entry.view.*
 
 class MyItemRecyclerViewAdapter(
     private val itemObject : Item,
-    private val mListener: OnListFragmentInteractionListener?
+    private val mListener: OnItemFragmentInteractionListener?
 ) : RecyclerView.Adapter<MyItemRecyclerViewAdapter.ViewHolder>() {
 
 //    private val mOnClickListener: View.OnClickListener

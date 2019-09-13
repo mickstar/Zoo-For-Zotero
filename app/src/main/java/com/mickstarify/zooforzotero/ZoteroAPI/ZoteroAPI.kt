@@ -5,10 +5,8 @@ import android.util.Log
 import com.google.common.hash.Hashing
 import com.google.common.io.Files
 import com.mickstarify.zooforzotero.BuildConfig
+import com.mickstarify.zooforzotero.ZoteroAPI.Model.*
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Collection
-import com.mickstarify.zooforzotero.ZoteroAPI.Model.Item
-import com.mickstarify.zooforzotero.ZoteroAPI.Model.ItemJSONConverter
-import com.mickstarify.zooforzotero.ZoteroAPI.Model.KeyInfo
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.ResponseBody
@@ -36,7 +34,7 @@ class ZoteroAPI(
         val httpClient = OkHttpClient().newBuilder().apply {
             if (BuildConfig.DEBUG) {
                 addInterceptor(HttpLoggingInterceptor().apply {
-                    this.level = HttpLoggingInterceptor.Level.HEADERS
+                    this.level = HttpLoggingInterceptor.Level.BODY
                 })
             }
             addInterceptor(object : Interceptor {
@@ -274,6 +272,24 @@ class ZoteroAPI(
             override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
                 Log.d("zotero", "network failure ${t.message}")
                 listener.onNetworkFailure()
+            }
+        })
+    }
+
+    fun uploadNote(note: Note) {
+        val zoteroAPI = buildZoteroAPI(useCaching = false, libraryVersion = -1)
+        val call: Call<ResponseBody> = zoteroAPI.writeItem(userID, note.writeToZoteroJson())
+
+        call.enqueue(object : Callback<ResponseBody> {
+            override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
+                if (response.code() == 200) {
+                    Log.d("zotero", "success on note upload")
+                } else {
+                    Log.d("zotero", "got back code ${response.code()} from note upload.")
+                }
+            }
+
+            override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
             }
         })
     }

@@ -1,4 +1,4 @@
-package com.mickstarify.zooforzotero.LibraryActivity.ItemViewFragment
+package com.mickstarify.zooforzotero.LibraryActivity.ItemView
 
 import android.app.AlertDialog
 import android.content.Context
@@ -27,9 +27,9 @@ class ItemNoteEntry : Fragment() {
 
     fun stripHtml(html: String): String {
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N) {
-            return Html.fromHtml(html, Html.FROM_HTML_MODE_LEGACY).toString();
+            return Html.fromHtml(html, Html.FROM_HTML_MODE_LEGACY).toString()
         } else {
-            return Html.fromHtml(html).toString();
+            return Html.fromHtml(html).toString()
         }
     }
 
@@ -43,9 +43,9 @@ class ItemNoteEntry : Fragment() {
         val htmlText = stripHtml(note?.note ?: "")
         noteText.text = htmlText
 
-        view.setOnClickListener(View.OnClickListener {
+        view.setOnClickListener({
             Log.d("zotero", "note clicked")
-            val dialog = AlertDialog.Builder(this.context)
+            AlertDialog.Builder(this.context)
                 .setTitle("Note")
                 .setMessage(Html.fromHtml(note?.note))
                 .setPositiveButton("Dismiss", { _, _ -> })
