@@ -373,6 +373,14 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
         presenter.createNote(note)
     }
 
+    override fun onNoteEdit(note: Note) {
+        presenter.modifyNote(note)
+    }
+
+    override fun onNoteDelete(note: Note) {
+        presenter.deleteNote(note)
+    }
+
     companion object {
         const val ACTION_FILTER = "com.mickstarify.zooforzotero.intent.action.LIBRARY_FILTER_INTENT"
         const val EXTRA_QUERY = "com.mickstarify.zooforzotero.intent.EXTRA_QUERY_TEXT"

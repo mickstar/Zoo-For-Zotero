@@ -18,6 +18,7 @@ class NoteTest {
         assertNotNull(note)
         assertEquals(note?.parent, "KEGNWTKP")
         assertEquals(note?.key, "GANIKZC7")
+        assertEquals(note?.version, 7)
         assertEquals(
             note?.note,
             "<p>Wow great Article man</p>\n<p> </p>\n<p>here are some notes dude</p>\n<p> </p>"
@@ -38,7 +39,7 @@ class NoteTest {
     @Test
     fun testJson() {
         val note = Note("note text", "F#F#F#F")
-        val jsonArray = note.writeToZoteroJson()
+        val jsonArray = note.asJsonArray()
         assert(jsonArray.toString() == "[{\"itemType\":\"note\",\"note\":\"note text\",\"parentItem\":\"F#F#F#F\",\"tags\":[],\"collections\":[],\"relations\":[]}]")
     }
 

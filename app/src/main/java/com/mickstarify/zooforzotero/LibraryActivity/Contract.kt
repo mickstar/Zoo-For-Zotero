@@ -44,6 +44,9 @@ interface Contract {
         fun cancelAttachmentDownload()
         fun redisplayItems()
         fun createNote(note: Note)
+        fun modifyNote(note: Note)
+        fun deleteNote(note: Note)
+        fun refreshItemView()
     }
 
     interface Model {
@@ -63,5 +66,7 @@ interface Contract {
         fun loadCollectionsLocally(onFinish: () -> Unit)
         fun getNotes(itemKey: String): List<Note>
         fun createNote(note: Note)
+        fun modifyNote(note: Note)
+        fun deleteNote(note: Note)
     }
 }

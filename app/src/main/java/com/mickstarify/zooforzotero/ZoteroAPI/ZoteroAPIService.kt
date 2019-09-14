@@ -1,6 +1,7 @@
 package com.mickstarify.zooforzotero.ZoteroAPI
 
 import com.google.gson.JsonArray
+import com.google.gson.JsonObject
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Collection
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.KeyInfo
 import okhttp3.ResponseBody
@@ -36,5 +37,18 @@ interface ZoteroAPIService {
     fun writeItem(
         @Path("user") user: String,
         @Body json: JsonArray
+    ): Call<ResponseBody>
+
+    @PATCH("users/{user}/items/{itemKey}")
+    fun editNote(
+        @Path("user") user: String,
+        @Path("itemKey") itemKey: String,
+        @Body json: JsonObject
+    ): Call<ResponseBody>
+
+    @DELETE("users/{user}/items/{itemKey}")
+    fun deleteItem(
+        @Path("user") user: String,
+        @Path("itemKey") itemKey: String
     ): Call<ResponseBody>
 }

@@ -10,12 +10,14 @@ class Note() : Parcelable {
     lateinit var parent: String
     lateinit var key: String
     lateinit var note: String
+    var version: Int = -1
     lateinit var tags: List<String>
 
     constructor(parcel: Parcel) : this() {
         parent = parcel.readString() ?: throw ExceptionInInitializerError("No Parent Key")
         key = parcel.readString() ?: throw ExceptionInInitializerError("No Key")
         note = parcel.readString() ?: throw ExceptionInInitializerError("No note")
+        version = parcel.readInt()
         tags = parcel.createStringArrayList() ?: LinkedList()
     }
 
@@ -23,12 +25,14 @@ class Note() : Parcelable {
         parent = item.data["parentItem"] ?: throw ExceptionInInitializerError("No Parent Key")
         key = item.data["key"] ?: throw ExceptionInInitializerError("No Key")
         note = item.data["note"] ?: throw ExceptionInInitializerError("No note")
+        version = item.version
         tags = item.tags
     }
 
     constructor(note: String, parent: String) : this() {
         this.parent = parent
         this.note = note
+        this.version = -1
         this.tags = LinkedList()
     }
 
@@ -36,11 +40,18 @@ class Note() : Parcelable {
         parcel.writeString(parent)
         parcel.writeString(key)
         parcel.writeString(note)
+        parcel.writeInt(version)
         parcel.writeStringList(tags)
     }
 
-    fun writeToZoteroJson(): JsonArray {
-        val jsonArray = JsonArray()
+    fun getJsonNotePatch(): JsonObject {
+        val noteObject = JsonObject()
+        noteObject.addProperty("note", note)
+        return noteObject
+    }
+
+    fun asJsonObject(): JsonObject {
+
         val noteObject = JsonObject()
 
         noteObject.addProperty("itemType", "note")
@@ -49,19 +60,24 @@ class Note() : Parcelable {
         noteObject.add("tags", JsonArray())
         noteObject.add("collections", JsonArray())
         noteObject.add("relations", JsonArray())
-        jsonArray.add(noteObject)
+
+        return noteObject
+    }
+
+    fun asJsonArray(): JsonArray {
+        val jsonArray = JsonArray()
+        jsonArray.add(asJsonObject())
         return jsonArray
+    }
 
-
-//        return """[{
+//        """[{
 //        "itemType": "note",
 //        "note": "$note",
 //        "parentItem": "$parent",
 //        "tags": [],
 //        "collections": [],
 //        "relations": {}
-//        }]""".trimMargin()
-    }
+//        }]
 
     override fun describeContents(): Int {
         return 0

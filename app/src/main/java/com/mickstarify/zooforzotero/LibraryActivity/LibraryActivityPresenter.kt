@@ -9,10 +9,18 @@ import java.io.File
 import java.util.*
 
 class LibraryActivityPresenter(val view: Contract.View, context: Context) : Contract.Presenter {
+    override fun modifyNote(note: Note) {
+        model.modifyNote(note)
+    }
+
     override fun createNote(note: Note) {
         if (note.note.trim() != "") {
             model.createNote(note)
         }
+    }
+
+    override fun deleteNote(note: Note) {
+        model.deleteNote(note)
     }
 
     override fun redisplayItems() {
@@ -102,6 +110,18 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
         } else if (item.getItemType() == "note") {
             //ignore
         } else {
+            model.selectedItem = item
+            view.showItemDialog(
+                item,
+                model.getAttachments(item.ItemKey),
+                model.getNotes(item.ItemKey)
+            )
+        }
+    }
+
+    override fun refreshItemView() {
+        val item = model.selectedItem
+        if (item != null) {
             view.showItemDialog(
                 item,
                 model.getAttachments(item.ItemKey),

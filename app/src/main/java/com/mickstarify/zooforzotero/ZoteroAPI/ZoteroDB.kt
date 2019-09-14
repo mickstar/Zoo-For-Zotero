@@ -275,4 +275,15 @@ class ZoteroDB(val context: Context) {
         }
         return LinkedList()
     }
+
+    fun deleteItem(key: String) {
+        val newItems = LinkedList<Item>()
+        items?.forEach {
+            if (it.ItemKey != key) {
+                newItems.add(it)
+            }
+        }
+        items = newItems
+        this.commitItemsToStorage()
+    }
 }

@@ -1,7 +1,6 @@
 package com.mickstarify.zooforzotero.LibraryActivity.ItemView
 
 import android.content.Context
-import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
@@ -12,7 +11,6 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import androidx.fragment.app.Fragment
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
-import com.mickstarify.zooforzotero.LibraryActivity.ItemView.ItemAuthorsEntry.OnFragmentInteractionListener
 import com.mickstarify.zooforzotero.R
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Creator
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Item
@@ -24,9 +22,23 @@ import java.util.*
  * Activities containing this fragment MUST implement the
  * [ItemViewFragment.OnListFragmentInteractionListener] interface.
  */
-class ItemViewFragment : BottomSheetDialogFragment(), OnFragmentInteractionListener {
-    override fun onFragmentInteraction(uri: Uri) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+class ItemViewFragment : BottomSheetDialogFragment(), ItemNoteEntry.OnNoteInteractionListener {
+    override fun deleteNote(note: Note) {
+        listener?.onNoteDelete(note)
+    }
+
+    override fun editNote(note: Note) {
+        EditNoteDialog().show(context, note.note, object : onEditNoteChangeListener {
+            override fun onCancel() {
+            }
+
+            override fun onSubmit(noteText: String) {
+                note.note = noteText
+                listener?.onNoteEdit(note)
+
+            }
+
+        })
     }
 
     private lateinit var item: Item
@@ -65,7 +77,7 @@ class ItemViewFragment : BottomSheetDialogFragment(), OnFragmentInteractionListe
     }
 
     private fun showCreateNoteDialog() {
-        EditNoteDialog().show(context, object : onEditNoteChangeListener {
+        EditNoteDialog().show(context, "", object : onEditNoteChangeListener {
             override fun onCancel() {
             }
 
@@ -190,6 +202,8 @@ class ItemViewFragment : BottomSheetDialogFragment(), OnFragmentInteractionListe
     interface OnItemFragmentInteractionListener {
         fun onListFragmentInteraction(item: Item?)
         fun onNoteCreate(note: Note)
+        fun onNoteEdit(note: Note)
+        fun onNoteDelete(note: Note)
     }
 
     companion object {

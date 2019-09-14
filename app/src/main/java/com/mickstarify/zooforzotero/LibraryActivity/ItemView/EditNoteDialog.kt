@@ -14,7 +14,11 @@ import org.jetbrains.anko.sdk27.coroutines.onClick
 
 class EditNoteDialog {
 
-    fun show(context: Context?, onEditNoteChangeListener: onEditNoteChangeListener) {
+    fun show(
+        context: Context?,
+        noteText: String,
+        onEditNoteChangeListener: onEditNoteChangeListener
+    ) {
         if (context == null) {
             Log.e("zotero", "got null context on create Note")
             return
@@ -27,6 +31,8 @@ class EditNoteDialog {
         val cancelButton = dialogView.findViewById<Button>(R.id.buttonCancel)
         val submitButton = dialogView.findViewById<Button>(R.id.buttonSubmit)
         val editTextNote = dialogView.findViewById<EditText>(R.id.edit_note)
+
+        editTextNote.setText(noteText)
 
         cancelButton.onClick {
             onEditNoteChangeListener.onCancel()

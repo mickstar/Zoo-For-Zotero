@@ -2,6 +2,7 @@ package com.mickstarify.zooforzotero.LibraryActivity.ItemView
 
 import android.app.AlertDialog
 import android.content.Context
+import android.content.DialogInterface
 import android.os.Bundle
 import android.text.Html
 import android.util.Log
@@ -17,12 +18,13 @@ val ARG_NOTE = "note"
 
 class ItemNoteEntry : Fragment() {
     private var note: Note? = null
-
+    private var listener: OnNoteInteractionListener? = null
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         arguments?.let {
             note = it.getParcelable(ARG_NOTE)
         }
+        onAttachToParentFragment(parentFragment)
     }
 
     fun stripHtml(html: String): String {
@@ -44,23 +46,74 @@ class ItemNoteEntry : Fragment() {
         noteText.text = htmlText
 
         view.setOnClickListener({
-            Log.d("zotero", "note clicked")
-            AlertDialog.Builder(this.context)
-                .setTitle("Note")
-                .setMessage(Html.fromHtml(note?.note))
-                .setPositiveButton("Dismiss", { _, _ -> })
-                .show()
+            showNote()
+        })
+
+        view.setOnLongClickListener(object : View.OnLongClickListener {
+            override fun onLongClick(dialog: View?): Boolean {
+                AlertDialog.Builder(this@ItemNoteEntry.context)
+                    .setTitle("Note")
+                    .setItems(
+                        arrayOf("View Note", "Edit Note", "Delete Note"),
+                        object : DialogInterface.OnClickListener {
+                            override fun onClick(dialog: DialogInterface?, item: Int) {
+                                when (item) {
+                                    0 -> showNote()
+                                    1 -> editNote()
+                                    2 -> deleteNote()
+                                }
+                            }
+
+                        }).show()
+                return true
+            }
+
         })
 
         return view
+    }
+
+    private fun editNote() {
+        Log.d("zotero", "edit note clicked")
+        if (note != null) {
+            listener?.editNote(note!!)
+        }
+    }
+
+    private fun deleteNote() {
+        Log.d("zotero", "delete note clicked")
+        if (note != null) {
+            listener?.deleteNote(note!!)
+        }
+    }
+
+    private fun showNote() {
+        Log.d("zotero", "note clicked")
+        AlertDialog.Builder(this.context)
+            .setTitle("Note")
+            .setMessage(Html.fromHtml(note?.note))
+            .setPositiveButton("Dismiss", { _, _ -> })
+            .show()
     }
 
     override fun onAttach(context: Context) {
         super.onAttach(context)
     }
 
+    fun onAttachToParentFragment(parentFragment: Fragment?) {
+        if (parentFragment == null) {
+            return
+        }
+        if (parentFragment is OnNoteInteractionListener) {
+            listener = parentFragment
+        } else {
+            throw RuntimeException(parentFragment.toString() + " must implement OnNoteInteractionListener")
+        }
+    }
+
     interface OnNoteInteractionListener {
         fun deleteNote(note: Note)
+        fun editNote(note: Note)
     }
 
     companion object {

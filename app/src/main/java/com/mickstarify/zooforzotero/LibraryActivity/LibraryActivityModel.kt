@@ -19,7 +19,8 @@ import java.util.concurrent.TimeUnit
 
 class LibraryActivityModel(private val presenter: Contract.Presenter, val context: Context) :
     Contract.Model {
-
+    // stores the current item being viewed by the user. (useful for refreshing the view)
+    var selectedItem: Item? = null
     // just a flag to store whether we have shown the user a network error so that we don't
     // do it twice (from getCatalog & getItems
     private var shownNetworkError: Boolean = false
@@ -319,6 +320,38 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
 
     override fun createNote(note: Note) {
         zoteroAPI.uploadNote(note)
+    }
+
+    override fun modifyNote(note: Note) {
+        zoteroAPI.modifyNote(note, zoteroDB.getLibraryVersion())
+    }
+
+    override fun deleteNote(note: Note) {
+        zoteroAPI.deleteItem(note.key, note.version, object : DeleteItemListener {
+            override fun success() {
+                presenter.makeToastAlert("Successfully deleted your note.")
+                zoteroDB.deleteItem(note.key)
+                presenter.refreshItemView()
+            }
+
+            override fun failedItemLocked() {
+                presenter.createErrorAlert("Error Deleting Note", "The item is locked " +
+                        "and you do not have permission to delete this note.", {})
+            }
+
+            override fun failedItemChangedSince() {
+                presenter.createErrorAlert("Error Deleting Note",
+                    "Your local copy of this note is out of date. " +
+                            "Please refresh your library to delete this note.",
+                    {})
+            }
+
+            override fun failed(code: Int) {
+                presenter.createErrorAlert("Error Deleting Note", "There was an error " +
+                        "deleting your note. The server responded : ${code}", {})
+            }
+
+        })
     }
 
 

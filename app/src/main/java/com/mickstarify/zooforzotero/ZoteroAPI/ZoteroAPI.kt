@@ -30,7 +30,11 @@ class ZoteroAPI(
     val userID: String,
     val username: String
 ) {
-    private fun buildZoteroAPI(useCaching: Boolean, libraryVersion: Int): ZoteroAPIService {
+    private fun buildZoteroAPI(
+        useCaching: Boolean,
+        libraryVersion: Int,
+        ifModifiedSinceVersion: Int = -1
+    ): ZoteroAPIService {
         val httpClient = OkHttpClient().newBuilder().apply {
             if (BuildConfig.DEBUG) {
                 addInterceptor(HttpLoggingInterceptor().apply {
@@ -44,6 +48,9 @@ class ZoteroAPI(
                         .addHeader("Zotero-API-Key", API_KEY)
                     if (useCaching && libraryVersion > 0) {
                         request.addHeader("If-Modified-Since-Version", "$libraryVersion")
+                    }
+                    if (ifModifiedSinceVersion >= 0) {
+                        request.addHeader("If-Unmodified-Since-Version", "$ifModifiedSinceVersion")
                     }
                     return chain.proceed(request.build())
                 }
@@ -278,7 +285,7 @@ class ZoteroAPI(
 
     fun uploadNote(note: Note) {
         val zoteroAPI = buildZoteroAPI(useCaching = false, libraryVersion = -1)
-        val call: Call<ResponseBody> = zoteroAPI.writeItem(userID, note.writeToZoteroJson())
+        val call: Call<ResponseBody> = zoteroAPI.writeItem(userID, note.asJsonArray())
 
         call.enqueue(object : Callback<ResponseBody> {
             override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
@@ -286,6 +293,43 @@ class ZoteroAPI(
                     Log.d("zotero", "success on note upload")
                 } else {
                     Log.d("zotero", "got back code ${response.code()} from note upload.")
+                }
+            }
+
+            override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
+            }
+        })
+    }
+
+    fun modifyNote(note: Note, libraryVersion: Int) {
+        val zoteroAPI = buildZoteroAPI(true, -1, note.version)
+        val call: Call<ResponseBody> = zoteroAPI.editNote(userID, note.key, note.getJsonNotePatch())
+
+        call.enqueue(object : Callback<ResponseBody> {
+            override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
+                if (response.code() == 200 || response.code() == 204) {
+                    Log.d("zotero", "success on note modification")
+                } else {
+                    Log.d("zotero", "got back code ${response.code()} from note upload.")
+                }
+            }
+
+            override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
+            }
+        })
+    }
+
+    fun deleteItem(itemKey: String, version: Int, listener: DeleteItemListener) {
+        val zoteroAPI = buildZoteroAPI(true, -1, version)
+        val call: Call<ResponseBody> = zoteroAPI.deleteItem(userID, itemKey)
+
+        call.enqueue(object : Callback<ResponseBody> {
+            override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
+                when (response.code()) {
+                    204 -> listener.success()
+                    409 -> listener.failedItemLocked()
+                    412 -> listener.failedItemChangedSince()
+                    else -> listener.failed(response.code())
                 }
             }
 
