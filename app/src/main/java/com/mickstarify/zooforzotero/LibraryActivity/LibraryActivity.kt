@@ -4,8 +4,6 @@ import android.app.ProgressDialog
 import android.app.SearchManager
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
-import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.view.Menu
@@ -17,7 +15,6 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SearchView
 import androidx.constraintlayout.widget.ConstraintLayout
-import androidx.core.content.FileProvider
 import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
@@ -31,7 +28,6 @@ import com.mickstarify.zooforzotero.ZoteroAPI.Model.Collection
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Item
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Note
 import kotlinx.android.synthetic.main.activity_library.*
-import java.io.File
 
 
 class LibraryActivity : AppCompatActivity(), Contract.View,
@@ -230,34 +226,6 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
         val myBottomSheet = ItemViewFragment.newInstance(item, attachments, notes)
         val fm = supportFragmentManager
         myBottomSheet.show(fm, "hello world")
-    }
-
-    override fun openPDF(attachment: File) {
-        var intent = Intent(Intent.ACTION_VIEW)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            var uri: Uri?
-            try {
-                uri = FileProvider.getUriForFile(this, "$packageName.fileprovider", attachment)
-            } catch (exception: IllegalArgumentException) {
-                val params = Bundle()
-                params.putString("filename", attachment.name)
-                firebaseAnalytics.logEvent("error_opening_pdf", params)
-                presenter.makeToastAlert("Sorry an error occurred while trying to download your attachment.")
-                return
-            }
-            Log.d("zotero", "${uri.query}")
-            intent = Intent(Intent.ACTION_VIEW)
-            intent.data = uri
-            intent.flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
-        } else {
-            intent.setDataAndType(Uri.fromFile(attachment), "application/pdf")
-            intent.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY)
-            intent = Intent.createChooser(intent, "Open File")
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-
-        }
-        startActivity(intent)
-
     }
 
     @Suppress("DEPRECATION")
