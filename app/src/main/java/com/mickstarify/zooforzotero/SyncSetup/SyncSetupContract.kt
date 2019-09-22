@@ -1,24 +1,25 @@
 package com.mickstarify.zooforzotero.SyncSetup
 
-import android.content.Context
-
 interface SyncSetupContract {
     interface View {
         fun initUI()
         fun createUnsupportedAlert()
         fun startZoteroAPIActivity()
         fun showHowToZoteroSyncDialog(onProceed: () -> Unit)
+        fun createAPIKeyDialog(onKeySubmit: (String) -> Unit)
+        fun createAlertDialog(title: String, message: String)
     }
 
     interface Presenter {
         fun selectSyncSetup(option: SyncOption)
         fun startZoteroAPISetup()
-        fun hasSyncSetup(context: Context): Boolean
-
+        fun hasSyncSetup(): Boolean
+        fun createNetworkError(message: String)
     }
 
     interface Model {
         fun setupZoteroAPI()
-        fun hasSyncSetup(context: Context): Boolean
+        fun hasSyncSetup(): Boolean
+        fun testAPIKey(apiKey: String)
     }
 }

@@ -2,7 +2,9 @@ package com.mickstarify.zooforzotero.SyncSetup
 
 import android.content.Intent
 import android.os.Bundle
+import android.text.InputType
 import android.widget.Button
+import android.widget.EditText
 import android.widget.RadioGroup
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -11,6 +13,31 @@ import com.mickstarify.zooforzotero.R
 import com.mickstarify.zooforzotero.SyncSetup.ZoteroAPISetup.ZoteroAPISetup
 
 class SyncSetupView : AppCompatActivity(), SyncSetupContract.View {
+    override fun createAlertDialog(title: String, message: String) {
+        val alert = AlertDialog.Builder(this)
+        alert.setIcon(R.drawable.ic_error_black_24dp)
+        alert.setTitle(title)
+        alert.setMessage(message)
+        alert.setPositiveButton("Ok") { _, _ -> }
+        alert.show()
+    }
+
+    override fun createAPIKeyDialog(onKeySubmit: (String) -> Unit) {
+        val dialogBuilder = AlertDialog.Builder(this)
+            .setTitle("Enter your API Key")
+
+        val textBox: EditText = EditText(this)
+        textBox.inputType = InputType.TYPE_CLASS_TEXT
+        dialogBuilder.setView(textBox)
+            .setPositiveButton("Submit", { _, _ ->
+                onKeySubmit(textBox.text.toString())
+            })
+            .setNegativeButton("Cancel", { _, _ -> })
+
+        dialogBuilder.show()
+        textBox.requestFocus()
+    }
+
     private lateinit var firebaseAnalytics: FirebaseAnalytics
 
     override fun showHowToZoteroSyncDialog(onProceed: () -> Unit) {
@@ -59,6 +86,7 @@ class SyncSetupView : AppCompatActivity(), SyncSetupContract.View {
                 R.id.radio_googledrive -> selected_provider = SyncOption.GoogleDrive
                 R.id.radio_onedrive -> selected_provider = SyncOption.Onedrive
                 R.id.radio_zotero -> selected_provider = SyncOption.ZoteroAPI
+                R.id.radio_zotero_manual_apikey -> selected_provider = SyncOption.ZoteroAPIManual
                 else -> throw Exception("Error, not sure what Radiobox was pressed")
             }
             btnProceed.isEnabled = true
@@ -80,11 +108,11 @@ class SyncSetupView : AppCompatActivity(), SyncSetupContract.View {
         setContentView(R.layout.activity_sync_setup)
         firebaseAnalytics = FirebaseAnalytics.getInstance(this)
 
-        presenter = SyncSetupPresenter(this)
+        presenter = SyncSetupPresenter(this, this)
     }
 
     override fun onResume() {
-        if (presenter.hasSyncSetup(this)) {
+        if (presenter.hasSyncSetup()) {
             finish()
         }
         super.onResume()

@@ -2,9 +2,14 @@ package com.mickstarify.zooforzotero.SyncSetup
 
 import android.content.Context
 
-class SyncSetupPresenter(private val view: SyncSetupContract.View) : SyncSetupContract.Presenter {
-    override fun hasSyncSetup(context: Context): Boolean {
-        return model.hasSyncSetup(context)
+class SyncSetupPresenter(private val view: SyncSetupContract.View, context: Context) :
+    SyncSetupContract.Presenter {
+    override fun createNetworkError(message: String) {
+        view.createAlertDialog("Network Error", message)
+    }
+
+    override fun hasSyncSetup(): Boolean {
+        return model.hasSyncSetup()
     }
 
     override fun startZoteroAPISetup() {
@@ -18,11 +23,16 @@ class SyncSetupPresenter(private val view: SyncSetupContract.View) : SyncSetupCo
                     model.setupZoteroAPI()
                 })
             }
+            SyncOption.ZoteroAPIManual -> {
+                view.createAPIKeyDialog({ apiKey: String ->
+                    model.testAPIKey(apiKey)
+                })
+            }
             else -> view.createUnsupportedAlert()
         }
     }
 
-    private val model = SyncSetupModel(this)
+    private val model = SyncSetupModel(this, context)
 
 
     init{
