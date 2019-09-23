@@ -75,15 +75,15 @@ class ItemNoteEntry : Fragment() {
 
     private fun editNote() {
         Log.d("zotero", "edit note clicked")
-        if (note != null) {
-            listener?.editNote(note!!)
+        note?.let {
+            listener?.editNote(it)
         }
     }
 
     private fun deleteNote() {
         Log.d("zotero", "delete note clicked")
-        if (note != null) {
-            listener?.deleteNote(note!!)
+        note?.let {
+            listener?.deleteNote(it)
         }
     }
 

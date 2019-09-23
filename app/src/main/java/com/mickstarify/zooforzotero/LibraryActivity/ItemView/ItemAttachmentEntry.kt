@@ -41,7 +41,9 @@ class ItemAttachmentEntry : Fragment() {
         if (filetype == "application/pdf") {
             icon.setImageResource(R.drawable.treeitem_attachment_pdf_2x)
             layout.setOnClickListener {
-                fileOpenListener?.openAttachmentFileListener(attachment!!)
+                fileOpenListener?.openAttachmentFileListener(
+                    attachment ?: throw Exception("No Attachment given.")
+                )
             }
         }
 

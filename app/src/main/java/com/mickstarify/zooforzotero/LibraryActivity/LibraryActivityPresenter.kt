@@ -77,12 +77,12 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
 
     override fun openPDF(attachment: File) {
         view.hideAttachmentDownloadProgress()
-        view.openPDF(attachment)
+        model.openPDF(attachment)
     }
 
     override fun openAttachment(item: Item) {
         view.updateAttachmentDownloadProgress(0, -1)
-        model.openAttachment(item)
+        model.downloadAttachment(item)
     }
 
     override fun updateAttachmentDownloadProgress(progress: Long, total: Long) {

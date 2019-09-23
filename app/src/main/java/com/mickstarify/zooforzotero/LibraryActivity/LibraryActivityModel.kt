@@ -2,7 +2,13 @@ package com.mickstarify.zooforzotero.LibraryActivity
 
 import android.app.Activity
 import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import android.os.Build
+import android.os.Bundle
 import android.util.Log
+import androidx.core.content.FileProvider
+import com.google.firebase.analytics.FirebaseAnalytics
 import com.mickstarify.zooforzotero.PreferenceManager
 import com.mickstarify.zooforzotero.SortMethod
 import com.mickstarify.zooforzotero.SyncSetup.AuthenticationStorage
@@ -31,6 +37,8 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
 
     private var itemsDownloadAttempt = 0
     private var collectionsDownloadAttempt = 0
+
+    private var firebaseAnalytics: FirebaseAnalytics
 
     var isDisplayingItems = false
 
@@ -254,6 +262,37 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
         } ?: LinkedList()
     }
 
+    override fun openPDF(attachment: File) {
+        var intent = Intent(Intent.ACTION_VIEW)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            var uri: Uri?
+            try {
+                uri = FileProvider.getUriForFile(
+                    context,
+                    "${context.packageName}.fileprovider",
+                    attachment
+                )
+            } catch (exception: IllegalArgumentException) {
+                val params = Bundle()
+                params.putString("filename", attachment.name)
+                firebaseAnalytics.logEvent("error_opening_pdf", params)
+                presenter.makeToastAlert("Sorry an error occurred while trying to download your attachment.")
+                return
+            }
+            Log.d("zotero", "${uri.query}")
+            intent = Intent(Intent.ACTION_VIEW)
+            intent.data = uri
+            intent.flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
+        } else {
+            intent.setDataAndType(Uri.fromFile(attachment), "application/pdf")
+            intent.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY)
+            intent = Intent.createChooser(intent, "Open File")
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+
+        }
+        context.startActivity(intent)
+    }
+
     override fun filterItems(query: String): List<Item> {
         val items = zoteroDB.items?.filter {
             it.query(query)
@@ -267,7 +306,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
 
     var isDownloading: Boolean = false
     var task: Future<Unit>? = null
-    override fun openAttachment(item: Item) {
+    override fun downloadAttachment(item: Item) {
         if (isDownloading) {
             Log.d("zotero", "not downloading ${item.getTitle()} because i am already downloading.")
             return
@@ -356,6 +395,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
 
 
     init {
+        firebaseAnalytics = FirebaseAnalytics.getInstance(context)
         val auth = AuthenticationStorage(context)
         if (auth.hasCredentials()) {
             zoteroAPI = ZoteroAPI(

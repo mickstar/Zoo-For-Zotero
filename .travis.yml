@@ -2,36 +2,35 @@ language: android
 dist: trusty
 android:
   components:
-    - tools
-    - platform-tools
-
-    - build-tools-29.0.2
-    - android-29
-    - extra
-  # Additional components
-    - extra-google-google_play_services
-    - extra-google-m2repository
-    - extra-android-m2repository
+  - tools
+  - platform-tools
+  - build-tools-29.0.2
+  - android-29
+  - extra
+  - extra-google-google_play_services
+  - extra-google-m2repository
+  - extra-android-m2repository
   licenses:
-    - android-sdk-license-.+
-    - google-gdk-license-.+
-
+  - android-sdk-license-.+
+  - google-gdk-license-.+
 before_install:
-  - touch $HOME/.android/repositories.cfg
-  - yes | sdkmanager "platforms;android-28"
-  - yes | sdkmanager "build-tools;28.0.3"
-
-
+- touch $HOME/.android/repositories.cfg
+- yes | sdkmanager "platforms;android-28"
+- yes | sdkmanager "build-tools;28.0.3"
+- openssl aes-256-cbc -K $encrypted_772d988f0138_key -iv $encrypted_772d988f0138_iv -in app/google-services.json.enc -out app/google-services.json -d
+- echo 'zotero_api_key=""' >> apikeys.properties
+- echo 'zotero_api_secret=""' >> apikeys.properties
 before_cache:
-  - rm -f  $HOME/.gradle/caches/modules-2/modules-2.lock
-  - rm -fr $HOME/.gradle/caches/*/plugin-resolution/
-
+- rm -f  $HOME/.gradle/caches/modules-2/modules-2.lock
+- rm -fr $HOME/.gradle/caches/*/plugin-resolution/
 cache:
   directories:
-  - $HOME/.gradle/caches/
-  - $HOME/.gradle/wrapper/
-  - $HOME/.android/build-cache
-
+  - "$HOME/.gradle/caches/"
+  - "$HOME/.gradle/wrapper/"
+  - "$HOME/.android/build-cache"
 before_script:
-  - chmod a+x gradlew
-script: ./gradlew build
+- chmod a+x gradlew
+script: "./gradlew build"
+env:
+  global:
+    secure: rO2/mzQijHudFyYdUacoVVZdUwowAmiTvg84UxbLLM3/oyd3Grt+JqaUgzYExddrg89TILpyzS/8bDQsNJG4IwL81li9FKN+m7LRgN36nq4wet9B2abNGaaUEGyqKf8Zv2atsgWw/PPUKku4OqMtvMirzzE5wUSByzuRH6Vw8j49Hmr5yI5gZuuyUWLMmGhlFIqS42YofalvvgnXQ/KjMhHsNOyEYE0Eumminrv/fKYan1fuNOeq5VEFNKuUp0fK6ehnFzdRf9x/RkSC7V969NFQRuj/ENYOLl2Hu+SqKzqxpO2kKQGPoR1B05e/iDoWiQ6v3xSGumaBXCEA+BA6A4nbNrZOtfZpJvrvYXkfaGbeN2pgIg9lhdVM1YfwbQKDzkbRZZjzox2P2nkwiljhqWt9gfA8kJ84MI08Aq/4+gfX4k2n/fFuP7TS/4e1Sjo+kn9l7NUCFRHor080aGGYLtl+6XUys/wlauFWVVDJgP4Xn//KMYqVhuyARJw2DRLYUVVVif9MfUvz1lco65e3hy9ALNU6bJ3LY/XViZLYZ3wpCXQqBs6JSUxIYP3WA5ZHClBcXej1Dr66Qywd6zEi71GSJhqsVk2kGDtc7AnRgM7IBBqY2zNIaW9vcI4ncxEGFA+4IhZw+OqRZZmG5r0yO0o0kK9rUkq3EYaDt7adj2Q=

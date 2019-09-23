@@ -6,5 +6,7 @@ enum class SyncOption {
     ZoteroAPI,
     Dropbox,
     GoogleDrive,
-    Onedrive
+    Onedrive,
+
+    ZoteroAPIManual
 }

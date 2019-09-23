@@ -16,7 +16,6 @@ interface Contract {
         fun addNavigationEntry(collection: Collection, parent: String)
         fun populateEntries(entries: List<ListEntry>)
         fun showItemDialog(item: Item, attachments: List<Item>, notes: List<Note>)
-        fun openPDF(attachment: File)
         fun updateAttachmentDownloadProgress(progress: Int, total: Int)
         fun hideAttachmentDownloadProgress()
         fun makeToastAlert(message: String)
@@ -57,7 +56,7 @@ interface Contract {
         fun refreshLibrary()
         fun getCollections(): List<Collection>
         fun getAttachments(itemKey: String): List<Item>
-        fun openAttachment(item: Item)
+        fun downloadAttachment(item: Item)
         fun cancelAttachmentDownload()
         fun getSubCollections(collectionName: String): List<Collection>
         fun filterCollections(query: String): List<Collection>
@@ -68,5 +67,6 @@ interface Contract {
         fun createNote(note: Note)
         fun modifyNote(note: Note)
         fun deleteNote(note: Note)
+        fun openPDF(attachment: File)
     }
 }

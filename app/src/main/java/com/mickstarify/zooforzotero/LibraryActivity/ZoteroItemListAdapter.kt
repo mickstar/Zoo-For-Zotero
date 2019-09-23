@@ -147,6 +147,21 @@ class ZoteroItemListAdapter(val context: Context, val list: List<ListEntry>) : B
             }
         }
         img.setImageResource(icon)
+        if (item.getItemType() == "note") {
+            val note = item.data["note"]
+            if (note == null) {
+                lbl_title.text = "Unknown note"
+            } else {
+                // we want to subjugate longer strings with ellipses
+                val noteSubstring = note.take(20)
+                lbl_title.text = if (noteSubstring == note) {
+                    note
+                } else {
+                    "${noteSubstring}..."
+                }
+            }
+            lbl_title.text = item.data["note"] ?: "Note"
+        }
         lbl_title.text = item.getTitle()
         author.text = item.getAuthor()
     }

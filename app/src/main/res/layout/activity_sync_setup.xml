@@ -64,6 +64,14 @@
                 android:layout_height="wrap_content"
                 android:drawableLeft="@mipmap/ic_zoterosync"
                 android:text="Zotero Account Sync" />
+
+        <RadioButton
+                android:id="@+id/radio_zotero_manual_apikey"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:drawableLeft="@mipmap/ic_zoterosync_grey"
+                android:text="Enter your Zotero API Key Manually"
+                android:textSize="24dp" />
     </RadioGroup>
 
     <Button
