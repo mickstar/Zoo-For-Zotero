@@ -1,8 +1,8 @@
 package com.mickstarify.zooforzotero.SyncSetup
 
+
 import android.content.Context
 import android.content.Intent
-import android.util.Log
 import com.mickstarify.zooforzotero.BuildConfig
 import com.mickstarify.zooforzotero.LibraryActivity.LibraryActivity
 import com.mickstarify.zooforzotero.ZoteroAPI.BASE_URL
@@ -13,9 +13,6 @@ import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
-
-
-
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
@@ -25,10 +22,6 @@ class SyncSetupModel(val presenter: SyncSetupPresenter, val context: Context) :
         if (apiKey.trim() == "") {
             return
         }
-        val apiKey2 = "cbP02wcEvC43J21hm2IqmLSu"
-
-        Log.d("Zotero", "got api key $apiKey")
-
         val httpClient = OkHttpClient().newBuilder().apply {
             if (BuildConfig.DEBUG) {
                 addInterceptor(HttpLoggingInterceptor().apply {
