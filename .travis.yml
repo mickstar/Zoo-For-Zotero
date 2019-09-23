@@ -17,6 +17,9 @@ before_install:
 - touch $HOME/.android/repositories.cfg
 - yes | sdkmanager "platforms;android-28"
 - yes | sdkmanager "build-tools;28.0.3"
+- openssl aes-256-cbc -K $encrypted_772d988f0138_key -iv $encrypted_772d988f0138_iv -in app/google-services.json.enc -out app/google-services.json -d
+- echo 'zotero_api_key=""' >> apikeys.properties
+- echo 'zotero_api_secret=""' >> apikeys.properties
 before_cache:
 - rm -f  $HOME/.gradle/caches/modules-2/modules-2.lock
 - rm -fr $HOME/.gradle/caches/*/plugin-resolution/
@@ -27,8 +30,6 @@ cache:
   - "$HOME/.android/build-cache"
 before_script:
 - chmod a+x gradlew
-- echo 'zotero_api_key=""' >> apikeys.properties
-- echo 'zotero_api_secret=""' >> apikeys.properties
 script: "./gradlew build"
 env:
   global:
