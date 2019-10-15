@@ -68,5 +68,8 @@ interface Contract {
         fun modifyNote(note: Note)
         fun deleteNote(note: Note)
         fun openPDF(attachment: File)
+        fun deleteAttachment(item: Item)
+        fun uploadAttachment(parent: Item, attachment: File)
+        fun updateAttachment(item: Item, attachment: File)
     }
 }

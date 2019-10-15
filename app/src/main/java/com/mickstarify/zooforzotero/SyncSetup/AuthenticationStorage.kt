@@ -7,7 +7,7 @@ class AuthenticationStorage (context : Context){
     private var sharedPreferences : SharedPreferences = context.getSharedPreferences("credentials", Context.MODE_PRIVATE)
 
     fun hasCredentials(): Boolean {
-        return sharedPreferences.contains("userkey")
+        return (sharedPreferences.contains("userkey") && sharedPreferences.getString("userkey", "") != "")
     }
 
     fun getUsername() : String? {

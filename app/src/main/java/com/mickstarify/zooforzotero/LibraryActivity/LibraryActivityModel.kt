@@ -127,16 +127,16 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                     zoteroDB.writeDatabaseUpdatedTimestamp()
                     try {
                         zoteroDB.loadItemsFromStorage()
+                        finishGetItems(onFinish)
                     } catch (e: Exception) {
                         Log.d("zotero", "there was an error loading cached items copy.")
                         presenter.makeToastAlert("There was an error loading the cached copy of your library")
                         requestItems(onFinish, useCaching = false)
                     }
-                    finishGetItems(onFinish)
                 }
 
                 override fun onNetworkFailure() {
-                    if (itemsDownloadAttempt < 2) {
+                    if (itemsDownloadAttempt < 3) {
                         Log.d("zotero", "attempting another download of items")
                         requestItems(onFinish, useCaching)
                     } else if (zoteroDB.hasStorage()) {
@@ -195,11 +195,11 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                 override fun onCachedComplete() {
                     try {
                         zoteroDB.loadCollectionsFromStorage()
+                        finishGetCollections(onFinish)
                     } catch (e: Exception) {
                         Log.d("zotero", "there was an error loading cached collections copy.")
                         requestCollections(onFinish, useCaching = false)
                     }
-                    finishGetCollections(onFinish)
                 }
 
 
@@ -210,7 +210,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                 }
 
                 override fun onNetworkFailure() {
-                    if (collectionsDownloadAttempt < 2) {
+                    if (collectionsDownloadAttempt < 3) {
                         Log.d("zotero", "attempting another download of collections")
                         requestCollections(onFinish, useCaching)
                     } else if (zoteroDB.hasStorage()) {
@@ -226,6 +226,9 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                                 { shownNetworkError = false }
                             )
                         }
+                        val params = Bundle()
+                        firebaseAnalytics.logEvent("error_loading_collections", params)
+
                         zoteroDB.collections = LinkedList()
                     }
                     finishGetCollections(onFinish)
@@ -389,8 +392,42 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                 presenter.createErrorAlert("Error Deleting Note", "There was an error " +
                         "deleting your note. The server responded : ${code}", {})
             }
-
         })
+    }
+
+    override fun deleteAttachment(item: Item) {
+        zoteroAPI.deleteItem(item.ItemKey, item.version, object : DeleteItemListener {
+            override fun success() {
+                presenter.makeToastAlert("Successfully deleted your attachment.")
+                zoteroDB.deleteItem(item.ItemKey)
+                presenter.refreshItemView()
+            }
+
+            override fun failedItemLocked() {
+                presenter.createErrorAlert("Error Deleting Attachment", "The item is locked " +
+                        "and you do not have permission to delete this attachment.", {})
+            }
+
+            override fun failedItemChangedSince() {
+                presenter.createErrorAlert("Error Deleting Attachment",
+                    "Your local copy of this note is out of date. " +
+                            "Please refresh your library to delete this attachment.",
+                    {})
+            }
+
+            override fun failed(code: Int) {
+                presenter.createErrorAlert("Error Deleting Attachment", "There was an error " +
+                        "deleting your attachment. The server responded : ${code}", {})
+            }
+        })
+    }
+
+    override fun updateAttachment(item: Item, attachment: File) {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun uploadAttachment(parent: Item, attachment: File) {
+        zoteroAPI.uploadPDF(parent, attachment)
     }
 
 

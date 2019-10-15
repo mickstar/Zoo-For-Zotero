@@ -133,7 +133,7 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
     }
 
     override fun populateEntries(entries: List<ListEntry>) {
-        val listView: ListView = findViewById<ListView>(R.id.library_listview)
+        val listView: ListView = findViewById(R.id.library_listview)
         listView.adapter = ZoteroItemListAdapter(this, entries)
 
         listView.setOnItemClickListener { adapter, view, position: Int, lpos ->

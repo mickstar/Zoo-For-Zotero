@@ -85,12 +85,13 @@ class ZoteroAPI(
                 } else if (response.code() == 304) {
                     listener.onCachedComplete()
                 } else {
+                    Log.e("zotero", "Error downloading collections, got back code ${response.code()} message: ${response.body()}")
                     listener.onNetworkFailure()
                 }
             }
 
             override fun onFailure(call: Call<List<Collection>>, t: Throwable) {
-                Log.d("zotero", "failure on getting Collection ${t.message}")
+                Log.e("zotero", "failure on getting Collection message: ${t.message}")
                 listener.onNetworkFailure()
             }
         })
@@ -186,6 +187,7 @@ class ZoteroAPI(
             }
 
             override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
+                Log.e("zotero", "Download Items(1) Failure, message: ${t.message}")
                 listener.onNetworkFailure()
             }
         })
@@ -272,6 +274,7 @@ class ZoteroAPI(
                     listener.onCachedComplete()
 
                 } else {
+                    Log.e("zotero", "Error downloading items, got back code ${response.code()} message: ${response.body()}")
                     listener.onNetworkFailure()
                 }
             }
@@ -336,5 +339,23 @@ class ZoteroAPI(
             override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
             }
         })
+    }
+
+    fun uploadPDF(parent: Item, attachment: File) {
+//        val zoteroAPI = buildZoteroAPI(useCaching = false, libraryVersion = -1)
+//        val call: Call<ResponseBody> = zoteroAPI.writeItem(userID, note.asJsonArray())
+//
+//        call.enqueue(object : Callback<ResponseBody> {
+//            override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
+//                if (response.code() == 200) {
+//                    Log.d("zotero", "success on note upload")
+//                } else {
+//                    Log.d("zotero", "got back code ${response.code()} from note upload.")
+//                }
+//            }
+//
+//            override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
+//            }
+//        })
     }
 }
