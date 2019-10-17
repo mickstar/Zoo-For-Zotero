@@ -122,6 +122,7 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
     override fun refreshItemView() {
         val item = model.selectedItem
         if (item != null) {
+            view.closeItemView()
             view.showItemDialog(
                 item,
                 model.getAttachments(item.ItemKey),
@@ -143,9 +144,13 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
             val entries = model.getLibraryItems().map { ListEntry(it) }
             model.isDisplayingItems = entries.size > 0
             view.populateEntries(entries)
+        } else if (collectionName == "unfiled_items") {
+            view.setTitle("Unfiled Items")
+            val entries = model.getUnfiledItems().map { ListEntry(it) }
+            model.isDisplayingItems = entries.size > 0
+            view.populateEntries(entries)
         } else {
             view.setTitle(collectionName)
-
             val entries = LinkedList<ListEntry>()
             entries.addAll(model.getSubCollections(collectionName).sortedBy {
                 it.getName().toLowerCase(Locale.getDefault())
@@ -161,6 +166,7 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
     }
 
     override fun receiveCollections(collections: List<Collection>) {
+        view.clearSidebar()
         for (collection: Collection in collections.filter {
             !it.hasParent()
         }.sortedBy { it.getName().toLowerCase(Locale.getDefault()) }) {
@@ -188,11 +194,11 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
         view.showLoadingAnimation(true)
         view.showLibraryContentDisplay("Loading your library content.")
         if (model.shouldIUpdateLibrary()) {
-            model.requestCollections({ receiveCollections(model.getCollections()) })
-            model.requestItems({ this.setCollection("all") })
+            model.requestCollections()
+            model.requestItems()
         } else {
-            model.loadCollectionsLocally { receiveCollections(model.getCollections()) }
-            model.loadItemsLocally { this.setCollection("all") }
+            model.loadCollectionsLocally()
+            model.loadItemsLocally()
         }
     }
 }

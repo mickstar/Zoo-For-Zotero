@@ -21,6 +21,8 @@ interface Contract {
         fun makeToastAlert(message: String)
         fun showLibraryContentDisplay(message: String = "")
         fun hideLibraryContentDisplay()
+        fun clearSidebar()
+        fun closeItemView()
     }
 
     interface Presenter{
@@ -49,8 +51,8 @@ interface Contract {
     }
 
     interface Model {
-        fun requestItems(onFinish: () -> (Unit), useCaching: Boolean = true)
-        fun requestCollections(onFinish: () -> (Unit), useCaching: Boolean = true)
+        fun requestItems(useCaching: Boolean = true)
+        fun requestCollections(useCaching: Boolean = true)
         fun getLibraryItems() : List<Item>
         fun getItemsFromCollection(collectionName : String) : List<Item>
         fun refreshLibrary()
@@ -62,7 +64,7 @@ interface Contract {
         fun filterCollections(query: String): List<Collection>
         fun filterItems(query: String): List<Item>
         fun isLoaded(): Boolean
-        fun loadCollectionsLocally(onFinish: () -> Unit)
+        fun loadCollectionsLocally()
         fun getNotes(itemKey: String): List<Note>
         fun createNote(note: Note)
         fun modifyNote(note: Note)
@@ -71,5 +73,6 @@ interface Contract {
         fun deleteAttachment(item: Item)
         fun uploadAttachment(parent: Item, attachment: File)
         fun updateAttachment(item: Item, attachment: File)
+        fun getUnfiledItems(): List<Item>
     }
 }

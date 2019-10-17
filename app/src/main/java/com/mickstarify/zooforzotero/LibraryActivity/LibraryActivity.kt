@@ -38,6 +38,8 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
 
     private lateinit var presenter: Contract.Presenter
     private lateinit var firebaseAnalytics: FirebaseAnalytics
+    private var itemView: ItemViewFragment? = null
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -62,6 +64,11 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
             "Collections"
         )
 
+        // add our "unfiled items" entry
+        navigationView.menu.add(R.id.group_other, Menu.NONE, Menu.NONE, "Unfiled Items")
+            .setIcon(R.drawable.baseline_description_24)
+            .setCheckable(true)
+
         val swipeRefresh = findViewById<SwipeRefreshLayout>(R.id.library_swipe_refresh)
         swipeRefresh.setOnRefreshListener(this)
     }
@@ -71,6 +78,10 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
         collectionsMenu.add(R.id.group_collections, Menu.NONE, Menu.NONE, collection.getName())
             .setIcon(R.drawable.ic_folder_black_24dp)
             .setCheckable(true)
+    }
+
+    override fun clearSidebar() {
+        collectionsMenu.clear()
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
@@ -124,6 +135,8 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
         if (item.itemId == R.id.my_library) {
             presenter.setCollection("all")
+        } else if (item.title == "Unfiled Items") {
+            presenter.setCollection("unfiled_items")
         } else {
             presenter.setCollection("${item.title}")
         }
@@ -223,9 +236,14 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
     }
 
     override fun showItemDialog(item: Item, attachments: List<Item>, notes: List<Note>) {
-        val myBottomSheet = ItemViewFragment.newInstance(item, attachments, notes)
+        itemView = ItemViewFragment.newInstance(item, attachments, notes)
         val fm = supportFragmentManager
-        myBottomSheet.show(fm, "hello world")
+        itemView?.show(fm, "hello world")
+
+    }
+
+    override fun closeItemView() {
+        itemView?.dismiss()
     }
 
     @Suppress("DEPRECATION")

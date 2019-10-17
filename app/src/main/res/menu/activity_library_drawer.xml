@@ -7,7 +7,10 @@
         <item
                 android:id="@+id/my_library"
                 android:icon="@drawable/ic_menu_gallery"
-                android:title="My Library" />
+                android:title="@string/my_library" />
     </group>
+    <group
+            android:id="@+id/group_other"
+            android:checkableBehavior="single"></group>
 
 </menu>
