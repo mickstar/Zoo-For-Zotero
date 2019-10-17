@@ -98,17 +98,17 @@ class ZoteroAPI(
     }
 
     fun getFileForDownload(context: Context, item: Item): File {
-        val name = item.ItemKey.toUpperCase(Locale.getDefault())
+        val name = item.data.get("filename") ?: "unknown.pdf"
         val outputDir = context.externalCacheDir
 
-        var extension = when (item.data["contentType"]) {
-            "application/pdf" -> "pdf"
-            "text/html" -> "html"
-            else -> ""
-        }
-        val filename = "${name}.${extension}"
+//        var extension = when (item.data["contentType"]) {
+//            "application/pdf" -> "pdf"
+//            "text/html" -> "html"
+//            else -> ""
+//        }
+//        val filename = "${name}.${extension}"
 
-        val file = File(outputDir, filename)
+        val file = File(outputDir, name)
         return file
     }
 
