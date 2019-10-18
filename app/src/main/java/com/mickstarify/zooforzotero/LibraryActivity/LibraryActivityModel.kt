@@ -45,8 +45,8 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
     val preferences = PreferenceManager(context)
 
     override fun refreshLibrary() {
-        this.requestItems({}, useCaching = true)
-        this.requestCollections({}, useCaching = true)
+        this.requestItems(useCaching = true)
+        this.requestCollections(useCaching = true)
     }
 
     fun shouldIUpdateLibrary(): Boolean {
@@ -98,16 +98,16 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
     private lateinit var zoteroAPI: ZoteroAPI
     private var zoteroDB = ZoteroDB(context)
 
-    fun loadItemsLocally(onFinish: () -> Unit) {
+    fun loadItemsLocally() {
         doAsync {
             zoteroDB.loadItemsFromStorage()
             onComplete {
-                finishGetItems(onFinish)
+                finishGetItems()
             }
         }
     }
 
-    override fun requestItems(onFinish: () -> (Unit), useCaching: Boolean) {
+    override fun requestItems(useCaching: Boolean) {
         loadingItems = true
         itemsDownloadAttempt++
 
@@ -120,25 +120,25 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                     zoteroDB.items = items
                     zoteroDB.setItemsVersion(libraryVersion)
                     zoteroDB.commitItemsToStorage()
-                    finishGetItems(onFinish)
+                    finishGetItems()
                 }
 
                 override fun onCachedComplete() {
                     zoteroDB.writeDatabaseUpdatedTimestamp()
                     try {
                         zoteroDB.loadItemsFromStorage()
+                        finishGetItems()
                     } catch (e: Exception) {
                         Log.d("zotero", "there was an error loading cached items copy.")
                         presenter.makeToastAlert("There was an error loading the cached copy of your library")
-                        requestItems(onFinish, useCaching = false)
+                        requestItems(useCaching = false)
                     }
-                    finishGetItems(onFinish)
                 }
 
                 override fun onNetworkFailure() {
-                    if (itemsDownloadAttempt < 2) {
+                    if (itemsDownloadAttempt < 3) {
                         Log.d("zotero", "attempting another download of items")
-                        requestItems(onFinish, useCaching)
+                        requestItems(useCaching)
                     } else if (zoteroDB.hasStorage()) {
                         Log.d("zotero", "no internet connection. Using cached copy")
                         presenter.makeToastAlert("No internet connection, using cached copy of library")
@@ -155,7 +155,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                         }
                         zoteroDB.items = LinkedList()
                     }
-                    finishGetItems(onFinish)
+                    finishGetItems()
                 }
 
                 override fun onProgressUpdate(progress: Int, total: Int) {
@@ -165,26 +165,16 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
             })
     }
 
-    private fun finishGetItems(onFinish: () -> Unit) {
-        if (zoteroDB.items != null) {
-            loadingItems = false
-            if (!loadingCollections) {
-                presenter.stopLoadingLibrary()
-            }
-            onFinish()
-        }
-    }
-
-    override fun loadCollectionsLocally(onFinish: () -> Unit) {
+    override fun loadCollectionsLocally() {
         doAsync {
             zoteroDB.loadCollectionsFromStorage()
             onComplete {
-                finishGetCollections(onFinish)
+                finishGetCollections()
             }
         }
     }
 
-    override fun requestCollections(onFinish: () -> (Unit), useCaching: Boolean) {
+    override fun requestCollections(useCaching: Boolean) {
         loadingCollections = true
         collectionsDownloadAttempt++
 
@@ -195,24 +185,24 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                 override fun onCachedComplete() {
                     try {
                         zoteroDB.loadCollectionsFromStorage()
+                        finishGetCollections()
                     } catch (e: Exception) {
                         Log.d("zotero", "there was an error loading cached collections copy.")
-                        requestCollections(onFinish, useCaching = false)
+                        requestCollections(useCaching = false)
                     }
-                    finishGetCollections(onFinish)
                 }
 
 
                 override fun onDownloadComplete(collections: List<Collection>) {
                     zoteroDB.collections = collections
                     zoteroDB.commitCollectionsToStorage()
-                    finishGetCollections(onFinish)
+                    finishGetCollections()
                 }
 
                 override fun onNetworkFailure() {
-                    if (collectionsDownloadAttempt < 2) {
+                    if (collectionsDownloadAttempt < 3) {
                         Log.d("zotero", "attempting another download of collections")
-                        requestCollections(onFinish, useCaching)
+                        requestCollections(useCaching)
                     } else if (zoteroDB.hasStorage()) {
                         Log.d("zotero", "no internet connection. Using cached copy")
                         zoteroDB.loadCollectionsFromStorage()
@@ -226,20 +216,39 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                                 { shownNetworkError = false }
                             )
                         }
+                        val params = Bundle()
+                        firebaseAnalytics.logEvent("error_loading_collections", params)
+
                         zoteroDB.collections = LinkedList()
                     }
-                    finishGetCollections(onFinish)
+                    finishGetCollections()
                 }
             })
     }
 
-    private fun finishGetCollections(onFinish: () -> Unit) {
+    private fun finishGetCollections() {
         if (zoteroDB.collections != null) {
             loadingCollections = false
             if (!loadingItems) {
-                presenter.stopLoadingLibrary()
+                finishLoading()
             }
-            onFinish()
+        }
+    }
+
+    private fun finishGetItems() {
+        if (zoteroDB.items != null) {
+            loadingItems = false
+            if (!loadingCollections) {
+                finishLoading()
+            }
+        }
+    }
+
+    private fun finishLoading() {
+        presenter.stopLoadingLibrary()
+        presenter.receiveCollections(getCollections())
+        if (currentCollection == "unset") {
+            presenter.setCollection("all")
         }
     }
 
@@ -352,6 +361,14 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
             })
     }
 
+    override fun getUnfiledItems(): List<Item> {
+        if (!zoteroDB.isPopulated()) {
+            Log.e("zotero", "error zoteroDB not populated!")
+            return LinkedList()
+        }
+        return zoteroDB.getItemsWithoutCollection().sortedWith(sortMethod)
+    }
+
     override fun cancelAttachmentDownload() {
         this.isDownloading = false
         task?.cancel(true)
@@ -389,8 +406,42 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                 presenter.createErrorAlert("Error Deleting Note", "There was an error " +
                         "deleting your note. The server responded : ${code}", {})
             }
-
         })
+    }
+
+    override fun deleteAttachment(item: Item) {
+        zoteroAPI.deleteItem(item.ItemKey, item.version, object : DeleteItemListener {
+            override fun success() {
+                presenter.makeToastAlert("Successfully deleted your attachment.")
+                zoteroDB.deleteItem(item.ItemKey)
+                presenter.refreshItemView()
+            }
+
+            override fun failedItemLocked() {
+                presenter.createErrorAlert("Error Deleting Attachment", "The item is locked " +
+                        "and you do not have permission to delete this attachment.", {})
+            }
+
+            override fun failedItemChangedSince() {
+                presenter.createErrorAlert("Error Deleting Attachment",
+                    "Your local copy of this note is out of date. " +
+                            "Please refresh your library to delete this attachment.",
+                    {})
+            }
+
+            override fun failed(code: Int) {
+                presenter.createErrorAlert("Error Deleting Attachment", "There was an error " +
+                        "deleting your attachment. The server responded : ${code}", {})
+            }
+        })
+    }
+
+    override fun updateAttachment(item: Item, attachment: File) {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun uploadAttachment(parent: Item, attachment: File) {
+        zoteroAPI.uploadPDF(parent, attachment)
     }
 
 

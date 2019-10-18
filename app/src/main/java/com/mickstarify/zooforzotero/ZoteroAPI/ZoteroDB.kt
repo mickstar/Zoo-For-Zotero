@@ -207,6 +207,16 @@ class ZoteroDB(val context: Context) {
         }
     }
 
+    fun getItemsWithoutCollection(): List<Item> {
+        if (this.items == null) {
+            Log.e("zotero", "Error, items not loaded yet.")
+            return LinkedList()
+        }
+        return (this.getDisplayableItems().filter {
+            it.collections.isEmpty()
+        })
+    }
+
     /*we will do O(n^2) because I'm not bothered to create a map for what i presume is a small list.*/
     fun populateCollectionChildren() {
         if (collections == null) {
