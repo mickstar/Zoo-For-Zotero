@@ -84,8 +84,16 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
         collectionsMenu.clear()
     }
 
+    fun showFilterMenu() {
+        LibraryFilterMenuDialog(this).show()
+    }
+
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
+            R.id.filter_menu -> {
+                showFilterMenu()
+            }
+
             R.id.settings -> {
                 val intent = Intent(this, SettingsActivity::class.java)
                 startActivity(intent)

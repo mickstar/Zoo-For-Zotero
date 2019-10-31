@@ -1,16 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
         xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <item
+            android:id="@+id/filter_menu"
+            android:icon="@drawable/baseline_filter_list_white_24"
+            android:title="@string/settings"
+            app:showAsAction="collapseActionView|ifRoom" />
+
     <item
             android:id="@+id/search"
-            android:icon="@drawable/baseline_search_white_36"
+            android:icon="@drawable/baseline_search_white_24"
             android:title="@string/search_title"
             app:actionViewClass="androidx.appcompat.widget.SearchView"
             app:showAsAction="collapseActionView|ifRoom" />
+
 
     <item
             android:id="@+id/settings"
             android:icon="@drawable/baseline_settings_applications_white_24"
             android:title="@string/settings"
-            app:showAsAction="collapseActionView|ifRoom" />
+            app:showAsAction="collapseActionView" />
 </menu>
