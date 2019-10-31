@@ -182,6 +182,10 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
             useCaching,
             zoteroDB.getLibraryVersion(),
             object : ZoteroAPIDownloadCollectionListener {
+                override fun onProgressUpdate(newIndex: Int, toInt: Int) {
+                    // do nothing, don't care.
+                }
+
                 override fun onCachedComplete() {
                     try {
                         zoteroDB.loadCollectionsFromStorage()

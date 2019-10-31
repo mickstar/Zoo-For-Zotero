@@ -22,7 +22,8 @@ interface ZoteroAPIService {
 
     @GET("users/{user}/collections")
     fun getCollections (
-        @Path("user") user: String
+        @Path("user") user: String,
+        @Query("start") index: Int
     ) : Call<List<Collection>>
 
     @Streaming
