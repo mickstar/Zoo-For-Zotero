@@ -85,7 +85,7 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
     }
 
     fun showFilterMenu() {
-        LibraryFilterMenuDialog(this).show()
+        LibraryFilterMenuDialog(this, { presenter.redisplayItems() }).show()
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {

@@ -14,6 +14,11 @@ class PreferenceManager(context: Context) {
     val sharedPreferences = context.defaultSharedPreferences
 
 
+    fun setSortMethod(method: String) {
+        val sortMethod = stringToSortMethod(method)
+        this.setSortMethod(sortMethod)
+    }
+
     fun setSortMethod(method: SortMethod) {
         val methodString = when (method) {
             SortMethod.TITLE -> "TITLE"
@@ -21,7 +26,6 @@ class PreferenceManager(context: Context) {
             SortMethod.AUTHOR -> "AUTHOR"
             SortMethod.DATE_ADDED -> "DATEADDED"
         }
-
         val editor = sharedPreferences.edit()
         editor.putString("sort_method", methodString)
         editor.apply()
@@ -56,5 +60,25 @@ class PreferenceManager(context: Context) {
             "DATE_ADDED" -> SortMethod.DATE_ADDED
             else -> SortMethod.TITLE
         }
+    }
+
+    fun getIsShowingOnlyPdfs(): Boolean {
+        return sharedPreferences.getBoolean("is_showing_only_with_pdfs", false)
+    }
+
+    fun getIsShowingOnlyNotes(): Boolean {
+        return sharedPreferences.getBoolean("is_showing_only_with_notes", false)
+    }
+
+    fun setIsShowingOnlyPdfs(value: Boolean) {
+        val editor = sharedPreferences.edit()
+        editor.putBoolean("is_showing_only_with_pdfs", value)
+        editor.apply()
+    }
+
+    fun setIsShowingOnlyNotes(value: Boolean) {
+        val editor = sharedPreferences.edit()
+        editor.putBoolean("is_showing_only_with_notes", value)
+        editor.apply()
     }
 }

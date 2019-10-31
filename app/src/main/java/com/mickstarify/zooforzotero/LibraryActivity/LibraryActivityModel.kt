@@ -25,6 +25,7 @@ import java.util.concurrent.TimeUnit
 
 class LibraryActivityModel(private val presenter: Contract.Presenter, val context: Context) :
     Contract.Model {
+
     // stores the current item being viewed by the user. (useful for refreshing the view)
     var selectedItem: Item? = null
     // just a flag to store whether we have shown the user a network error so that we don't
@@ -76,7 +77,25 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
     }
 
     override fun getLibraryItems(): List<Item> {
-        return zoteroDB.getDisplayableItems().sortedWith(sortMethod)
+        val onlyNotes = preferences.getIsShowingOnlyNotes()
+        val onlyPdfs = preferences.getIsShowingOnlyPdfs()
+
+        var items = zoteroDB.getDisplayableItems()
+        if (onlyNotes) {
+            items = items.filter { zoteroDB.getNotes(it.ItemKey).isNotEmpty() }
+        }
+        if (onlyPdfs) {
+            items = items.filter {
+                getAttachments(it.ItemKey).fold(false, { acc, attachment ->
+                    var result = acc
+                    if (!result) {
+                        result = attachment.data["contentType"] == "application/pdf"
+                    }
+                    result
+                })
+            }
+        }
+        return items.sortedWith(sortMethod)
     }
 
     override fun getItemsFromCollection(collectionName: String): List<Item> {

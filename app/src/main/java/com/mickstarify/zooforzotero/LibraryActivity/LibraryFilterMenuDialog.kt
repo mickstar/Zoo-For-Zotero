@@ -6,12 +6,13 @@ import android.content.DialogInterface
 import android.util.Log
 import android.view.View
 import android.widget.Button
+import android.widget.CheckBox
 import com.mickstarify.zooforzotero.PreferenceManager
 import com.mickstarify.zooforzotero.R
 import org.jetbrains.anko.layoutInflater
 import org.jetbrains.anko.sdk27.coroutines.onClick
 
-class LibraryFilterMenuDialog(val context: Context) {
+class LibraryFilterMenuDialog(val context: Context, val onFilterChange: (() -> (Unit))) {
     lateinit var preferences: PreferenceManager
 
     var selected_sorting_method = "UNSET"
@@ -27,18 +28,39 @@ class LibraryFilterMenuDialog(val context: Context) {
         }
     }
 
-    fun show() {
-        if (context == null) {
-            Log.e("Zotero", "Error LibraryFilterMenuDialog got null context.")
-            return
-        }
+    private fun saveSettings(onlyNotes: Boolean, onlyPDFs: Boolean) {
+        // only updated values if they have changed.
+//        if (is_showing_pdf != onlyPDFs){
+        preferences.setIsShowingOnlyPdfs(onlyPDFs)
+//        }
+//        if (is_showing_notes != onlyNotes){
+        preferences.setIsShowingOnlyNotes(onlyNotes)
+//        }
 
+        preferences.setSortMethod(selected_sorting_method)
+        onFilterChange()
+
+    }
+
+    private fun getSortString(method: String): String {
+        val i = context.resources.getStringArray(R.array.sort_options_values).indexOf(method)
+        return context.resources.getTextArray(R.array.sort_options_entries)[i].toString()
+    }
+
+    fun show() {
         val dialogBuilder = AlertDialog.Builder(context).create()
         val inflater = context.layoutInflater
         val dialogView: View = inflater.inflate(R.layout.dialog_filter_menu, null)
 
-        val cancelButton = dialogView.findViewById<Button>(R.id.btn_cancel)
-        val submitButton = dialogView.findViewById<Button>(R.id.btn_submit)
+        val sortingMethodButton = dialogView.findViewById<Button>(R.id.button_sort_by)
+        sortingMethodButton.setText(this.getSortString(selected_sorting_method))
+        val checkbox_show_only_pdf = dialogView.findViewById<CheckBox>(R.id.checkBox_show_only_pdf)
+        val checkbox_show_only_notes =
+            dialogView.findViewById<CheckBox>(R.id.checkBox_show_only_notes)
+
+
+        checkbox_show_only_notes.isChecked = this.is_showing_notes
+        checkbox_show_only_pdf.isChecked = this.is_showing_pdf
 
         val builder = AlertDialog.Builder(context)
         builder.setTitle("Sorting Method")
@@ -47,16 +69,21 @@ class LibraryFilterMenuDialog(val context: Context) {
             { dialogInterface, i ->
                 Log.d("Zotero", "pressed ${i} ")
                 this.setSortingMethod(i)
+                sortingMethodButton.setText(this.getSortString(this.selected_sorting_method))
 
             })
 
-        builder.show()
+        sortingMethodButton.onClick { builder.show() }
+
+        val cancelButton = dialogView.findViewById<Button>(R.id.btn_cancel)
+        val submitButton = dialogView.findViewById<Button>(R.id.btn_submit)
 
         cancelButton.onClick {
             dialogBuilder.dismiss()
         }
 
         submitButton.onClick {
+            saveSettings(checkbox_show_only_notes.isChecked, checkbox_show_only_pdf.isChecked)
             dialogBuilder.dismiss()
         }
 
@@ -73,7 +100,10 @@ class LibraryFilterMenuDialog(val context: Context) {
 
     init {
         preferences = PreferenceManager(context)
-        val sortMethod = preferences.getSortMethod()
+        selected_sorting_method =
+            preferences.sortMethodToString(preferences.getSortMethod()) //terrible code, i know.
+        is_showing_pdf = preferences.getIsShowingOnlyPdfs()
+        is_showing_notes = preferences.getIsShowingOnlyNotes()
 
     }
 

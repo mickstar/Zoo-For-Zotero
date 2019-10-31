@@ -9,6 +9,7 @@ import java.io.File
 import java.util.*
 
 class LibraryActivityPresenter(val view: Contract.View, context: Context) : Contract.Presenter {
+
     override fun modifyNote(note: Note) {
         model.modifyNote(note)
     }
