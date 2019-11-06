@@ -203,6 +203,77 @@ class ZoteroAPI(
         getCollectionsFromIndex(collections, 0, zoteroAPI, listener)
     }
 
+    fun getItemsSinceModification(
+        modificationSinceVersion: Int,
+        listener: ZoteroAPIDownloadItemsListener
+    ) {
+        val modifiedItems = LinkedList<Item>()
+        val zoteroAPI = buildZoteroAPI(false, 0)
+        getItemsSinceModificationFromIndex(
+            modifiedItems,
+            modificationSinceVersion,
+            0,
+            zoteroAPI,
+            listener
+        )
+
+    }
+
+    private fun getItemsSinceModificationFromIndex(
+        modifiedItems: MutableList<Item>,
+        modificationSinceVersion: Int,
+        index: Int,
+        zoteroAPIService: ZoteroAPIService,
+        listener: ZoteroAPIDownloadItemsListener
+    ) {
+        val call = zoteroAPIService.getItemsSince(userID, modificationSinceVersion, index)
+        call.enqueue(object : Callback<ResponseBody> {
+            override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
+                if (response.code() == 200) {
+                    val s = response.body()?.string()
+                    if (s == null) {
+                        throw(Exception("Error on item call, got back nothing on call."))
+                    }
+                    val newItems = ItemJSONConverter().deserialize(s)
+
+                    modifiedItems.addAll(newItems)
+
+                    val totalResults: String? = response.headers()["Total-Results"]
+                    val myLibraryVersion: Int =
+                        response.headers()["Last-Modified-Version"]?.toInt() ?: -1
+                    if (totalResults == null) {
+                        listener.onDownloadComplete(modifiedItems, myLibraryVersion)
+                    } else {
+                        val newIndex = index + newItems.size
+                        if (newIndex < totalResults.toInt()) {
+                            listener.onProgressUpdate(newIndex, totalResults.toInt())
+                            getItemsSinceModificationFromIndex(
+                                modifiedItems,
+                                modificationSinceVersion,
+                                newIndex,
+                                zoteroAPIService,
+                                listener
+                            )
+                        } else {
+                            listener.onDownloadComplete(modifiedItems, myLibraryVersion)
+                        }
+                    }
+                } else {
+                    Log.e(
+                        "zotero",
+                        "Error downloading modified since items, got back code ${response.code()} message: ${response.body()}"
+                    )
+                    listener.onNetworkFailure()
+                }
+            }
+
+            override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
+                Log.d("zotero", "network failure ${t.message}")
+                listener.onNetworkFailure()
+            }
+        })
+    }
+
     fun getItems(
         useCaching: Boolean,
         libraryVersion: Int,

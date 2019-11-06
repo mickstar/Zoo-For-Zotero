@@ -296,4 +296,31 @@ class ZoteroDB(val context: Context) {
         items = newItems
         this.commitItemsToStorage()
     }
+
+    fun applyChangesToItems(modifiedItems: List<Item>) {
+        if (items == null) {
+            Log.e("zotero", "error items cannot be null!")
+            return
+        }
+        val toAdd: MutableList<Item> = LinkedList(modifiedItems)
+        Log.d("zotero", "got a list of modifications of size ${modifiedItems.size}")
+        val newItems = LinkedList<Item>()
+        for (item in this.items!!) {
+            var added = false
+            for (modifiedItem: Item in toAdd) {
+                if (item.ItemKey == modifiedItem.ItemKey) {
+                    newItems.add(modifiedItem)
+                    toAdd.remove(modifiedItem)
+                    added = true
+                    break
+                }
+            }
+            if (!added) {
+                newItems.add(item)
+            }
+        }
+        newItems.addAll(toAdd)
+        this.items = newItems
+        this.commitItemsToStorage()
+    }
 }

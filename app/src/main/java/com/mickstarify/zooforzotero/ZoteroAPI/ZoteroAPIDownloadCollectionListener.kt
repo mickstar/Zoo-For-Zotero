@@ -6,5 +6,5 @@ interface ZoteroAPIDownloadCollectionListener {
     fun onCachedComplete()
     fun onNetworkFailure()
     fun onDownloadComplete(collections: List<Collection>)
-    fun onProgressUpdate(newIndex: Int, toInt: Int)
+    fun onProgressUpdate(progress: Int, total: Int)
 }
