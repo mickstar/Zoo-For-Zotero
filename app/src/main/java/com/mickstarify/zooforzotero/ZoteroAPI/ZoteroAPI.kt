@@ -108,23 +108,28 @@ class ZoteroAPI(
         val call: Call<ResponseBody> = zoteroAPI.getItemFile(userID, item.ItemKey)
         call.enqueue(object : Callback<ResponseBody> {
             override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
+
+                val inputStream = response.body()?.byteStream()
+                val fileSize = response.body()?.contentLength() ?: 0
+                if (inputStream == null) {
+                    listener.onNetworkFailure()
+                    return
+                }
                 if (response.code() == 200) {
-                    val inputStream = response.body()?.byteStream()
-                    val fileSize = response.body()?.contentLength() ?: 0
-                    if (inputStream == null) {
-                        listener.onNetworkFailure()
-                        return
-                    }
                     val task = doAsync {
                         val outputFileStream = outputFile.outputStream()
+                        var failure = false
                         val buffer = ByteArray(32768)
                         var read = inputStream.read(buffer)
                         var progress: Long = 0
-                        var failure = false
+                        var priorProgress: Long = -1
                         while (read > 0) {
                             // I Should just bite the bullet and implement rxJava...
                             context.runOnUiThread {
-                                listener.onProgressUpdate(progress, fileSize)
+                                if (priorProgress != progress) {
+                                    listener.onProgressUpdate(progress, fileSize)
+                                    priorProgress = progress
+                                }
                             }
                             try {
                                 outputFileStream.write(buffer, 0, read)
@@ -143,13 +148,15 @@ class ZoteroAPI(
 
                         onComplete {
                             outputFileStream.close()
-                            inputStream.close()
+                            inputStream?.close()
                             if (failure == false) {
                                 listener.onComplete(outputFile)
                             }
                         }
                     }
                     listener.receiveTask(task)
+                } else {
+                    listener.onNetworkFailure()
                 }
             }
 

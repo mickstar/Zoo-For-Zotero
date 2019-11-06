@@ -271,11 +271,11 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
         } else {
             progressDialog?.isIndeterminate = false
             progressDialog?.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL)
-            progressDialog?.progress = progress
-            progressDialog?.max = total
+            progressDialog?.setProgress(progress)
             if (total == -1) {
                 progressDialog?.setMessage("We are connecting to the zotero servers and requesting the file.")
             } else {
+                progressDialog?.max = total
                 progressDialog?.setMessage("${progress}KB of ${total}KB")
             }
         }
