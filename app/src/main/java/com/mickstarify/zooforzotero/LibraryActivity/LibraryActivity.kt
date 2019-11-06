@@ -84,8 +84,16 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
         collectionsMenu.clear()
     }
 
+    fun showFilterMenu() {
+        LibraryFilterMenuDialog(this, { presenter.redisplayItems() }).show()
+    }
+
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
+            R.id.filter_menu -> {
+                showFilterMenu()
+            }
+
             R.id.settings -> {
                 val intent = Intent(this, SettingsActivity::class.java)
                 startActivity(intent)
@@ -263,11 +271,11 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
         } else {
             progressDialog?.isIndeterminate = false
             progressDialog?.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL)
-            progressDialog?.progress = progress
-            progressDialog?.max = total
+            progressDialog?.setProgress(progress)
             if (total == -1) {
                 progressDialog?.setMessage("We are connecting to the zotero servers and requesting the file.")
             } else {
+                progressDialog?.max = total
                 progressDialog?.setMessage("${progress}KB of ${total}KB")
             }
         }

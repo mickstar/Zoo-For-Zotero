@@ -25,6 +25,7 @@ import java.util.concurrent.TimeUnit
 
 class LibraryActivityModel(private val presenter: Contract.Presenter, val context: Context) :
     Contract.Model {
+
     // stores the current item being viewed by the user. (useful for refreshing the view)
     var selectedItem: Item? = null
     // just a flag to store whether we have shown the user a network error so that we don't
@@ -76,7 +77,25 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
     }
 
     override fun getLibraryItems(): List<Item> {
-        return zoteroDB.getDisplayableItems().sortedWith(sortMethod)
+        val onlyNotes = preferences.getIsShowingOnlyNotes()
+        val onlyPdfs = preferences.getIsShowingOnlyPdfs()
+
+        var items = zoteroDB.getDisplayableItems()
+        if (onlyNotes) {
+            items = items.filter { zoteroDB.getNotes(it.ItemKey).isNotEmpty() }
+        }
+        if (onlyPdfs) {
+            items = items.filter {
+                getAttachments(it.ItemKey).fold(false, { acc, attachment ->
+                    var result = acc
+                    if (!result) {
+                        result = attachment.data["contentType"] == "application/pdf"
+                    }
+                    result
+                })
+            }
+        }
+        return items.sortedWith(sortMethod)
     }
 
     override fun getItemsFromCollection(collectionName: String): List<Item> {
@@ -107,9 +126,55 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
         }
     }
 
+    private fun requestOnlyModifiedItems() {
+        if (!zoteroDB.hasStorage()) {
+            Log.e(
+                "zotero",
+                "Error, attempting to load only changed items when there is no local items"
+            )
+            return
+        }
+        if (zoteroDB.items == null) {
+            Log.e("zotero", "Error, items cannot be null (in modified items request)")
+            return
+        }
+        zoteroAPI.getItemsSinceModification(
+            zoteroDB.getLibraryVersion(),
+            object : ZoteroAPIDownloadItemsListener {
+                override fun onCachedComplete() {
+                    //never happens
+                }
+
+                override fun onNetworkFailure() {
+                    Log.e("zotero", "there was a network error downloading modifiedItems")
+                }
+
+                override fun onDownloadComplete(items: List<Item>, libraryVersion: Int) {
+                    zoteroDB.applyChangesToItems(items)
+                    zoteroDB.setItemsVersion(libraryVersion)
+                    presenter.makeToastAlert("Updated ${items.size} Items")
+                    finishGetItems()
+                }
+
+                override fun onProgressUpdate(progress: Int, total: Int) {
+                    presenter.updateLibraryRefreshProgress(progress, total)
+                }
+
+            }
+        )
+    }
+
     override fun requestItems(useCaching: Boolean) {
         loadingItems = true
         itemsDownloadAttempt++
+
+        if (useCaching && zoteroDB.hasStorage()) {
+            zoteroDB.loadItemsFromStorage()
+            if (zoteroDB.items != null) {
+                requestOnlyModifiedItems()
+                return // we don't need to proceed.
+            }
+        }
 
         zoteroAPI.getItems(
             useCaching,
@@ -182,6 +247,10 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
             useCaching,
             zoteroDB.getLibraryVersion(),
             object : ZoteroAPIDownloadCollectionListener {
+                override fun onProgressUpdate(progress: Int, total: Int) {
+                    // do nothing, don't care.
+                }
+
                 override fun onCachedComplete() {
                     try {
                         zoteroDB.loadCollectionsFromStorage()
@@ -249,6 +318,8 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
         presenter.receiveCollections(getCollections())
         if (currentCollection == "unset") {
             presenter.setCollection("all")
+        } else {
+            presenter.redisplayItems()
         }
     }
 
@@ -274,7 +345,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
     override fun openPDF(attachment: File) {
         var intent = Intent(Intent.ACTION_VIEW)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            var uri: Uri?
+            val uri: Uri?
             try {
                 uri = FileProvider.getUriForFile(
                     context,

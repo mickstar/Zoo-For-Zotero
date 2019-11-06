@@ -11,7 +11,12 @@ import com.mickstarify.zooforzotero.R
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Collection
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Item
 
-class ZoteroItemListAdapter(val context: Context, val list: List<ListEntry>) : BaseAdapter() {
+class ZoteroItemListAdapter(val context: Context, var list: List<ListEntry>) : BaseAdapter() {
+
+    fun updateItems(newList: List<ListEntry>) {
+        list = newList
+        this.notifyDataSetChanged()
+    }
 
     override fun getView(i : Int, _convertView : View?, parent : ViewGroup?): View {
         val entry = getItem(i)

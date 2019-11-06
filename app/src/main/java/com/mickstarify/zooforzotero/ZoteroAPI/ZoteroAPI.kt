@@ -64,39 +64,6 @@ class ZoteroAPI(
             .build().create(ZoteroAPIService::class.java)
     }
 
-    fun getCollections(
-        useCaching: Boolean,
-        libraryVersion: Int,
-        listener: ZoteroAPIDownloadCollectionListener
-    ) {
-        /*Does a async call to the API and callbacks with the list of collections, returns an empty list on failure.*/
-
-        val zoteroAPI = buildZoteroAPI(useCaching, libraryVersion)
-        val call: Call<List<Collection>> = zoteroAPI.getCollections(userID)
-
-        call.enqueue(object : Callback<List<Collection>> {
-            override fun onResponse(
-                call: Call<List<Collection>>,
-                response: Response<List<Collection>>
-            ) {
-                if (response.code() == 200) {
-                    val collections = response.body() ?: LinkedList()
-                    listener.onDownloadComplete(collections)
-                } else if (response.code() == 304) {
-                    listener.onCachedComplete()
-                } else {
-                    Log.e("zotero", "Error downloading collections, got back code ${response.code()} message: ${response.body()}")
-                    listener.onNetworkFailure()
-                }
-            }
-
-            override fun onFailure(call: Call<List<Collection>>, t: Throwable) {
-                Log.e("zotero", "failure on getting Collection message: ${t.message}")
-                listener.onNetworkFailure()
-            }
-        })
-    }
-
     fun getFileForDownload(context: Context, item: Item): File {
         val name = item.data.get("filename") ?: "unknown.pdf"
         val outputDir = context.externalCacheDir
@@ -141,23 +108,28 @@ class ZoteroAPI(
         val call: Call<ResponseBody> = zoteroAPI.getItemFile(userID, item.ItemKey)
         call.enqueue(object : Callback<ResponseBody> {
             override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
+
+                val inputStream = response.body()?.byteStream()
+                val fileSize = response.body()?.contentLength() ?: 0
+                if (inputStream == null) {
+                    listener.onNetworkFailure()
+                    return
+                }
                 if (response.code() == 200) {
-                    val inputStream = response.body()?.byteStream()
-                    val fileSize = response.body()?.contentLength() ?: 0
-                    if (inputStream == null) {
-                        listener.onNetworkFailure()
-                        return
-                    }
                     val task = doAsync {
                         val outputFileStream = outputFile.outputStream()
+                        var failure = false
                         val buffer = ByteArray(32768)
                         var read = inputStream.read(buffer)
                         var progress: Long = 0
-                        var failure = false
+                        var priorProgress: Long = -1
                         while (read > 0) {
                             // I Should just bite the bullet and implement rxJava...
                             context.runOnUiThread {
-                                listener.onProgressUpdate(progress, fileSize)
+                                if (priorProgress != progress) {
+                                    listener.onProgressUpdate(progress, fileSize)
+                                    priorProgress = progress
+                                }
                             }
                             try {
                                 outputFileStream.write(buffer, 0, read)
@@ -176,13 +148,15 @@ class ZoteroAPI(
 
                         onComplete {
                             outputFileStream.close()
-                            inputStream.close()
+                            inputStream?.close()
                             if (failure == false) {
                                 listener.onComplete(outputFile)
                             }
                         }
                     }
                     listener.receiveTask(task)
+                } else {
+                    listener.onNetworkFailure()
                 }
             }
 
@@ -214,6 +188,95 @@ class ZoteroAPI(
             override fun onFailure(call: Call<KeyInfo>, t: Throwable) {
                 Log.d("zotero", "failure on item")
                 callback(false, "Failure.")
+            }
+        })
+    }
+
+    fun getCollections(
+        useCaching: Boolean,
+        libraryVersion: Int,
+        listener: ZoteroAPIDownloadCollectionListener
+    ) {
+        /*
+        * getItems loads the Every Item from the Zotero API.
+        * since Zotero API may only return partial data, we may need to make several requests so this may take
+        * some time to get all the data.
+        * We use recursion to download all the items.
+        * */
+
+
+        val collections = LinkedList<Collection>()
+        val zoteroAPI = buildZoteroAPI(useCaching, libraryVersion)
+        getCollectionsFromIndex(collections, 0, zoteroAPI, listener)
+    }
+
+    fun getItemsSinceModification(
+        modificationSinceVersion: Int,
+        listener: ZoteroAPIDownloadItemsListener
+    ) {
+        val modifiedItems = LinkedList<Item>()
+        val zoteroAPI = buildZoteroAPI(false, 0)
+        getItemsSinceModificationFromIndex(
+            modifiedItems,
+            modificationSinceVersion,
+            0,
+            zoteroAPI,
+            listener
+        )
+
+    }
+
+    private fun getItemsSinceModificationFromIndex(
+        modifiedItems: MutableList<Item>,
+        modificationSinceVersion: Int,
+        index: Int,
+        zoteroAPIService: ZoteroAPIService,
+        listener: ZoteroAPIDownloadItemsListener
+    ) {
+        val call = zoteroAPIService.getItemsSince(userID, modificationSinceVersion, index)
+        call.enqueue(object : Callback<ResponseBody> {
+            override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
+                if (response.code() == 200) {
+                    val s = response.body()?.string()
+                    if (s == null) {
+                        throw(Exception("Error on item call, got back nothing on call."))
+                    }
+                    val newItems = ItemJSONConverter().deserialize(s)
+
+                    modifiedItems.addAll(newItems)
+
+                    val totalResults: String? = response.headers()["Total-Results"]
+                    val myLibraryVersion: Int =
+                        response.headers()["Last-Modified-Version"]?.toInt() ?: -1
+                    if (totalResults == null) {
+                        listener.onDownloadComplete(modifiedItems, myLibraryVersion)
+                    } else {
+                        val newIndex = index + newItems.size
+                        if (newIndex < totalResults.toInt()) {
+                            listener.onProgressUpdate(newIndex, totalResults.toInt())
+                            getItemsSinceModificationFromIndex(
+                                modifiedItems,
+                                modificationSinceVersion,
+                                newIndex,
+                                zoteroAPIService,
+                                listener
+                            )
+                        } else {
+                            listener.onDownloadComplete(modifiedItems, myLibraryVersion)
+                        }
+                    }
+                } else {
+                    Log.e(
+                        "zotero",
+                        "Error downloading modified since items, got back code ${response.code()} message: ${response.body()}"
+                    )
+                    listener.onNetworkFailure()
+                }
+            }
+
+            override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
+                Log.d("zotero", "network failure ${t.message}")
+                listener.onNetworkFailure()
             }
         })
     }
@@ -274,12 +337,74 @@ class ZoteroAPI(
                     listener.onCachedComplete()
 
                 } else {
-                    Log.e("zotero", "Error downloading items, got back code ${response.code()} message: ${response.body()}")
+                    Log.e(
+                        "zotero",
+                        "Error downloading items, got back code ${response.code()} message: ${response.body()}"
+                    )
                     listener.onNetworkFailure()
                 }
             }
 
             override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
+                Log.d("zotero", "network failure ${t.message}")
+                listener.onNetworkFailure()
+            }
+        })
+    }
+
+    private fun getCollectionsFromIndex(
+        collections: MutableList<Collection>,
+        index: Int,
+        zoteroAPIService: ZoteroAPIService,
+        listener: ZoteroAPIDownloadCollectionListener
+    ) {
+        val call: Call<List<Collection>> = zoteroAPIService.getCollections(userID, index)
+
+        call.enqueue(object : Callback<List<Collection>> {
+            override fun onResponse(
+                call: Call<List<Collection>>,
+                response: Response<List<Collection>>
+            ) {
+                if (response.code() == 200) {
+                    response.body()?.let {
+                        collections.addAll(it)
+                    }
+
+                    val totalResults: String? = response.headers()["Total-Results"]
+                    val myLibraryVersion: Int =
+                        response.headers()["Last-Modified-Version"]?.toInt() ?: -1
+                    if (totalResults == null) {
+                        listener.onDownloadComplete(collections)
+                    } else {
+                        var newIndex = index
+                        response.body()?.let {
+                            newIndex += it.size
+                        }
+                        if (newIndex < totalResults.toInt()) {
+                            listener.onProgressUpdate(newIndex, totalResults.toInt())
+                            getCollectionsFromIndex(
+                                collections,
+                                newIndex,
+                                zoteroAPIService,
+                                listener
+                            )
+                        } else {
+                            listener.onDownloadComplete(collections)
+                        }
+                    }
+                } else if (response.code() == 304) {
+                    Log.d("zotero", "got back 304, using cached copy.")
+                    listener.onCachedComplete()
+                } else {
+                    Log.e(
+                        "zotero",
+                        "Error downloading collections, got back code ${response.code()} message: ${response.body()}"
+                    )
+                    listener.onNetworkFailure()
+                }
+            }
+
+            override fun onFailure(call: Call<List<Collection>>, t: Throwable) {
                 Log.d("zotero", "network failure ${t.message}")
                 listener.onNetworkFailure()
             }

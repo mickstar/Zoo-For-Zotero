@@ -15,6 +15,14 @@ interface ZoteroAPIService {
         @Query("start") index: Int
     ) : Call<ResponseBody>
 
+    /* Gets items since last update. */
+    @GET("users/{user}/items")
+    fun getItemsSince(
+        @Path("user") user: String,
+        @Query("since") modificationSinceVersion: Int,
+        @Query("start") index: Int
+    ): Call<ResponseBody>
+
     @GET("keys/{key}")
     fun getKeyInfo (
         @Path("key") key : String
@@ -22,7 +30,8 @@ interface ZoteroAPIService {
 
     @GET("users/{user}/collections")
     fun getCollections (
-        @Path("user") user: String
+        @Path("user") user: String,
+        @Query("start") index: Int
     ) : Call<List<Collection>>
 
     @Streaming

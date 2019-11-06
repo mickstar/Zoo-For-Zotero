@@ -69,8 +69,10 @@ class ItemJSONConverter {
                                 data[key] = value
                             } else if (value is Int) {
                                 data[key] = "$value"
+                            } else if (value is Boolean) {
+                                data[key] = "$value"
                             } else {
-                                Log.d(
+                                Log.e(
                                     "zotero",
                                     "This parameter '$key' is not a string and not logged"
                                 )
