@@ -3,10 +3,12 @@ package com.mickstarify.zooforzotero.LibraryActivity
 import android.app.AlertDialog
 import android.content.Context
 import android.content.DialogInterface
+import android.os.Bundle
 import android.util.Log
 import android.view.View
 import android.widget.Button
 import android.widget.CheckBox
+import com.google.firebase.analytics.FirebaseAnalytics
 import com.mickstarify.zooforzotero.PreferenceManager
 import com.mickstarify.zooforzotero.R
 import org.jetbrains.anko.layoutInflater
@@ -29,21 +31,29 @@ class LibraryFilterMenuDialog(val context: Context, val onFilterChange: (() -> (
     }
 
     private fun saveSettings(onlyNotes: Boolean, onlyPDFs: Boolean) {
-        // only updated values if they have changed.
-//        if (is_showing_pdf != onlyPDFs){
         preferences.setIsShowingOnlyPdfs(onlyPDFs)
-//        }
-//        if (is_showing_notes != onlyNotes){
         preferences.setIsShowingOnlyNotes(onlyNotes)
-//        }
 
         preferences.setSortMethod(selected_sorting_method)
-        onFilterChange()
 
+        val params = Bundle().apply {
+            putBoolean("show_pdfs", onlyPDFs)
+            putBoolean("only_notes", onlyNotes)
+            putString("sort_method", selected_sorting_method)
+        }
+        FirebaseAnalytics.getInstance(context).logEvent("set_filter", params)
+
+        onFilterChange()
     }
 
     private fun getSortString(method: String): String {
         val i = context.resources.getStringArray(R.array.sort_options_values).indexOf(method)
+        if (i == -1) {
+            val params = Bundle()
+            params.putString("method", method)
+            FirebaseAnalytics.getInstance(context).logEvent("error_sort_method_not_found", params)
+            return "Error"
+        }
         return context.resources.getTextArray(R.array.sort_options_entries)[i].toString()
     }
 
@@ -67,7 +77,6 @@ class LibraryFilterMenuDialog(val context: Context, val onFilterChange: (() -> (
         builder.setItems(context.resources.getTextArray(R.array.sort_options_entries),
             DialogInterface.OnClickListener
             { dialogInterface, i ->
-                Log.d("Zotero", "pressed ${i} ")
                 this.setSortingMethod(i)
                 sortingMethodButton.setText(this.getSortString(this.selected_sorting_method))
 
