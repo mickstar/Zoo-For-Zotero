@@ -418,8 +418,8 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                     }
                 }
 
-                override fun onFailure() {
-                    presenter.attachmentDownloadError()
+                override fun onFailure(message: String) {
+                    presenter.attachmentDownloadError(message)
                     isDownloading = false
                 }
 

@@ -72,6 +72,8 @@ dependencies {
     androidTestImplementation 'androidx.test:runner:1.2.0'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0'
     implementation 'androidx.gridlayout:gridlayout:1.0.0'
-    implementation 'com.google.firebase:firebase-analytics:17.2.0'
+    implementation 'com.google.firebase:firebase-analytics:17.2.1'
+    implementation 'com.thegrizzlylabs.sardine-android:sardine-android:0.5'
+    implementation 'net.lingala.zip4j:zip4j:2.2.4'
     releaseImplementation 'com.crashlytics.sdk.android:crashlytics:2.10.1'
 }

@@ -14,7 +14,8 @@
   ~ limitations under the License.
   -->
 
-<PreferenceScreen xmlns:app="http://schemas.android.com/apk/res-auto">
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <PreferenceCategory app:title="@string/syncing_header">
 
@@ -33,6 +34,38 @@
         <!--                app:summaryOn="@string/sync_only_new_summary_on"-->
         <!--                app:title="@string/sync_only_new" />-->
 
+    </PreferenceCategory>
+    <PreferenceCategory android:title="Preference category">
+
+        <SwitchPreference
+                android:defaultValue="false"
+                android:key="use_webdav"
+                android:title="Use webdav to access attachments" />
+        <EditTextPreference
+                android:dependency="use_webdav"
+                android:enabled="false"
+                android:key="webdav_address"
+                android:selectAllOnFocus="true"
+                android:singleLine="true"
+                android:summary=""
+                android:title="Webdav Address"
+                app:enabled="false" />
+        <EditTextPreference
+                android:dependency="use_webdav"
+                android:enabled="false"
+                android:key="webdav_username"
+                android:selectAllOnFocus="true"
+                android:singleLine="true"
+                android:summary="Username for webDAV. Leave empty for no username."
+                android:title="WebDAV Username" />
+        <EditTextPreference
+                android:dependency="use_webdav"
+                android:enabled="false"
+                android:key="webdav_password"
+                android:selectAllOnFocus="true"
+                android:singleLine="true"
+                android:summary="Password for webDAV. Leave empty for no password."
+                android:title="WebDAV Password" />
     </PreferenceCategory>
     <PreferenceCategory app:title="@string/library_header">
         <ListPreference

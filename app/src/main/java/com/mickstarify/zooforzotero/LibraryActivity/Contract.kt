@@ -36,7 +36,7 @@ interface Contract {
         fun openAttachment(item: Item)
         fun openPDF(attachment: File)
         fun makeToastAlert(message: String)
-        fun attachmentDownloadError()
+        fun attachmentDownloadError(message: String = "")
         fun updateAttachmentDownloadProgress(progress: Long, total: Long)
         fun filterEntries(query: String)
         fun closeQuery()

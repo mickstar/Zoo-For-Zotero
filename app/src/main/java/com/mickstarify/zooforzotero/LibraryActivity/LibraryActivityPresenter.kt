@@ -67,13 +67,17 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
         view.populateEntries(entries)
     }
 
-    override fun attachmentDownloadError() {
+    override fun attachmentDownloadError(message: String) {
         view.hideAttachmentDownloadProgress()
-        createErrorAlert(
-            "Error getting Attachment", "There was an error " +
-                    "downloading the attachment from the Zotero Servers.\n" +
-                    "Please check your internet connection."
-        ) { }
+        if (message == "") {
+            createErrorAlert(
+                "Error getting Attachment", "There was an error " +
+                        "downloading the attachment from the Zotero Servers.\n" +
+                        "Please check your internet connection."
+            ) { }
+        } else {
+            createErrorAlert("Error getting Attachment", message) { }
+        }
     }
 
     override fun openPDF(attachment: File) {

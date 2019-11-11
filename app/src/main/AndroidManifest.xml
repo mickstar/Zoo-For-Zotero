@@ -9,12 +9,21 @@
 
     <application
             android:allowBackup="true"
-            android:icon="@mipmap/icon"
-            android:roundIcon="@mipmap/icon_round"
-            android:label="@string/app_name"
-            android:supportsRtl="true"
             android:fullBackupContent="@xml/backup_rules"
+            android:icon="@mipmap/icon"
+            android:label="@string/app_name"
+            android:roundIcon="@mipmap/icon_round"
+            android:supportsRtl="true"
             android:theme="@style/AppTheme">
+        <activity
+                android:name=".LibraryActivity.WebDAV.WebDAVSetup"
+                android:label="@string/title_activity_web_davsetup"
+                android:parentActivityName=".LibraryActivity.LibraryActivity"
+                android:theme="@style/AppTheme.NoActionBar">
+            <meta-data
+                    android:name="android.support.PARENT_ACTIVITY"
+                    android:value="com.mickstarify.zooforzotero.LibraryActivity.LibraryActivity" />
+        </activity>
         <activity
                 android:name=".SettingsActivity"
                 android:label="@string/title_activity_settings"

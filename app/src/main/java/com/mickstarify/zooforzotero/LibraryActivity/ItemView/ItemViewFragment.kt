@@ -61,6 +61,8 @@ class ItemViewFragment : BottomSheetDialogFragment(), ItemNoteEntry.OnNoteIntera
         // idk why these library activity items are being inflated...
         menu.removeItem(R.id.settings)
         menu.removeItem(R.id.search)
+        menu.removeItem(R.id.webdav_setup)
+        menu.removeItem(R.id.filter_menu)
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {

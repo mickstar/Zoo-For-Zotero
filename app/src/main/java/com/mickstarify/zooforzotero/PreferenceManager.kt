@@ -81,4 +81,41 @@ class PreferenceManager(context: Context) {
         editor.putBoolean("is_showing_only_with_notes", value)
         editor.apply()
     }
+
+    fun setWebDAVAuthentication(address: String, username: String, password: String) {
+        val editor = sharedPreferences.edit()
+        editor.putBoolean("use_webdav", true)
+        editor.putString("webdav_address", address)
+        editor.putString("webdav_username", username)
+        editor.putString("webdav_password", password)
+
+        editor.apply()
+    }
+
+    fun destroyWebDAVAuthentication() {
+        val editor = sharedPreferences.edit()
+        editor.putBoolean("use_webdav", false)
+        editor.putString("webdav_address", "")
+        editor.putString("webdav_username", "")
+        editor.putString("webdav_password", "")
+
+        editor.apply()
+    }
+
+    fun getWebDAVUsername(): String {
+        return sharedPreferences.getString("webdav_username", "") ?: ""
+    }
+
+    fun getWebDAVPassword(): String {
+        return sharedPreferences.getString("webdav_password", "") ?: ""
+    }
+
+    fun getWebDAVAddress(): String {
+        return sharedPreferences.getString("webdav_address", "") ?: ""
+    }
+
+    fun isWebDAVEnabled(): Boolean {
+        return sharedPreferences.getBoolean("use_webdav", false)
+    }
+
 }
