@@ -9,6 +9,7 @@ import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
+import android.view.WindowManager
 import android.widget.*
 import androidx.appcompat.app.ActionBarDrawerToggle
 import androidx.appcompat.app.AlertDialog
@@ -22,6 +23,7 @@ import com.google.android.material.navigation.NavigationView
 import com.google.firebase.analytics.FirebaseAnalytics
 import com.mickstarify.zooforzotero.LibraryActivity.ItemView.ItemAttachmentEntry
 import com.mickstarify.zooforzotero.LibraryActivity.ItemView.ItemViewFragment
+import com.mickstarify.zooforzotero.LibraryActivity.WebDAV.WebDAVSetup
 import com.mickstarify.zooforzotero.R
 import com.mickstarify.zooforzotero.SettingsActivity
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Collection
@@ -88,6 +90,12 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
         LibraryFilterMenuDialog(this, { presenter.redisplayItems() }).show()
     }
 
+    private fun showWebDAVSetup() {
+        val intent = Intent(this, WebDAVSetup::class.java)
+        startActivity(intent)
+    }
+
+
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
             R.id.filter_menu -> {
@@ -98,10 +106,12 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
                 val intent = Intent(this, SettingsActivity::class.java)
                 startActivity(intent)
             }
+            R.id.webdav_setup -> {
+                showWebDAVSetup()
+            }
         }
         return super.onOptionsItemSelected(item)
     }
-
     lateinit var searchView: SearchView
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         menuInflater.inflate(R.menu.activity_library_actionbar, menu)
@@ -202,7 +212,11 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
         alert.setTitle(title)
         alert.setMessage(message)
         alert.setPositiveButton("Ok") { _, _ -> onClick() }
-        alert.show()
+        try {
+            alert.show()
+        } catch (exception: WindowManager.BadTokenException) {
+            Log.e("zotero", "error cannot show error dialog. ${message}")
+        }
     }
 
     override fun showLoadingAnimation(showScreen: Boolean) {
@@ -266,19 +280,21 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
                 presenter.cancelAttachmentDownload()
             }
         }
-        if (total == 0) {
+        if (true) { // if (total == 0) {
             progressDialog?.isIndeterminate = true
-        } else {
-            progressDialog?.isIndeterminate = false
-            progressDialog?.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL)
-            progressDialog?.setProgress(progress)
-            if (total == -1) {
-                progressDialog?.setMessage("We are connecting to the zotero servers and requesting the file.")
-            } else {
-                progressDialog?.max = total
-                progressDialog?.setMessage("${progress}KB of ${total}KB")
-            }
+            progressDialog?.setMessage("Downloading your Attachment.")
         }
+//        else {
+//            progressDialog?.isIndeterminate = false
+//            progressDialog?.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL)
+//            progressDialog?.setProgress(progress)
+//            if (total == -1) {
+//                progressDialog?.setMessage("We are connecting to the zotero servers and requesting the file.")
+//            } else {
+//                progressDialog?.max = total
+//                progressDialog?.setMessage("${progress}KB of ${total}KB")
+//            }
+//        }
         progressDialog?.show()
     }
 
@@ -332,7 +348,7 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
 
         progressBar?.progress = progress
         if (total == -1) {
-            progressBar?.isIndeterminate = true
+            progressBar?.isIndeterminate = false
             textView.text = "Starting to download your library."
         } else {
             progressBar?.max = total

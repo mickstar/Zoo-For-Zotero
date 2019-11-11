@@ -21,4 +21,10 @@
             android:icon="@drawable/baseline_settings_applications_white_24"
             android:title="@string/settings"
             app:showAsAction="collapseActionView" />
+    <item
+            android:id="@+id/webdav_setup"
+            android:icon="@drawable/baseline_settings_applications_white_24"
+            android:title="Setup WebDAV"
+            app:showAsAction="collapseActionView" />
+
 </menu>

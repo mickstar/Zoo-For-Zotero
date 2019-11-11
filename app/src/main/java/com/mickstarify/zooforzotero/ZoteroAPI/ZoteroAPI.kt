@@ -5,6 +5,7 @@ import android.util.Log
 import com.google.common.hash.Hashing
 import com.google.common.io.Files
 import com.mickstarify.zooforzotero.BuildConfig
+import com.mickstarify.zooforzotero.PreferenceManager
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.*
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Collection
 import okhttp3.Interceptor
@@ -20,6 +21,7 @@ import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.io.File
+import java.io.IOException
 import java.util.*
 
 
@@ -88,6 +90,51 @@ class ZoteroAPI(
         return false
     }
 
+    fun downloadItemWithWebDAV(
+        context: Context,
+        item: Item,
+        listener: ZoteroAPIDownloadAttachmentListener
+    ) {
+        val preferenceManager = PreferenceManager(context)
+        val webdav = Webdav(
+            preferenceManager.getWebDAVAddress(),
+            preferenceManager.getWebDAVUsername(),
+            preferenceManager.getWebDAVPassword()
+        )
+
+        val task = doAsync {
+            var outputFile: File? = null
+            var hadIOError = false
+            var illegalArgumentError = false
+            try {
+                outputFile = webdav!!.getAttachment(item.ItemKey, context)
+            } catch (e: IOException) {
+                hadIOError = true
+            } catch (e: IllegalArgumentException) {
+                illegalArgumentError = true
+
+            } catch (e: Exception) {
+
+            }
+
+            onComplete {
+                if (outputFile != null) {
+                    listener.onComplete(outputFile)
+                } else {
+                    if (hadIOError) {
+                        listener.onFailure("Error, ${item.ItemKey.toUpperCase()}.zip was not found on the webDAV server.")
+                    } else if (illegalArgumentError) {
+                        listener.onFailure("Error, your WebDAV is misconfigured. Please disable WebDAV in your settings, or reconfigure WebDAV from the menu.")
+                    } else {
+                        listener.onFailure()
+                    }
+                }
+            }
+        }
+        listener.receiveTask(task)
+
+    }
+
     fun downloadItem(
         context: Context,
         item: Item,
@@ -101,6 +148,12 @@ class ZoteroAPI(
         if (checkIfFileExists(outputFile, item)) {
             listener.onComplete(outputFile)
             return
+        }
+
+        val preferenceManager = PreferenceManager(context)
+        if (preferenceManager.isWebDAVEnabled()) {
+            return downloadItemWithWebDAV(context, item, listener)
+            //stops here.
         }
 
         val zoteroAPI = buildZoteroAPI(useCaching = false, libraryVersion = -1)
