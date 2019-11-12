@@ -68,11 +68,14 @@ open class Item(
     * checks to see if we can find the text anywhere. Useful for search. */
     fun query(queryText: String): Boolean {
         val queryUpper = queryText.toUpperCase(Locale.getDefault())
+
         return this.ItemKey.toUpperCase(Locale.getDefault()).contains(queryUpper) ||
                 this.tags.joinToString("_").toUpperCase(Locale.getDefault()).contains(queryUpper) ||
                 this.data.values.joinToString("_").toUpperCase(Locale.getDefault()).contains(
                     queryUpper
-                )
+                ) || this.creators.map {
+            it.makeString().toUpperCase(Locale.getDefault())
+        }.joinToString("_").contains(queryUpper)
     }
 
     fun getSortableDateString(): String {
