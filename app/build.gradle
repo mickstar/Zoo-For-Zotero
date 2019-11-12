@@ -15,8 +15,8 @@ android {
         applicationId "com.mickstarify.zooforzotero"
         minSdkVersion 21
         targetSdkVersion 29
-        versionCode 12
-        versionName "1.4"
+        versionCode 13
+        versionName "1.5"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "zotero_api_key", apikeyProperties['zotero_api_key'])
         buildConfigField("String", "zotero_api_secret", apikeyProperties['zotero_api_secret'])
@@ -40,6 +40,10 @@ android {
 
     androidExtensions {
         experimental = true
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
     }
 }
 
