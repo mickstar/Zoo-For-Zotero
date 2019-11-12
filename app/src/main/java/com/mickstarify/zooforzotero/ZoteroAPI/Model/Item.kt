@@ -45,7 +45,13 @@ open class Item(
     }
 
     fun getTitle(): String {
-        return (this.getValue("title") ?: "unknown") as String
+        val title = when (getItemType()) {
+            "case" -> this.getValue("caseName")
+            "statute" -> this.getValue("nameOfAct")
+            else -> this.getValue("title")
+        }
+
+        return (title ?: "unknown") as String
     }
 
     fun getItemType(): String {
