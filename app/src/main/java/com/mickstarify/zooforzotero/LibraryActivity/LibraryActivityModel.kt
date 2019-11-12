@@ -76,16 +76,16 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
         return zoteroDB.isPopulated()
     }
 
-    override fun getLibraryItems(): List<Item> {
+    private fun filterItems(items: List<Item>): List<Item> {
         val onlyNotes = preferences.getIsShowingOnlyNotes()
         val onlyPdfs = preferences.getIsShowingOnlyPdfs()
 
-        var items = zoteroDB.getDisplayableItems()
+        var newItems = items
         if (onlyNotes) {
-            items = items.filter { zoteroDB.getNotes(it.ItemKey).isNotEmpty() }
+            newItems = newItems.filter { zoteroDB.getNotes(it.ItemKey).isNotEmpty() }
         }
         if (onlyPdfs) {
-            items = items.filter {
+            newItems = newItems.filter {
                 getAttachments(it.ItemKey).fold(false, { acc, attachment ->
                     var result = acc
                     if (!result) {
@@ -95,13 +95,18 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                 })
             }
         }
-        return items.sortedWith(sortMethod)
+        return newItems
+    }
+
+    override fun getLibraryItems(): List<Item> {
+        return filterItems(zoteroDB.getDisplayableItems()).sortedWith(sortMethod)
     }
 
     override fun getItemsFromCollection(collectionName: String): List<Item> {
         val collectionKey = zoteroDB.getCollectionId(collectionName)
         if (collectionKey != null) {
-            return zoteroDB.getItemsFromCollection(collectionKey).sortedWith(sortMethod)
+            val items = zoteroDB.getItemsFromCollection(collectionKey)
+            return filterItems(items).sortedWith(sortMethod)
         }
         throw (Exception("Error, could not find collection with name ${collectionName}"))
     }
@@ -437,7 +442,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
             Log.e("zotero", "error zoteroDB not populated!")
             return LinkedList()
         }
-        return zoteroDB.getItemsWithoutCollection().sortedWith(sortMethod)
+        return filterItems(zoteroDB.getItemsWithoutCollection()).sortedWith(sortMethod)
     }
 
     override fun cancelAttachmentDownload() {
