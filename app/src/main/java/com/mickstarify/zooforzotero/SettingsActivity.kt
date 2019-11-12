@@ -25,7 +25,11 @@ class SettingsActivity : AppCompatActivity() {
             setPreferencesFromResource(R.xml.root_preferences, rootKey)
             val preferenceManager = PreferenceManager(context!!)
             val username = findPreference<EditTextPreference>("webdav_username")
-            username?.summary = preferenceManager.getWebDAVUsername()
+            username?.summary = if (preferenceManager.getWebDAVUsername() == "") {
+                "No Username set."
+            } else {
+                preferenceManager.getWebDAVUsername()
+            }
             val address = findPreference<EditTextPreference>("webdav_address")
             address?.summary = preferenceManager.getWebDAVAddress()
             val password = findPreference<EditTextPreference>("webdav_password")
