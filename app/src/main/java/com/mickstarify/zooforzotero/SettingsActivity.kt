@@ -6,6 +6,7 @@ import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import androidx.preference.EditTextPreference
 import androidx.preference.PreferenceFragmentCompat
+import androidx.preference.SwitchPreference
 
 class SettingsActivity : AppCompatActivity() {
 
@@ -37,6 +38,14 @@ class SettingsActivity : AppCompatActivity() {
                 "No password set."
             } else {
                 "***********"
+            }
+
+            // check to see if user has ever setup webDAV before.
+            if (preferenceManager.getWebDAVAddress() == "") {
+                val pref = findPreference<SwitchPreference>("use_webdav")
+                pref?.isEnabled = false
+                pref?.summary = "Please use the Setup WebDAV option from the Library view."
+                // rather them do it in the activity as that will check the connection.
             }
         }
 
