@@ -35,7 +35,7 @@
         <!--                app:title="@string/sync_only_new" />-->
 
     </PreferenceCategory>
-    <PreferenceCategory android:title="Preference category">
+    <PreferenceCategory android:title="Web DAV">
 
         <SwitchPreference
                 android:defaultValue="false"
@@ -66,6 +66,11 @@
                 android:singleLine="true"
                 android:summary="Password for webDAV. Leave empty for no password."
                 android:title="WebDAV Password" />
+        <SwitchPreference
+                android:defaultValue="false"
+                android:dependency="use_webdav"
+                android:key="use_webdav_shared_libraries"
+                android:title="Use webdav for Shared Libraries" />
     </PreferenceCategory>
     <PreferenceCategory app:title="@string/library_header">
         <ListPreference

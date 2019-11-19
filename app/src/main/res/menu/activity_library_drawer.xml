@@ -12,5 +12,9 @@
     <group
             android:id="@+id/group_other"
             android:checkableBehavior="single"></group>
+    <group
+            android:id="@+id/group_shared_collections"
+            android:checkableBehavior="single"
+            android:title="Shared Collections"></group>
 
 </menu>

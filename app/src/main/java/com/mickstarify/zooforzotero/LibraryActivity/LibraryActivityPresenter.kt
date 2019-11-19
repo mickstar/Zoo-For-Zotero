@@ -2,13 +2,35 @@ package com.mickstarify.zooforzotero.LibraryActivity
 
 import android.content.Context
 import android.util.Log
+import com.mickstarify.zooforzotero.ZoteroAPI.Database.GroupInfo
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Collection
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Item
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Note
 import java.io.File
 import java.util.*
+import kotlin.collections.HashMap
 
 class LibraryActivityPresenter(val view: Contract.View, context: Context) : Contract.Presenter {
+    val groupsById = HashMap<Int, GroupInfo>()
+    override fun setGroupId(itemId: Int, groupInfo: GroupInfo) {
+        groupsById[itemId] = groupInfo
+    }
+
+    override fun openGroup(itemId: Int) {
+        val group = groupsById[itemId]!!
+        model.loadGroup(group)
+    }
+
+    override fun displayGroupsOnActionBar(groups: List<GroupInfo>) {
+        groups.forEach { groupInfo: GroupInfo ->
+            Log.d("zotero", "got group ${groupInfo.name}")
+            view.addSharedCollection(groupInfo)
+        }
+    }
+
+    override fun containsGroupId(itemId: Int): Boolean {
+        return groupsById.containsKey(itemId)
+    }
 
     override fun modifyNote(note: Note) {
         model.modifyNote(note)
@@ -27,7 +49,7 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
     override fun redisplayItems() {
         if (model.isLoaded()) {
             if (model.currentCollection != "unset") {
-                setCollection(model.currentCollection)
+                setCollection(model.currentCollection, isSubCollection = true)
             }
         }
     }
@@ -62,7 +84,7 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
             .map { ListEntry(it) })
         entries.addAll(
             items
-            .map { ListEntry(it) })
+                .map { ListEntry(it) })
 
         view.populateEntries(entries)
     }
@@ -97,7 +119,12 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
     }
 
 
-    override fun stopLoadingLibrary() {
+    override fun showLibraryLoadingAnimation() {
+        view.showLoadingAnimation(showScreen = true)
+        view.setTitle("Loading")
+    }
+
+    override fun hideLibraryLoadingAnimation() {
         if (!model.loadingCollections && !model.loadingItems) {
             view.hideLoadingAnimation()
             view.hideLibraryContentDisplay()
@@ -136,15 +163,18 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
         }
     }
 
-    override fun setCollection(collectionName: String) {
+    override fun setCollection(collectionName: String, isSubCollection: Boolean) {
         if (!model.isLoaded()) {
             Log.d("zotero", "tried to change collection before fully loaded!")
             return
         }
+        if (!isSubCollection) {
+            model.usePersonalLibrary()
+        }
 
         Log.d("zotero", "Got request to change collection to ${collectionName}")
         model.currentCollection = collectionName
-        if (collectionName == "all") {
+        if (collectionName == "all" && model.usingGroup == false) {
             view.setTitle("My Library")
             val entries = model.getLibraryItems().map { ListEntry(it) }
             model.isDisplayingItems = entries.size > 0
@@ -154,7 +184,20 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
             val entries = model.getUnfiledItems().map { ListEntry(it) }
             model.isDisplayingItems = entries.size > 0
             view.populateEntries(entries)
-        } else {
+        } else if (collectionName == "group_all" && model.usingGroup) {
+            view.setTitle(model.currentGroup!!.name)
+            val entries = LinkedList<ListEntry>()
+            entries.addAll(model.getCollections().filter {
+                !it.hasParent()
+            }.sortedBy {
+                it.getName().toLowerCase(Locale.getDefault())
+            }.map { ListEntry(it) })
+            entries.addAll(model.getLibraryItems().map { ListEntry(it) })
+            model.isDisplayingItems = entries.size > 0
+            view.populateEntries(entries)
+        }
+        // It is an actual collection on the user's private.
+        else {
             view.setTitle(collectionName)
             val entries = LinkedList<ListEntry>()
             entries.addAll(model.getSubCollections(collectionName).sortedBy {
@@ -201,9 +244,11 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
         if (model.shouldIUpdateLibrary()) {
             model.requestCollections()
             model.requestItems()
+            model.loadGroups()
         } else {
             model.loadCollectionsLocally()
             model.loadItemsLocally()
+            model.loadGroups()
         }
     }
 }

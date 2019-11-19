@@ -9,6 +9,9 @@ import kotlin.collections.HashMap
 * which is to say that return entries have varied parameters depending on the itemType or what info is available.*/
 class ItemJSONConverter {
     fun deserialize(jsonString: String): List<Item> {
+        if (jsonString == "[]") {
+            return LinkedList()
+        }
         val gson = Gson()
         val lmap: List<Map<String, Any>> = LinkedList()
         val listOfItemsObjects = gson.fromJson(jsonString, lmap.javaClass)

@@ -1,5 +1,6 @@
 package com.mickstarify.zooforzotero.LibraryActivity
 
+import com.mickstarify.zooforzotero.ZoteroAPI.Database.GroupInfo
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Collection
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Item
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Note
@@ -7,12 +8,13 @@ import java.io.File
 
 interface Contract {
     interface View {
-        fun initUI ()
+        fun initUI()
         fun createErrorAlert(title: String, message: String, onClick: () -> Unit)
         fun showLoadingAnimation(showScreen: Boolean)
         fun updateLibraryLoadingProgress(progress: Int, total: Int = -1)
+        fun addSharedCollection(groupInfo: GroupInfo)
         fun hideLoadingAnimation()
-        fun setTitle(title : String)
+        fun setTitle(title: String)
         fun addNavigationEntry(collection: Collection, parent: String)
         fun populateEntries(entries: List<ListEntry>)
         fun showItemDialog(item: Item, attachments: List<Item>, notes: List<Note>)
@@ -25,14 +27,15 @@ interface Contract {
         fun closeItemView()
     }
 
-    interface Presenter{
+    interface Presenter {
         fun createErrorAlert(title: String, message: String, onClick: () -> Unit)
         fun testConnection()
-        fun receiveCollections(collections : List<Collection>)
-        fun setCollection(collectionName: String)
-        fun selectItem(item : Item)
+        fun receiveCollections(collections: List<Collection>)
+        fun setCollection(collectionName: String, isSubCollection: Boolean = false)
+        fun selectItem(item: Item)
         fun requestLibraryRefresh()
-        fun stopLoadingLibrary()
+        fun showLibraryLoadingAnimation()
+        fun hideLibraryLoadingAnimation()
         fun openAttachment(item: Item)
         fun openPDF(attachment: File)
         fun makeToastAlert(message: String)
@@ -48,13 +51,17 @@ interface Contract {
         fun modifyNote(note: Note)
         fun deleteNote(note: Note)
         fun refreshItemView()
+        fun displayGroupsOnActionBar(groups: List<GroupInfo>)
+        fun setGroupId(itemId: Int, groupInfo: GroupInfo)
+        fun containsGroupId(itemId: Int): Boolean
+        fun openGroup(itemId: Int)
     }
 
     interface Model {
         fun requestItems(useCaching: Boolean = true)
         fun requestCollections(useCaching: Boolean = true)
-        fun getLibraryItems() : List<Item>
-        fun getItemsFromCollection(collectionName : String) : List<Item>
+        fun getLibraryItems(): List<Item>
+        fun getItemsFromCollection(collectionName: String): List<Item>
         fun refreshLibrary()
         fun getCollections(): List<Collection>
         fun getAttachments(itemKey: String): List<Item>
@@ -74,5 +81,7 @@ interface Contract {
         fun uploadAttachment(parent: Item, attachment: File)
         fun updateAttachment(item: Item, attachment: File)
         fun getUnfiledItems(): List<Item>
+        fun loadGroup(group: GroupInfo)
+        fun usePersonalLibrary()
     }
 }

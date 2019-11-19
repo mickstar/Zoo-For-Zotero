@@ -3,17 +3,20 @@ package com.mickstarify.zooforzotero.ZoteroAPI
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Collection
+import com.mickstarify.zooforzotero.ZoteroAPI.Model.GroupPojo
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.KeyInfo
+import io.reactivex.Observable
 import okhttp3.ResponseBody
 import retrofit2.Call
+import retrofit2.Response
 import retrofit2.http.*
 
 interface ZoteroAPIService {
     @GET("users/{user}/items")
-    fun getItems (
-        @Path("user") user : String,
+    fun getItems(
+        @Path("user") user: String,
         @Query("start") index: Int
-    ) : Call<ResponseBody>
+    ): Call<ResponseBody>
 
     /* Gets items since last update. */
     @GET("users/{user}/items")
@@ -23,23 +26,50 @@ interface ZoteroAPIService {
         @Query("start") index: Int
     ): Call<ResponseBody>
 
+
+    @GET("users/{user}/groups")
+    fun getGroupInfo(
+        @Path("user") userID: String
+    ): Observable<List<GroupPojo>>
+
+    // get items for the group ID
+    @GET("groups/{groupID}/items")
+    fun getItemsForGroup(
+        @Path("groupID") groupID: Int,
+        @Query("start") index: Int
+    ): Observable<Response<ResponseBody>>
+
+    // get items for the group ID
+    @GET("groups/{groupID}/items")
+    fun getItemsForGroupSince(
+        @Path("groupID") groupID: Int,
+        @Query("since") modificationSinceVersion: Int,
+        @Query("start") index: Int
+    ): Observable<Response<ResponseBody>>
+
+    @GET("groups/{groupID}/collections")
+    fun getCollectionsForGroup(
+        @Path("groupID") groupID: Int,
+        @Query("start") index: Int
+    ): Observable<Response<List<Collection>>>
+
     @GET("keys/{key}")
-    fun getKeyInfo (
-        @Path("key") key : String
-    ) : Call<KeyInfo>
+    fun getKeyInfo(
+        @Path("key") key: String
+    ): Call<KeyInfo>
 
     @GET("users/{user}/collections")
-    fun getCollections (
+    fun getCollections(
         @Path("user") user: String,
         @Query("start") index: Int
-    ) : Call<List<Collection>>
+    ): Call<List<Collection>>
 
     @Streaming
     @GET("users/{user}/items/{itemKey}/file")
     fun getItemFile(
-        @Path("user") user : String,
-        @Path("itemKey") itemKey : String
-    ) : Call<ResponseBody>
+        @Path("user") user: String,
+        @Path("itemKey") itemKey: String
+    ): Call<ResponseBody>
 
 
     @POST("users/{user}/items")

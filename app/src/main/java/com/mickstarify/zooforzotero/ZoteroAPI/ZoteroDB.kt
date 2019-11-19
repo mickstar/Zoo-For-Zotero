@@ -16,7 +16,7 @@ import java.util.*
 import kotlin.collections.HashMap
 
 
-class ZoteroDB(val context: Context) {
+class ZoteroDB(val context: Context, val prefix: String = "") {
     var collections: List<Collection>? = null
         set(value) {
             field = value
@@ -34,9 +34,24 @@ class ZoteroDB(val context: Context) {
     var attachments: MutableMap<String, MutableList<Item>>? = null
     private var notes: MutableMap<String, MutableList<Note>>? = null
     private var itemsFromCollections: HashMap<String, MutableList<Item>>? = null
-    val COLLECTIONS_FILENAME = "collections.json"
-    val ITEMS_FILENAME = "items.json"
 
+    // we are adding this prefix stuff so we can have concurrent zoteroDBs that will allow users to store
+    // shared collections.
+    val COLLECTIONS_FILENAME = if (prefix == "") {
+        "collections.json"
+    } else {
+        "${prefix}_collections.json"
+    }
+    val ITEMS_FILENAME = if (prefix == "") {
+        "items.json"
+    } else {
+        "${prefix}_items.json"
+    }
+    val namespace: String = if (prefix == "") {
+        "zoteroDB"
+    } else {
+        "zoteroDB_${prefix}"
+    }
     fun isPopulated(): Boolean {
         return !(collections == null || items == null)
     }
@@ -58,7 +73,7 @@ class ZoteroDB(val context: Context) {
     }
 
     fun writeDatabaseUpdatedTimestamp() {
-        val editor = context.getSharedPreferences("zoteroDB", MODE_PRIVATE).edit()
+        val editor = context.getSharedPreferences(namespace, MODE_PRIVATE).edit()
         val timestamp = System.currentTimeMillis() //timestamp in milliseconds.
         editor.putLong("lastModified", timestamp)
         editor.apply()
@@ -66,7 +81,7 @@ class ZoteroDB(val context: Context) {
 
     /* Returns the timestamp in milliseconds of when the database was last updated.*/
     fun getLastModifiedTimestamp(): Long {
-        val sp = context.getSharedPreferences("zoteroDB", MODE_PRIVATE)
+        val sp = context.getSharedPreferences(namespace, MODE_PRIVATE)
         val timestamp = sp.getLong("lastModified", 0L)
         return timestamp
     }
@@ -247,21 +262,21 @@ class ZoteroDB(val context: Context) {
     }
 
     fun setItemsVersion(libraryVersion: Int) {
-        val sharedPreferences = context.getSharedPreferences("zoteroDB", MODE_PRIVATE)
+        val sharedPreferences = context.getSharedPreferences(namespace, MODE_PRIVATE)
         val editor = sharedPreferences.edit()
         editor.putInt("ItemsLibraryVersion", libraryVersion)
         editor.apply()
     }
 
     fun getLibraryVersion(): Int {
-        val sharedPreferences = context.getSharedPreferences("zoteroDB", MODE_PRIVATE)
+        val sharedPreferences = context.getSharedPreferences(namespace, MODE_PRIVATE)
         return sharedPreferences.getInt("ItemsLibraryVersion", -1)
     }
 
     fun clearItemsVersion() {
         try {
             val sharedPreferences =
-                context.getSharedPreferences("zoteroDB", MODE_PRIVATE)
+                context.getSharedPreferences(namespace, MODE_PRIVATE)
             val editor = sharedPreferences.edit()
             editor.remove("ItemsLibraryVersion")
             editor.apply()
