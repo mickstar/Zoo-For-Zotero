@@ -24,7 +24,7 @@ class PreferenceManager(context: Context) {
             SortMethod.TITLE -> "TITLE"
             SortMethod.DATE -> "DATE"
             SortMethod.AUTHOR -> "AUTHOR"
-            SortMethod.DATE_ADDED -> "DATEADDED"
+            SortMethod.DATE_ADDED -> "DATE_ADDED"
         }
         val editor = sharedPreferences.edit()
         editor.putString("sort_method", methodString)
