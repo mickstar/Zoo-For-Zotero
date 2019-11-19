@@ -15,6 +15,8 @@ android:
   - google-gdk-license-.+
 before_install:
 - touch $HOME/.android/repositories.cfg
+- yes | sdkmanager "platforms;android-29"
+- yes | sdkmanager "build-tools;29.0.2"
 - yes | sdkmanager "platforms;android-28"
 - yes | sdkmanager "build-tools;28.0.3"
 - openssl aes-256-cbc -K $encrypted_772d988f0138_key -iv $encrypted_772d988f0138_iv -in app/google-services.json.enc -out app/google-services.json -d
