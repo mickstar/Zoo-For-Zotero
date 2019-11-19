@@ -8,6 +8,12 @@ import com.mickstarify.zooforzotero.BuildConfig
 import com.mickstarify.zooforzotero.PreferenceManager
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.*
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Collection
+import io.reactivex.Observable
+import io.reactivex.ObservableEmitter
+import io.reactivex.ObservableOnSubscribe
+import io.reactivex.Observer
+import io.reactivex.disposables.Disposable
+import io.reactivex.functions.Consumer
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.ResponseBody
@@ -19,6 +25,7 @@ import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 import retrofit2.Retrofit
+import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory
 import retrofit2.converter.gson.GsonConverterFactory
 import java.io.File
 import java.io.IOException
@@ -26,6 +33,8 @@ import java.util.*
 
 
 const val BASE_URL = "https://api.zotero.org"
+
+class UpToDateException(message: String) : Exception(message)
 
 class ZoteroAPI(
     val API_KEY: String,
@@ -63,6 +72,7 @@ class ZoteroAPI(
             .baseUrl(BASE_URL)
             .client(httpClient)
             .addConverterFactory(GsonConverterFactory.create())
+            .addCallAdapterFactory(RxJava2CallAdapterFactory.create())
             .build().create(ZoteroAPIService::class.java)
     }
 
@@ -517,6 +527,157 @@ class ZoteroAPI(
             override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
             }
         })
+    }
+
+    private fun getItemsFromGroupFromIndex(
+        groupID: Int,
+        useCaching: Boolean,
+        modificationSinceVersion: Int,
+        index: Int = 0
+    ): Observable<ZoteroAPIItemsResponse> {
+        val service = buildZoteroAPI(useCaching, modificationSinceVersion)
+
+        val observable = if (modificationSinceVersion > -1) {
+            service.getItemsForGroupSince(groupID, modificationSinceVersion, index)
+        } else {
+            service.getItemsForGroup(groupID, index)
+        }
+
+        return observable.map { response: Response<ResponseBody> ->
+            if (response.code() == 304) {
+                ZoteroAPIItemsResponse(true, LinkedList(), -1, -1)
+            } else {
+                val s = response.body()?.string() ?: "[]"
+                val newItems = ItemJSONConverter().deserialize(s)
+                val lastModifiedVersion = response.headers()["Last-Modified-Version"]?.toInt() ?: -1
+                val totalResults = response.headers()["Total-Results"]?.toInt() ?: -1
+
+                ZoteroAPIItemsResponse(false, newItems, lastModifiedVersion, totalResults)
+            }
+        }
+    }
+
+    fun getItemsFromGroup(
+        groupID: Int,
+        useCaching: Boolean,
+        modificationSinceVersion: Int = -1,
+        index: Int = 0
+    ): Observable<ZoteroAPIItemsResponse> {
+
+        val observable = Observable.create(object : ObservableOnSubscribe<ZoteroAPIItemsResponse> {
+            var itemCount = index
+            override fun subscribe(emitter: ObservableEmitter<ZoteroAPIItemsResponse>) {
+                val observable =
+                    getItemsFromGroupFromIndex(groupID, useCaching, modificationSinceVersion, index)
+                observable.subscribe(object : Observer<ZoteroAPIItemsResponse> {
+                    override fun onComplete() {
+                    }
+
+                    override fun onSubscribe(d: Disposable) {
+                    }
+
+                    override fun onNext(response: ZoteroAPIItemsResponse) {
+                        if (response.isCached) {
+                            throw(UpToDateException("304. Already Downloaded."))
+                        }
+                        itemCount += response.items.size
+                        emitter.onNext(
+                            ZoteroAPIItemsResponse(
+                                false,
+                                response.items,
+                                response.LastModifiedVersion,
+                                response.totalResults
+                            )
+                        )
+                        if (itemCount < response.totalResults) {
+                            val s = getItemsFromGroup(
+                                groupID,
+                                useCaching,
+                                modificationSinceVersion,
+                                itemCount
+                            )
+                            s.blockingForEach(Consumer { t -> emitter.onNext(t) })
+                        }
+                        emitter.onComplete()
+                    }
+
+                    override fun onError(e: Throwable) {
+                        emitter.onError(e)
+                    }
+
+                })
+            }
+        })
+        return observable
+    }
+
+    private fun getCollectionForGroupFromIndex(
+        groupID: Int,
+        useCaching: Boolean,
+        modificationSinceVersion: Int,
+        index: Int = 0
+    ): Observable<ZoteroAPICollectionsResponse> {
+        val service = buildZoteroAPI(useCaching, modificationSinceVersion)
+
+        val observable = service.getCollectionsForGroup(groupID, index)
+
+        return observable.map { response: Response<List<Collection>> ->
+            if (response.code() == 304) {
+                throw UpToDateException("304 Collections up to date.")
+            }
+
+            val collections = response.body() ?: LinkedList()
+            val totalResults = response.headers()["Total-Results"]?.toInt() ?: 0
+            ZoteroAPICollectionsResponse(false, collections, totalResults)
+        }
+    }
+
+    fun getCollectionsFromGroup(
+        groupID: Int,
+        libraryVersion: Int,
+        useCaching: Boolean,
+        index: Int = 0
+    ): Observable<List<Collection>> {
+        val observable = Observable.create(object : ObservableOnSubscribe<List<Collection>> {
+            var itemCount = index
+            override fun subscribe(emitter: ObservableEmitter<List<Collection>>) {
+                val observable = getCollectionForGroupFromIndex(groupID, useCaching, index)
+                observable.subscribe(object : Observer<ZoteroAPICollectionsResponse> {
+                    override fun onComplete() {
+                    }
+
+                    override fun onSubscribe(d: Disposable) {
+                    }
+
+                    override fun onNext(response: ZoteroAPICollectionsResponse) {
+                        itemCount += response.collections.size
+                        emitter.onNext(response.collections)
+                        if (itemCount < response.totalResults) {
+                            val s = getCollectionsFromGroup(
+                                groupID,
+                                libraryVersion,
+                                useCaching,
+                                itemCount
+                            )
+                            s.blockingForEach(Consumer { t -> emitter.onNext(t) })
+                        }
+                        emitter.onComplete()
+                    }
+
+                    override fun onError(e: Throwable) {
+                        emitter.onError(e)
+                    }
+
+                })
+            }
+        })
+        return observable
+    }
+
+    fun getGroupInfo(): Observable<List<GroupPojo>> {
+        val service = buildZoteroAPI(true, -1)
+        val groupInfo = service.getGroupInfo(userID)
+        return groupInfo
     }
 
     fun uploadPDF(parent: Item, attachment: File) {

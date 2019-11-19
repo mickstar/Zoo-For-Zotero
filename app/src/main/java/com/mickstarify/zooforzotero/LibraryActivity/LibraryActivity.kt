@@ -5,6 +5,7 @@ import android.app.SearchManager
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.os.Handler
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
@@ -26,6 +27,7 @@ import com.mickstarify.zooforzotero.LibraryActivity.ItemView.ItemViewFragment
 import com.mickstarify.zooforzotero.LibraryActivity.WebDAV.WebDAVSetup
 import com.mickstarify.zooforzotero.R
 import com.mickstarify.zooforzotero.SettingsActivity
+import com.mickstarify.zooforzotero.ZoteroAPI.Database.GroupInfo
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Collection
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Item
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Note
@@ -56,6 +58,7 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
     }
 
     lateinit var collectionsMenu: Menu
+    lateinit var sharedCollections: Menu
 
     override fun initUI() {
         val navigationView = findViewById<NavigationView>(R.id.nav_view_library)
@@ -77,9 +80,25 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
 
 
     override fun addNavigationEntry(collection: Collection, parent: String) {
-        collectionsMenu.add(R.id.group_collections, Menu.NONE, Menu.NONE, collection.getName())
+        val item =
+            collectionsMenu.add(R.id.group_collections, Menu.NONE, Menu.NONE, collection.getName())
+                .setIcon(R.drawable.ic_folder_black_24dp)
+                .setCheckable(true)
+
+    }
+
+    /* Shows a shared Collection (group) on the sidebar. */
+    override fun addSharedCollection(groupInfo: GroupInfo) {
+        val navigationView = findViewById<NavigationView>(R.id.nav_view_library)
+        val item = navigationView.menu.add(
+            R.id.group_shared_collections,
+            Menu.NONE,
+            Menu.NONE,
+            groupInfo.name
+        )
             .setIcon(R.drawable.ic_folder_black_24dp)
             .setCheckable(true)
+        presenter.setGroupId(item.itemId, groupInfo)
     }
 
     override fun clearSidebar() {
@@ -151,12 +170,17 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
     }
 
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
+        Log.d("zotero", "pressed ${item.groupId} - ${item.itemId}")
         if (item.itemId == R.id.my_library) {
             presenter.setCollection("all")
         } else if (item.title == "Unfiled Items") {
             presenter.setCollection("unfiled_items")
+        } else if (item.groupId == R.id.group_shared_collections) {
+            presenter.openGroup(item.itemId)
+        } else if (item.groupId == R.id.group_collections) {
+            presenter.setCollection("${item.title}", isSubCollection = false)
         } else {
-            presenter.setCollection("${item.title}")
+            Log.e("zotero", "error unhandled menuitem. ${item.title}")
         }
         val drawer = findViewById<DrawerLayout>(R.id.drawerlayout_library)
         drawer.closeDrawer(GravityCompat.START)
@@ -170,7 +194,7 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
         listView.setOnItemClickListener { adapter, view, position: Int, lpos ->
             val entry = listView.adapter.getItem(position) as ListEntry
             if (entry.isCollection()) {
-                presenter.setCollection(entry.getCollection().getName())
+                presenter.setCollection(entry.getCollection().getName(), isSubCollection = true)
             } else {
                 presenter.selectItem(entry.getItem())
             }
@@ -327,15 +351,6 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
         }
     }
 
-    override fun onBackPressed() {
-        if (!searchView.isIconified) {
-            searchView.isIconified = true
-            presenter.closeQuery()
-        } else {
-            super.onBackPressed()
-        }
-    }
-
     var progressBar: ProgressBar? = null
     override fun updateLibraryLoadingProgress(progress: Int, total: Int) {
         if (progressBar == null) {
@@ -348,7 +363,7 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
 
         progressBar?.progress = progress
         if (total == -1) {
-            progressBar?.isIndeterminate = false
+            progressBar?.isIndeterminate = true
             textView.text = "Starting to download your library."
         } else {
             progressBar?.max = total
@@ -389,6 +404,24 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
 
     override fun onNoteDelete(note: Note) {
         presenter.deleteNote(note)
+    }
+
+    private var doubleBackToExitPressedOnce = false
+    override fun onBackPressed() {
+        if (!searchView.isIconified) {
+            searchView.isIconified = true
+            presenter.closeQuery()
+        }
+
+        if (doubleBackToExitPressedOnce) {
+            super.onBackPressed()
+            return
+        }
+
+        this.doubleBackToExitPressedOnce = true
+        Toast.makeText(this, "Please click BACK again to exit", Toast.LENGTH_SHORT).show()
+
+        Handler().postDelayed(Runnable { doubleBackToExitPressedOnce = false }, 2000)
     }
 
     companion object {
