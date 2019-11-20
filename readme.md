@@ -1,4 +1,4 @@
-# Zoo for Zotero [![Build Status](https://travis-ci.org/mickstar/Zoo-For-Zotero.svg?branch=master)](https://travis-ci.org/mickstar/Zoo-For-Zotero)
+# Zoo for Zotero [![Build Status](https://travis-ci.org/mickstar/Zoo-For-Zotero.svg?branch=master)](https://travis-ci.org/mickstar/Zoo-For-Zotero) [![Codacy Badge](https://api.codacy.com/project/badge/Grade/80b55ec190444aab978050ad03a7b4b5)](https://www.codacy.com/manual/mickstar/Zoo-For-Zotero?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=mickstar/Zoo-For-Zotero&amp;utm_campaign=Badge_Grade)
 
 [<img src="https://play.google.com/intl/en_us/badges/images/generic/en_badge_web_generic.png" 
       alt="Download from Google Play" 
