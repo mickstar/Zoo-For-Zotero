@@ -74,6 +74,13 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
             .setIcon(R.drawable.baseline_description_24)
             .setCheckable(true)
 
+        sharedCollections = navigationView.menu.addSubMenu(
+            R.id.group_shared_collections,
+            Menu.NONE,
+            Menu.NONE,
+            "Group Libraries"
+        )
+
         val swipeRefresh = findViewById<SwipeRefreshLayout>(R.id.library_swipe_refresh)
         swipeRefresh.setOnRefreshListener(this)
     }
@@ -89,7 +96,7 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
     /* Shows a shared Collection (group) on the sidebar. */
     override fun addSharedCollection(groupInfo: GroupInfo) {
         val navigationView = findViewById<NavigationView>(R.id.nav_view_library)
-        navigationView.menu.add(
+        sharedCollections.add(
             R.id.group_shared_collections,
             Menu.NONE,
             Menu.NONE,

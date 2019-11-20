@@ -476,14 +476,29 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
     }
 
     override fun createNote(note: Note) {
+        firebaseAnalytics.logEvent("create_note", Bundle())
+        if (usingGroup) {
+            presenter.makeToastAlert("Sorry, this isn't supported in shared collections.")
+            return
+        }
         zoteroAPI.uploadNote(note)
     }
 
     override fun modifyNote(note: Note) {
+        firebaseAnalytics.logEvent("modify_note", Bundle())
+        if (usingGroup) {
+            presenter.makeToastAlert("Sorry, this isn't supported in shared collections.")
+            return
+        }
         zoteroAPI.modifyNote(note, zoteroDBPicker.getZoteroDB().getLibraryVersion())
     }
 
     override fun deleteNote(note: Note) {
+        firebaseAnalytics.logEvent("delete_note", Bundle())
+        if (usingGroup) {
+            presenter.makeToastAlert("Sorry, this isn't supported in shared collections.")
+            return
+        }
         zoteroAPI.deleteItem(note.key, note.version, object : DeleteItemListener {
             override fun success() {
                 presenter.makeToastAlert("Successfully deleted your note.")
@@ -570,6 +585,9 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                         "Error loading group data",
                         "Message: ${e.message}",
                         {})
+                    val bundle = Bundle()
+                    bundle.putString("error_message", e.message)
+                    firebaseAnalytics.logEvent("error_loading_group_data", bundle)
                 }
 
             })
