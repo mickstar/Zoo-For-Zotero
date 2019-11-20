@@ -10,11 +10,12 @@ Zoo for Zotero is an Android application for viewing zotero libraries.
 
 ## Features
   - Material Design
-  - Support for catalogs
-  - Allows for viewing of attached PDFs, with caching
+  - Support for organization via Collections, including subcollections
+  - Allows for viewing of attached PDFs, including via WebDAV
+  - Support for viewing Shared Libraries
+  - Supports the creating, editing and deleting Zotero's notes
   - Flexible searching of your library
-  - Fast, native android implementation
-  - Written in 100% kotlin using the MVP design pattern
+  - Written in Kotlin using the MVP design pattern for a fast native experience
   - Currently readonly, but have plans allow for editing in the future
   - Support for the Zotero Account Sync service with plans for cloudsharing providers in the future.
 
