@@ -25,9 +25,6 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
             model.loadGroup(it)
         }
 
-    override fun openGroup(itemId: Int) {
-        val group = groupsById[itemId]!!
-        model.loadGroup(group)
     }
 
     override fun displayGroupsOnActionBar(groups: List<GroupInfo>) {
@@ -35,10 +32,6 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
             Log.d("zotero", "got group ${groupInfo.name}")
             view.addSharedCollection(groupInfo)
         }
-    }
-
-    override fun containsGroupId(itemId: Int): Boolean {
-        return groupsById.containsKey(itemId)
     }
 
     override fun modifyNote(note: Note) {
@@ -269,3 +262,4 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
         return this.sortedWith(sortMethod).reversed()
     }
 }
+

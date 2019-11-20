@@ -10,13 +10,11 @@ import android.util.Log
 import androidx.core.content.FileProvider
 import com.google.firebase.analytics.FirebaseAnalytics
 import com.mickstarify.zooforzotero.PreferenceManager
-import com.mickstarify.zooforzotero.SortMethod
 import com.mickstarify.zooforzotero.SyncSetup.AuthenticationStorage
 import com.mickstarify.zooforzotero.ZoteroAPI.*
 import com.mickstarify.zooforzotero.ZoteroAPI.Database.GroupInfo
 import com.mickstarify.zooforzotero.ZoteroAPI.Database.ZoteroDatabase
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Collection
-import com.mickstarify.zooforzotero.ZoteroAPI.Model.GroupPojo
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Item
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Note
 import io.reactivex.MaybeObserver
@@ -81,15 +79,6 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
         return false
     }
 
-    val sortMethod = compareBy<Item> {
-        when (preferences.getSortMethod()) {
-            SortMethod.TITLE -> it.getTitle().toLowerCase(Locale.getDefault())
-            SortMethod.DATE -> it.getSortableDateString()
-            SortMethod.AUTHOR -> it.getAuthor().toLowerCase(Locale.getDefault())
-            SortMethod.DATE_ADDED -> it.getSortableDateAddedString()
-        }
-    }.thenBy { it.getTitle().toLowerCase(Locale.getDefault()) }
-
     override fun isLoaded(): Boolean {
         return zoteroDBPicker.getZoteroDB().isPopulated()
     }
@@ -117,17 +106,27 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
         return newItems
     }
 
+    override fun getGroupByTitle(groupTitle: String): GroupInfo? {
+        return this.groups?.filter { it.name == groupTitle }?.firstOrNull()
+    }
+
     override fun getLibraryItems(): List<Item> {
-        return filterItems(zoteroDBPicker.getZoteroDB().getDisplayableItems()).sortedWith(sortMethod)
+        return filterItems(zoteroDBPicker.getZoteroDB().getDisplayableItems())
     }
 
     override fun getItemsFromCollection(collectionName: String): List<Item> {
         val collectionKey = zoteroDBPicker.getZoteroDB().getCollectionId(collectionName)
         if (collectionKey != null) {
             val items = zoteroDBPicker.getZoteroDB().getItemsFromCollection(collectionKey)
-            return filterItems(items).sortedWith(sortMethod)
+            return filterItems(items)
         }
-        throw (Exception("Error, could not find collection with name ${collectionName}"))
+        presenter.makeToastAlert("Error, could not open collection: $collectionName Try Refreshing your Library.")
+        val bundle = Bundle()
+        bundle.putBoolean("collections_is_null", zoteroDBPicker.getZoteroDB().collections == null)
+        bundle.putBoolean("is_populated", zoteroDBPicker.getZoteroDB().isPopulated())
+        bundle.putString("collection_name", collectionName)
+        firebaseAnalytics.logEvent("error_getting_subcollections_get_items", bundle)
+        return LinkedList()
     }
 
     override fun getSubCollections(collectionName: String): List<Collection> {
@@ -135,7 +134,13 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
         if (collectionKey != null) {
             return zoteroDBPicker.getZoteroDB().getSubCollectionsFor(collectionKey)
         }
-        throw (Exception("Error, could not find collection with name ${collectionName}"))
+        presenter.makeToastAlert("Error, could not open collection: $collectionName Try Refreshing your Library.")
+        val bundle = Bundle()
+        bundle.putBoolean("collection_is_null", zoteroDBPicker.getZoteroDB().collections == null)
+        bundle.putBoolean("is_populated", zoteroDBPicker.getZoteroDB().isPopulated())
+        bundle.putString("collection_name", collectionName)
+        firebaseAnalytics.logEvent("error_getting_subcollections_get_sub", bundle)
+        return LinkedList()
     }
 
 
@@ -321,7 +326,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
     private fun finishGetCollections() {
         if (zoteroDBPicker.getZoteroDB().collections != null) {
             loadingCollections = false
-            if (!loadingItems) {
+            if (zoteroDBPicker.getZoteroDB().items != null) {
                 finishLoading()
             }
         }
@@ -330,7 +335,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
     private fun finishGetItems() {
         if (zoteroDBPicker.getZoteroDB().items != null) {
             loadingItems = false
-            if (!loadingCollections) {
+            if (zoteroDBPicker.getZoteroDB().collections != null) {
                 finishLoading()
             }
         }
@@ -402,7 +407,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
 
         } ?: LinkedList()
 
-        items.sortedWith(sortMethod)
+        items
 
         return items
     }
@@ -418,7 +423,9 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
 
         zoteroAPI.downloadItem(context,
             item,
-            object : ZoteroAPIDownloadAttachmentListener {
+            usingGroup,
+            groupID = (currentGroup?.id ?: 0),
+            listener = object : ZoteroAPIDownloadAttachmentListener {
                 override fun receiveTask(task: Future<Unit>) {
                     this@LibraryActivityModel.task = task
                     // we have to check if the user has stopped the download before this task has come back.
@@ -460,9 +467,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
             Log.e("zotero", "error zoteroDB not populated!")
             return LinkedList()
         }
-        return filterItems(zoteroDBPicker.getZoteroDB().getItemsWithoutCollection()).sortedWith(
-            sortMethod
-        )
+        return filterItems(zoteroDBPicker.getZoteroDB().getItemsWithoutCollection())
     }
 
     override fun cancelAttachmentDownload() {
@@ -575,7 +580,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
         groupsObserver.subscribeOn(Schedulers.io())
             .observeOn(Schedulers.io())
             .unsubscribeOn(Schedulers.io())
-            .subscribe(object : Observer<List<GroupPojo>> {
+            .subscribe(object : Observer<List<GroupInfo>> {
                 override fun onComplete() {
                     Log.d("zotero", "completed getting group info")
                     displayGroupsOnUI()
@@ -585,25 +590,10 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                     Log.d("zotero", "subscribed to group info")
                 }
 
-                override fun onNext(groupInfoPOJO: List<GroupPojo>) {
-                    val groupInfo = groupInfoPOJO.map { groupPojo ->
-                        GroupInfo(
-                            id = groupPojo.groupData.id,
-                            version = groupPojo.version,
-                            name = groupPojo.groupData.name,
-                            description = groupPojo.groupData.description,
-                            fileEditing = groupPojo.groupData.fileEditing,
-                            libraryEditing = groupPojo.groupData.libraryEditing,
-                            libraryReading = groupPojo.groupData.libraryReading,
-                            owner = groupPojo.groupData.owner,
-                            type = groupPojo.groupData.type,
-                            url = groupPojo.groupData.url
-                        )
-                    }
-
+                override fun onNext(groupInfo: List<GroupInfo>) {
                     groupInfo.forEach { groupInfo ->
                         val status = zoteroDatabase.addGroup(groupInfo)
-                        status.blockingAwait()
+                        status.blockingAwait() // wait until the db add is finished.
                     }
                 }
 
@@ -704,8 +694,8 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                     } else {
                         presenter.createErrorAlert(
                             "Error downloading Group Collections",
-                            "Message: ${e}",
-                            {})
+                            "Message: ${e}"
+                        ) {}
 
                         if (db.hasStorage()) {
                             db.loadCollectionsFromStorage()

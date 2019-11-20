@@ -11,7 +11,7 @@ import java.util.zip.ZipFile
 
 class Webdav(address: String, val username: String, val password: String) {
     var sardine: Sardine = OkHttpSardine()
-    lateinit var address: String
+    var address: String
     fun testConnection(): Boolean {
         return sardine.exists(address)
     }

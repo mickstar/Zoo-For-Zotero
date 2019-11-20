@@ -52,9 +52,7 @@ interface Contract {
         fun deleteNote(note: Note)
         fun refreshItemView()
         fun displayGroupsOnActionBar(groups: List<GroupInfo>)
-        fun setGroupId(itemId: Int, groupInfo: GroupInfo)
-        fun containsGroupId(itemId: Int): Boolean
-        fun openGroup(itemId: Int)
+        fun openGroup(itemId: String)
     }
 
     interface Model {
@@ -83,5 +81,6 @@ interface Contract {
         fun getUnfiledItems(): List<Item>
         fun loadGroup(group: GroupInfo)
         fun usePersonalLibrary()
+        fun getGroupByTitle(groupTitle: String): GroupInfo?
     }
 }
