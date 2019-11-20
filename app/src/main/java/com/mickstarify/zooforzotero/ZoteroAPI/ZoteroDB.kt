@@ -286,7 +286,7 @@ class ZoteroDB(val context: Context, val prefix: String = "") {
     }
 
     fun getCollectionId(collectionName: String): String? {
-        return this.collections?.filter { it.getName() == collectionName }?.getOrNull(0)?.key
+        return this.collections?.filter { it.getName() == collectionName }?.firstOrNull()?.key
     }
 
     fun getSubCollectionsFor(collectionKey: String): List<Collection> {

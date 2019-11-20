@@ -80,17 +80,16 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
 
 
     override fun addNavigationEntry(collection: Collection, parent: String) {
-        val item =
-            collectionsMenu.add(R.id.group_collections, Menu.NONE, Menu.NONE, collection.getName())
-                .setIcon(R.drawable.ic_folder_black_24dp)
-                .setCheckable(true)
+        collectionsMenu.add(R.id.group_collections, Menu.NONE, Menu.NONE, collection.getName())
+            .setIcon(R.drawable.ic_folder_black_24dp)
+            .setCheckable(true)
 
     }
 
     /* Shows a shared Collection (group) on the sidebar. */
     override fun addSharedCollection(groupInfo: GroupInfo) {
         val navigationView = findViewById<NavigationView>(R.id.nav_view_library)
-        val item = navigationView.menu.add(
+        navigationView.menu.add(
             R.id.group_shared_collections,
             Menu.NONE,
             Menu.NONE,
@@ -98,7 +97,6 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
         )
             .setIcon(R.drawable.ic_folder_black_24dp)
             .setCheckable(true)
-        presenter.setGroupId(item.itemId, groupInfo)
     }
 
     override fun clearSidebar() {
@@ -131,6 +129,7 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
         }
         return super.onOptionsItemSelected(item)
     }
+
     lateinit var searchView: SearchView
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         menuInflater.inflate(R.menu.activity_library_actionbar, menu)
@@ -176,7 +175,7 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
         } else if (item.title == "Unfiled Items") {
             presenter.setCollection("unfiled_items")
         } else if (item.groupId == R.id.group_shared_collections) {
-            presenter.openGroup(item.itemId)
+            presenter.openGroup(item.title.toString())
         } else if (item.groupId == R.id.group_collections) {
             presenter.setCollection("${item.title}", isSubCollection = false)
         } else {
@@ -188,10 +187,15 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
     }
 
     override fun populateEntries(entries: List<ListEntry>) {
+        if (entries.size == 0) {
+            this.showEmptyList()
+            return
+        }
+
         val listView: ListView = findViewById(R.id.library_listview)
         listView.adapter = ZoteroItemListAdapter(this, entries)
 
-        listView.setOnItemClickListener { adapter, view, position: Int, lpos ->
+        listView.setOnItemClickListener { _, _, position: Int, _ ->
             val entry = listView.adapter.getItem(position) as ListEntry
             if (entry.isCollection()) {
                 presenter.setCollection(entry.getCollection().getName(), isSubCollection = true)
@@ -300,7 +304,7 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
         if (progressDialog == null) {
             progressDialog = ProgressDialog(this)
             progressDialog?.setTitle("Downloading File")
-            progressDialog?.setButton("Cancel") { dialogInterface, i ->
+            progressDialog?.setButton("Cancel") { dialogInterface, _ ->
                 presenter.cancelAttachmentDownload()
             }
         }
@@ -343,7 +347,7 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        Log.d(packageName, "got intent ${intent.action}")
+        Log.d(packageName, "got intent ${intent.action} ${intent.toString()}")
         if (intent.action == ACTION_FILTER) {
             val query = intent.getStringExtra(EXTRA_QUERY) ?: ""
             Log.d(packageName, "got intent for library filter $query")
@@ -373,6 +377,10 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
         progressBar?.isActivated = true
     }
 
+    fun showEmptyList() {
+        showLibraryContentDisplay(message = "This catalog is empty. If you believe this is an error please refresh your library.")
+    }
+
     override fun showLibraryContentDisplay(message: String) {
         val constraintLayout = findViewById<ConstraintLayout>(R.id.constraintLayout_library_content)
         constraintLayout.visibility = View.VISIBLE
@@ -387,6 +395,8 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
     override fun hideLibraryContentDisplay() {
         val constraintLayout = findViewById<ConstraintLayout>(R.id.constraintLayout_library_content)
         constraintLayout.visibility = View.GONE
+        progressBar?.visibility = View.GONE
+        progressBar = null
     }
 
     override fun onResume() {

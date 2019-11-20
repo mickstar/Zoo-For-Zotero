@@ -53,6 +53,13 @@ interface ZoteroAPIService {
         @Query("start") index: Int
     ): Observable<Response<List<Collection>>>
 
+    @Streaming
+    @GET("groups/{groupID}/items/{itemKey}/file")
+    fun getAttachmentFileFromGroup(
+        @Path("groupID") user: Int,
+        @Path("itemKey") itemKey: String
+    ): Call<ResponseBody>
+
     @GET("keys/{key}")
     fun getKeyInfo(
         @Path("key") key: String

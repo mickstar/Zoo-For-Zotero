@@ -6,6 +6,7 @@ import com.google.common.hash.Hashing
 import com.google.common.io.Files
 import com.mickstarify.zooforzotero.BuildConfig
 import com.mickstarify.zooforzotero.PreferenceManager
+import com.mickstarify.zooforzotero.ZoteroAPI.Database.GroupInfo
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.*
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Collection
 import io.reactivex.Observable
@@ -148,6 +149,8 @@ class ZoteroAPI(
     fun downloadItem(
         context: Context,
         item: Item,
+        useGroup: Boolean,
+        groupID: Int = 0,
         listener: ZoteroAPIDownloadAttachmentListener
     ) {
         if (item.getItemType() != "attachment") {
@@ -161,14 +164,19 @@ class ZoteroAPI(
         }
 
         val preferenceManager = PreferenceManager(context)
-        if (preferenceManager.isWebDAVEnabled()) {
+        // we will delegate to a webdav download if the user has webdav enabled.
+        // When the user has webdav enabled on personal account or for groups are the only two conditions.
+        if ((!useGroup && preferenceManager.isWebDAVEnabled()) || (useGroup && preferenceManager.isWebDAVEnabledForGroups())) {
             return downloadItemWithWebDAV(context, item, listener)
             //stops here.
         }
 
         val zoteroAPI = buildZoteroAPI(useCaching = false, libraryVersion = -1)
-
-        val call: Call<ResponseBody> = zoteroAPI.getItemFile(userID, item.ItemKey)
+        val call: Call<ResponseBody> = if (useGroup) {
+            zoteroAPI.getAttachmentFileFromGroup(groupID, item.ItemKey)
+        } else {
+            zoteroAPI.getItemFile(userID, item.ItemKey)
+        }
         call.enqueue(object : Callback<ResponseBody> {
             override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
 
@@ -211,7 +219,7 @@ class ZoteroAPI(
 
                         onComplete {
                             outputFileStream.close()
-                            inputStream?.close()
+                            inputStream.close()
                             if (failure == false) {
                                 listener.onComplete(outputFile)
                             }
@@ -674,10 +682,25 @@ class ZoteroAPI(
         return observable
     }
 
-    fun getGroupInfo(): Observable<List<GroupPojo>> {
+    fun getGroupInfo(): Observable<List<GroupInfo>> {
         val service = buildZoteroAPI(true, -1)
         val groupInfo = service.getGroupInfo(userID)
-        return groupInfo
+        return groupInfo.map {
+            it.map { groupPojo ->
+                GroupInfo(
+                    id = groupPojo.groupData.id,
+                    version = groupPojo.version,
+                    name = groupPojo.groupData.name,
+                    description = groupPojo.groupData.description,
+                    fileEditing = groupPojo.groupData.fileEditing,
+                    libraryEditing = groupPojo.groupData.libraryEditing,
+                    libraryReading = groupPojo.groupData.libraryReading,
+                    owner = groupPojo.groupData.owner,
+                    type = groupPojo.groupData.type,
+                    url = groupPojo.groupData.url
+                )
+            }
+        }
     }
 
     fun uploadPDF(parent: Item, attachment: File) {
