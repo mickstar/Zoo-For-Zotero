@@ -57,6 +57,32 @@ class LibraryFilterMenuDialog(val context: Context, val onFilterChange: (() -> (
         return context.resources.getTextArray(R.array.sort_options_entries)[i].toString()
     }
 
+    var sortingOrderButton: Button? = null
+
+    fun setSortButtonAscending() {
+        sortingOrderButton?.apply {
+            this.hint = "Sort ascendingly"
+            this.setCompoundDrawablesWithIntrinsicBounds(
+                context.getDrawable(R.drawable.ic_arrow_upward_24px),
+                null,
+                null,
+                null
+            )
+        }
+    }
+
+    fun setSortButtonDescending() {
+        sortingOrderButton?.apply {
+            this.hint = "Sort descendingly"
+            this.setCompoundDrawablesWithIntrinsicBounds(
+                context.getDrawable(R.drawable.ic_arrow_downward_24px),
+                null,
+                null,
+                null
+            )
+        }
+    }
+
     fun show() {
         val dialogBuilder = AlertDialog.Builder(context).create()
         val inflater = context.layoutInflater
@@ -94,6 +120,23 @@ class LibraryFilterMenuDialog(val context: Context, val onFilterChange: (() -> (
         submitButton.onClick {
             saveSettings(checkbox_show_only_notes.isChecked, checkbox_show_only_pdf.isChecked)
             dialogBuilder.dismiss()
+        }
+
+        sortingOrderButton = dialogView.findViewById<Button>(R.id.button_sort_order)
+        if (preferences.isSortedAscendingly()) {
+            setSortButtonAscending()
+        } else {
+            setSortButtonDescending()
+        }
+
+        sortingOrderButton?.onClick {
+            if (preferences.isSortedAscendingly()) {
+                setSortButtonDescending()
+                preferences.setSortDirection(PreferenceManager.SORT_METHOD_DESCENDING)
+            } else {
+                setSortButtonAscending()
+                preferences.setSortDirection(PreferenceManager.SORT_METHOD_ASCENDING)
+            }
         }
 
 
