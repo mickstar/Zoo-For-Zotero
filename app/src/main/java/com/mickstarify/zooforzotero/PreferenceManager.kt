@@ -1,6 +1,7 @@
 package com.mickstarify.zooforzotero
 
 import android.content.Context
+import android.util.Log
 import org.jetbrains.anko.defaultSharedPreferences
 
 enum class SortMethod {
@@ -12,7 +13,6 @@ enum class SortMethod {
 
 class PreferenceManager(context: Context) {
     val sharedPreferences = context.defaultSharedPreferences
-
 
     fun setSortMethod(method: String) {
         val sortMethod = stringToSortMethod(method)
@@ -60,6 +60,32 @@ class PreferenceManager(context: Context) {
             "DATE_ADDED" -> SortMethod.DATE_ADDED
             else -> SortMethod.TITLE
         }
+    }
+
+    fun isSortedAscendingly(): Boolean {
+        /* We will define ascending as going from smallest to largest. As such, A-Z will be defined
+        * as ascending and  Z-A will be descending.
+        * Similarly, Ascending will refer to older dates to newer ones.
+        * Ascending will be represented as an up arrow.*/
+        val direction = sharedPreferences.getString("SORT_DIRECTION", "DEFAULT")
+        return when (direction) {
+            SORT_METHOD_ASCENDING -> true
+            SORT_METHOD_DESCENDING -> false
+            else -> true // ascending will be default.
+        }
+    }
+
+    fun setSortDirection(direction: String) {
+        if (direction != SORT_METHOD_DESCENDING && direction != SORT_METHOD_ASCENDING) {
+            Log.e(
+                "zotero",
+                "got request to change sort method to $direction which is not understood"
+            )
+            return
+        }
+        val editor = sharedPreferences.edit()
+        editor.putString("SORT_DIRECTION", direction)
+        editor.apply()
     }
 
     fun getIsShowingOnlyPdfs(): Boolean {
@@ -116,6 +142,15 @@ class PreferenceManager(context: Context) {
 
     fun isWebDAVEnabled(): Boolean {
         return sharedPreferences.getBoolean("use_webdav", false)
+    }
+
+    fun isWebDAVEnabledForGroups(): Boolean {
+        return sharedPreferences.getBoolean("use_webdav_shared_libraries", false)
+    }
+
+    companion object {
+        val SORT_METHOD_ASCENDING = "ASCENDING"
+        val SORT_METHOD_DESCENDING = "DESCENDING"
     }
 
 }

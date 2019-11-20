@@ -2,19 +2,28 @@ package com.mickstarify.zooforzotero.LibraryActivity
 
 import android.content.Context
 import android.util.Log
+import com.mickstarify.zooforzotero.SortMethod
 import com.mickstarify.zooforzotero.ZoteroAPI.Database.GroupInfo
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Collection
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Item
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Note
 import java.io.File
 import java.util.*
-import kotlin.collections.HashMap
 
 class LibraryActivityPresenter(val view: Contract.View, context: Context) : Contract.Presenter {
-    val groupsById = HashMap<Int, GroupInfo>()
-    override fun setGroupId(itemId: Int, groupInfo: GroupInfo) {
-        groupsById[itemId] = groupInfo
-    }
+    val sortMethod = compareBy<Item> {
+        when (model.preferences.getSortMethod()) {
+            SortMethod.TITLE -> it.getTitle().toLowerCase(Locale.getDefault())
+            SortMethod.DATE -> it.getSortableDateString()
+            SortMethod.AUTHOR -> it.getAuthor().toLowerCase(Locale.getDefault())
+            SortMethod.DATE_ADDED -> it.getSortableDateAddedString()
+        }
+    }.thenBy { it.getTitle().toLowerCase(Locale.getDefault()) }
+
+    override fun openGroup(groupTitle: String) {
+        model.getGroupByTitle(groupTitle)?.also {
+            model.loadGroup(it)
+        }
 
     override fun openGroup(itemId: Int) {
         val group = groupsById[itemId]!!
@@ -77,7 +86,7 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
             return
         }
         val collections = model.filterCollections(query)
-        val items = model.filterItems(query)
+        val items = model.filterItems(query).sort()
 
         val entries = LinkedList<ListEntry>()
         entries.addAll(collections.sortedBy { it.getName().toLowerCase(Locale.getDefault()) }
@@ -165,7 +174,7 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
 
     override fun setCollection(collectionName: String, isSubCollection: Boolean) {
         if (!model.isLoaded()) {
-            Log.d("zotero", "tried to change collection before fully loaded!")
+            Log.e("zotero", "tried to change collection before fully loaded!")
             return
         }
         if (!isSubCollection) {
@@ -176,12 +185,12 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
         model.currentCollection = collectionName
         if (collectionName == "all" && model.usingGroup == false) {
             view.setTitle("My Library")
-            val entries = model.getLibraryItems().map { ListEntry(it) }
+            val entries = model.getLibraryItems().sort().map { ListEntry(it) }
             model.isDisplayingItems = entries.size > 0
             view.populateEntries(entries)
         } else if (collectionName == "unfiled_items") {
             view.setTitle("Unfiled Items")
-            val entries = model.getUnfiledItems().map { ListEntry(it) }
+            val entries = model.getUnfiledItems().sort().map { ListEntry(it) }
             model.isDisplayingItems = entries.size > 0
             view.populateEntries(entries)
         } else if (collectionName == "group_all" && model.usingGroup) {
@@ -192,7 +201,7 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
             }.sortedBy {
                 it.getName().toLowerCase(Locale.getDefault())
             }.map { ListEntry(it) })
-            entries.addAll(model.getLibraryItems().map { ListEntry(it) })
+            entries.addAll(model.getLibraryItems().sort().map { ListEntry(it) })
             model.isDisplayingItems = entries.size > 0
             view.populateEntries(entries)
         }
@@ -203,7 +212,8 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
             entries.addAll(model.getSubCollections(collectionName).sortedBy {
                 it.getName().toLowerCase(Locale.getDefault())
             }.map { ListEntry(it) })
-            entries.addAll(model.getItemsFromCollection(collectionName).map { ListEntry(it) })
+
+            entries.addAll(model.getItemsFromCollection(collectionName).sort().map { ListEntry(it) })
             model.isDisplayingItems = entries.size > 0
             view.populateEntries(entries)
         }
@@ -250,5 +260,12 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
             model.loadItemsLocally()
             model.loadGroups()
         }
+    }
+
+    private fun List<Item>.sort(): List<Item> {
+        if (model.preferences.isSortedAscendingly()) {
+            return this.sortedWith(sortMethod)
+        }
+        return this.sortedWith(sortMethod).reversed()
     }
 }
