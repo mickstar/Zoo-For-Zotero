@@ -198,7 +198,7 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
             this.showEmptyList()
             return
         }
-
+        this.hideLibraryContentDisplay()
         val listView: ListView = findViewById(R.id.library_listview)
         listView.adapter = ZoteroItemListAdapter(this, entries)
 

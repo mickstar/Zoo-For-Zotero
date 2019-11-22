@@ -166,10 +166,13 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
     }
 
     override fun setCollection(collectionName: String, isSubCollection: Boolean) {
+        /*SetCollection is the method used to display items on the listView. It
+        * has to get the data, then sort it, then provide it to the view.*/
         if (!model.isLoaded()) {
             Log.e("zotero", "tried to change collection before fully loaded!")
             return
         }
+        // this check covers if the user has just left their group library from the sidemenu.
         if (!isSubCollection) {
             model.usePersonalLibrary()
         }
