@@ -32,18 +32,19 @@ import java.util.concurrent.TimeUnit
 class LibraryActivityModel(private val presenter: Contract.Presenter, val context: Context) :
     Contract.Model {
 
-    // stores the current item being viewed by the user. (useful for refreshing the view)
-    var selectedItem: Item? = null
+    private var itemsDownloadAttempt = 0
+    private var collectionsDownloadAttempt = 0
+
     // just a flag to store whether we have shown the user a network error so that we don't
     // do it twice (from getCatalog & getItems
-    private var shownNetworkError: Boolean = false
-    var currentCollection: String = "unset"
+    var shownNetworkError: Boolean = false
+
+    // stores the current item being viewed by the user. (useful for refreshing the view)
+    var selectedItem: Item? = null
+    var isDisplayingItems = false
 
     var loadingItems = false
     var loadingCollections = false
-
-    private var itemsDownloadAttempt = 0
-    private var collectionsDownloadAttempt = 0
 
     private var firebaseAnalytics: FirebaseAnalytics
 
@@ -53,16 +54,16 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
     private val zoteroDatabase = ZoteroDatabase(context)
     private var groups: List<GroupInfo>? = null
 
-    var isDisplayingItems = false
-
     val preferences = PreferenceManager(context)
 
+    val state = LibraryModelState()
+
     override fun refreshLibrary() {
-        if (!usingGroup) {
+        if (!state.usingGroup) {
             this.requestItems(useCaching = true)
             this.requestCollections(useCaching = true)
         } else {
-            this.loadGroup(currentGroup!!, refresh = true)
+            this.loadGroup(state.currentGroup!!, refresh = true)
         }
     }
 
@@ -344,7 +345,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
     private fun finishLoading() {
         presenter.hideLibraryLoadingAnimation()
         presenter.receiveCollections(getCollections())
-        if (currentCollection == "unset") {
+        if (state.currentCollection == "unset") {
             presenter.setCollection("all")
         } else {
             presenter.redisplayItems()
@@ -407,8 +408,6 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
 
         } ?: LinkedList()
 
-        items
-
         return items
     }
 
@@ -423,8 +422,8 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
 
         zoteroAPI.downloadItem(context,
             item,
-            usingGroup,
-            groupID = (currentGroup?.id ?: 0),
+            state.usingGroup,
+            groupID = (state.currentGroup?.id ?: 0),
             listener = object : ZoteroAPIDownloadAttachmentListener {
                 override fun receiveTask(task: Future<Unit>) {
                     this@LibraryActivityModel.task = task
@@ -477,7 +476,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
 
     override fun createNote(note: Note) {
         firebaseAnalytics.logEvent("create_note", Bundle())
-        if (usingGroup) {
+        if (state.usingGroup) {
             presenter.makeToastAlert("Sorry, this isn't supported in shared collections.")
             return
         }
@@ -486,7 +485,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
 
     override fun modifyNote(note: Note) {
         firebaseAnalytics.logEvent("modify_note", Bundle())
-        if (usingGroup) {
+        if (state.usingGroup) {
             presenter.makeToastAlert("Sorry, this isn't supported in shared collections.")
             return
         }
@@ -495,7 +494,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
 
     override fun deleteNote(note: Note) {
         firebaseAnalytics.logEvent("delete_note", Bundle())
-        if (usingGroup) {
+        if (state.usingGroup) {
             presenter.makeToastAlert("Sorry, this isn't supported in shared collections.")
             return
         }
@@ -611,8 +610,8 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                 }
 
                 override fun onNext(groupInfo: List<GroupInfo>) {
-                    groupInfo.forEach { groupInfo ->
-                        val status = zoteroDatabase.addGroup(groupInfo)
+                    groupInfo.forEach {
+                        val status = zoteroDatabase.addGroup(it)
                         status.blockingAwait() // wait until the db add is finished.
                     }
                 }
@@ -641,7 +640,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
         }
 
         val modifiedSince = if (db.hasStorage()) {
-            db.getLibraryVersion() as Int
+            db.getLibraryVersion()
         } else {
             -1
         }
@@ -746,24 +745,37 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
             })
     }
 
-    var usingGroup: Boolean = false
-    var currentGroup: GroupInfo? = null
-
     private fun finishLoadingGroups(group: GroupInfo) {
         loadingItems = false
         loadingCollections = false
         presenter.hideLibraryLoadingAnimation()
-        usingGroup = true
-        currentGroup = group
+        state.usingGroup = true
+        state.currentGroup = group
         zoteroDBPicker.groupId = group.id
-        this.currentCollection = "group_all"
+        state.currentCollection = "group_all"
         presenter.redisplayItems()
     }
 
     override fun usePersonalLibrary() {
-        usingGroup = false
-        currentGroup = null
+        state.usingGroup = false
+        state.currentGroup = null
         this.zoteroDBPicker.stopGroup()
+    }
+
+    fun getCurrentCollection(): String {
+        return state.currentCollection
+    }
+
+    fun setCurrentCollection(collectionName: String) {
+        state.currentCollection = collectionName
+    }
+
+    fun isUsingGroups(): Boolean {
+        return state.usingGroup
+    }
+
+    fun getCurrentGroup(): GroupInfo {
+        return state.currentGroup ?: throw Exception("Error there is no current Group.")
     }
 
     init {

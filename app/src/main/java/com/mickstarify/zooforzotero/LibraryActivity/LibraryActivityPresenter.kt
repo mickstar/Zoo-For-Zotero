@@ -50,8 +50,8 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
 
     override fun redisplayItems() {
         if (model.isLoaded()) {
-            if (model.currentCollection != "unset") {
-                setCollection(model.currentCollection, isSubCollection = true)
+            if (model.getCurrentCollection() != "unset") {
+                setCollection(model.getCurrentCollection(), isSubCollection = true)
             }
         }
     }
@@ -70,7 +70,7 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
     }
 
     override fun closeQuery() {
-        this.setCollection(model.currentCollection)
+        this.setCollection(model.getCurrentCollection())
     }
 
     override fun filterEntries(query: String) {
@@ -178,8 +178,8 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
         }
 
         Log.d("zotero", "Got request to change collection to ${collectionName}")
-        model.currentCollection = collectionName
-        if (collectionName == "all" && model.usingGroup == false) {
+        model.setCurrentCollection(collectionName)
+        if (collectionName == "all" && !model.isUsingGroups()) {
             view.setTitle("My Library")
             val entries = model.getLibraryItems().sort().map { ListEntry(it) }
             model.isDisplayingItems = entries.size > 0
@@ -189,8 +189,8 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
             val entries = model.getUnfiledItems().sort().map { ListEntry(it) }
             model.isDisplayingItems = entries.size > 0
             view.populateEntries(entries)
-        } else if (collectionName == "group_all" && model.usingGroup) {
-            view.setTitle(model.currentGroup!!.name)
+        } else if (collectionName == "group_all" && model.isUsingGroups()) {
+            view.setTitle(model.getCurrentGroup()!!.name)
             val entries = LinkedList<ListEntry>()
             entries.addAll(model.getCollections().filter {
                 !it.hasParent()
