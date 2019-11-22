@@ -3,6 +3,7 @@ package com.mickstarify.zooforzotero.SyncSetup
 import android.content.Intent
 import android.os.Bundle
 import android.text.InputType
+import android.util.Log
 import android.widget.Button
 import android.widget.EditText
 import android.widget.RadioGroup
@@ -14,6 +15,7 @@ import com.mickstarify.zooforzotero.SyncSetup.ZoteroAPISetup.ZoteroAPISetup
 
 class SyncSetupView : AppCompatActivity(), SyncSetupContract.View {
     override fun createAlertDialog(title: String, message: String) {
+        Log.e("zotero", "got error $title - $message")
         val alert = AlertDialog.Builder(this)
         alert.setIcon(R.drawable.ic_error_black_24dp)
         alert.setTitle(title)

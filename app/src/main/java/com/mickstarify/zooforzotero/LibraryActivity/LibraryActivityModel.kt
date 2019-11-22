@@ -594,6 +594,8 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
     }
 
     fun loadGroups() {
+        /* This method loads a list of groups. It does not deal with getting items or catalogs. */
+
         val groupsObserver = zoteroAPI.getGroupInfo()
         groupsObserver.subscribeOn(Schedulers.io())
             .observeOn(Schedulers.io())
@@ -622,11 +624,18 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
     }
 
     override fun loadGroup(group: GroupInfo) {
+        /* This gets the items/catalogs for a group and does the respective callbacks to display the group.*/
+
         loadingItems = true
         loadingCollections = true
 
         /* This method beings the network calls to download all items related to the user group. */
         val db = zoteroGroupDB.getGroup(group.id)
+        if (db.isPopulated()) {
+            // user has already loaded this group so we just need to display it.
+            finishLoadingGroups(group)
+            return
+        }
 
         val modifiedSince = if (db.hasStorage()) {
             db.getLibraryVersion() as Int
