@@ -62,7 +62,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
             this.requestItems(useCaching = true)
             this.requestCollections(useCaching = true)
         } else {
-            this.loadGroup(currentGroup!!)
+            this.loadGroup(currentGroup!!, refresh = true)
         }
     }
 
@@ -623,7 +623,10 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
             })
     }
 
-    override fun loadGroup(group: GroupInfo) {
+    override fun loadGroup(
+        group: GroupInfo,
+        refresh: Boolean
+    ) {
         /* This gets the items/catalogs for a group and does the respective callbacks to display the group.*/
 
         loadingItems = true
@@ -631,7 +634,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
 
         /* This method beings the network calls to download all items related to the user group. */
         val db = zoteroGroupDB.getGroup(group.id)
-        if (db.isPopulated()) {
+        if (refresh == false && db.isPopulated()) {
             // user has already loaded this group so we just need to display it.
             finishLoadingGroups(group)
             return
@@ -656,7 +659,15 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                         "zotero",
                         "got ${this.items.size} many items in group. lv=$libraryVersion"
                     )
-                    db.items = items
+                    if (modifiedSince == -1) {
+                        // these are all brand new items
+                        db.items = items
+                    } else {
+                        //otherwise we just have changes and need to apply them.
+                        db.loadItemsFromStorage()
+                        db.applyChangesToItems(items)
+                        presenter.makeToastAlert("Updated ${items.size} items.")
+                    }
                     db.setItemsVersion(libraryVersion)
                     db.commitItemsToStorage()
                     if (db.collections != null) {

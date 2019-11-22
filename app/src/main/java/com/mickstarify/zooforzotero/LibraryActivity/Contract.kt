@@ -79,7 +79,7 @@ interface Contract {
         fun uploadAttachment(parent: Item, attachment: File)
         fun updateAttachment(item: Item, attachment: File)
         fun getUnfiledItems(): List<Item>
-        fun loadGroup(group: GroupInfo)
+        fun loadGroup(group: GroupInfo, refresh: Boolean = false)
         fun usePersonalLibrary()
         fun getGroupByTitle(groupTitle: String): GroupInfo?
     }
