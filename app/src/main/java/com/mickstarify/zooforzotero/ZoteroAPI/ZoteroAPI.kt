@@ -589,6 +589,7 @@ class ZoteroAPI(
                             throw(UpToDateException("304. Already Downloaded."))
                         }
                         itemCount += response.items.size
+                        // initial emit of items
                         emitter.onNext(
                             ZoteroAPIItemsResponse(
                                 false,
@@ -597,6 +598,7 @@ class ZoteroAPI(
                                 response.totalResults
                             )
                         )
+                        // then if there is more items, we will need to continue to download.
                         if (itemCount < response.totalResults) {
                             val s = getItemsFromGroup(
                                 groupID,
@@ -604,9 +606,28 @@ class ZoteroAPI(
                                 modificationSinceVersion,
                                 itemCount
                             )
-                            s.blockingForEach(Consumer { t -> emitter.onNext(t) })
+                            s.subscribe(object : Observer<ZoteroAPIItemsResponse> {
+                                override fun onComplete() {
+                                    emitter.onComplete()
+                                }
+
+                                override fun onSubscribe(d: Disposable) {
+                                    // nothing
+                                }
+
+                                override fun onNext(t: ZoteroAPIItemsResponse) {
+                                    emitter.onNext(t)
+                                }
+
+                                override fun onError(e: Throwable) {
+                                    emitter.onError(e)
+                                }
+
+                            })
+                        } else {
+                            // otherwise we can finish.
+                            emitter.onComplete()
                         }
-                        emitter.onComplete()
                     }
 
                     override fun onError(e: Throwable) {
