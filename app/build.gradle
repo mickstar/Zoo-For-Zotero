@@ -59,6 +59,7 @@ dependencies {
     implementation "androidx.navigation:navigation-fragment-ktx:2.1.0"
     implementation "androidx.navigation:navigation-ui-ktx:2.1.0"
     implementation 'com.google.android.material:material:1.0.0'
+    implementation 'com.google.android.material:material:1.2.0-alpha01'
     api 'com.google.guava:guava:28.0-android'
     implementation 'oauth.signpost:oauth-signpost:1.2.1.2'
     implementation("com.squareup.okhttp3:logging-interceptor:4.0.1")
