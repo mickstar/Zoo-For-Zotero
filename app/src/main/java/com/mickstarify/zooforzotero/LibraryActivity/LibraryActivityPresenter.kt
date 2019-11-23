@@ -22,7 +22,7 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
 
     override fun openGroup(groupTitle: String) {
         model.getGroupByTitle(groupTitle)?.also {
-            model.loadGroup(it, true)
+            model.loadGroup(it)
         }
 
     }
