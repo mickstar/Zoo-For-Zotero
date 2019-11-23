@@ -319,34 +319,6 @@ class ZoteroAPI(
         })
     }
 
-//    private fun getItemsFromGroupFromIndex(
-//        groupID: Int,
-//        useCaching: Boolean,
-//        modificationSinceVersion: Int,
-//        index: Int = 0
-//    ): Observable<ZoteroAPIItemsResponse> {
-//        val service = buildZoteroAPI(useCaching, modificationSinceVersion)
-//
-//        val observable = if (modificationSinceVersion > -1) {
-//            service.getItemsForGroupSince(groupID, modificationSinceVersion, index)
-//        } else {
-//            service.getItemsForGroup(groupID, index)
-//        }
-//
-//        return observable.map { response: Response<ResponseBody> ->
-//            if (response.code() == 304) {
-//                ZoteroAPIItemsResponse(true, LinkedList(), -1, -1)
-//            } else {
-//                val s = response.body()?.string() ?: "[]"
-//                val newItems = ItemJSONConverter().deserialize(s)
-//                val lastModifiedVersion = response.headers()["Last-Modified-Version"]?.toInt() ?: -1
-//                val totalResults = response.headers()["Total-Results"]?.toInt() ?: -1
-//
-//                ZoteroAPIItemsResponse(false, newItems, lastModifiedVersion, totalResults)
-//            }
-//        }
-//    }
-
     private fun getItemsFromIndex(
         modificationSinceVersion: Int,
         useCaching: Boolean,
