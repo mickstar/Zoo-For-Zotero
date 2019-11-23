@@ -16,7 +16,7 @@ interface ZoteroAPIService {
     fun getItems(
         @Path("user") user: String,
         @Query("start") index: Int
-    ): Call<ResponseBody>
+    ): Observable<Response<ResponseBody>>
 
     /* Gets items since last update. */
     @GET("users/{user}/items")
@@ -24,7 +24,7 @@ interface ZoteroAPIService {
         @Path("user") user: String,
         @Query("since") modificationSinceVersion: Int,
         @Query("start") index: Int
-    ): Call<ResponseBody>
+    ): Observable<Response<ResponseBody>>
 
 
     @GET("users/{user}/groups")
@@ -69,7 +69,7 @@ interface ZoteroAPIService {
     fun getCollections(
         @Path("user") user: String,
         @Query("start") index: Int
-    ): Call<List<Collection>>
+    ): Observable<Response<List<Collection>>>
 
     @Streaming
     @GET("users/{user}/items/{itemKey}/file")

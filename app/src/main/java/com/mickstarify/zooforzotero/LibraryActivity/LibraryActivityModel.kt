@@ -145,7 +145,6 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
     }
 
 
-
     fun loadItemsLocally() {
         doAsync {
             zoteroDBPicker.getZoteroDB().loadItemsFromStorage()
@@ -155,106 +154,57 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
         }
     }
 
-    private fun requestOnlyModifiedItems() {
-        if (!zoteroDBPicker.getZoteroDB().hasStorage()) {
-            Log.e(
-                "zotero",
-                "Error, attempting to load only changed items when there is no local items"
-            )
-            return
-        }
-        if (zoteroDBPicker.getZoteroDB().items == null) {
-            Log.e("zotero", "Error, items cannot be null (in modified items request)")
-            return
-        }
-        zoteroAPI.getItemsSinceModification(
-            zoteroDBPicker.getZoteroDB().getLibraryVersion(),
-            object : ZoteroAPIDownloadItemsListener {
-                override fun onCachedComplete() {
-                    //never happens
-                }
-
-                override fun onNetworkFailure() {
-                    Log.e("zotero", "there was a network error downloading modifiedItems")
-                }
-
-                override fun onDownloadComplete(items: List<Item>, libraryVersion: Int) {
-                    zoteroDBPicker.getZoteroDB().applyChangesToItems(items)
-                    zoteroDBPicker.getZoteroDB().setItemsVersion(libraryVersion)
-                    presenter.makeToastAlert("Updated ${items.size} Items")
-                    finishGetItems()
-                }
-
-                override fun onProgressUpdate(progress: Int, total: Int) {
-                    presenter.updateLibraryRefreshProgress(progress, total)
-                }
-
-            }
-        )
-    }
-
     override fun requestItems(useCaching: Boolean) {
         loadingItems = true
         itemsDownloadAttempt++
 
-        if (useCaching && zoteroDBPicker.getZoteroDB().hasStorage()) {
-            zoteroDBPicker.getZoteroDB().loadItemsFromStorage()
-            if (zoteroDBPicker.getZoteroDB().items != null) {
-                requestOnlyModifiedItems()
-                return // we don't need to proceed.
-            }
-        }
+        val db = zoteroDBPicker.getZoteroDB()
 
-        zoteroAPI.getItems(
-            useCaching,
-            zoteroDBPicker.getZoteroDB().getLibraryVersion(),
-            object : ZoteroAPIDownloadItemsListener {
-                override fun onDownloadComplete(items: List<Item>, libraryVersion: Int) {
-                    zoteroDBPicker.getZoteroDB().writeDatabaseUpdatedTimestamp()
-                    zoteroDBPicker.getZoteroDB().items = items
-                    zoteroDBPicker.getZoteroDB().setItemsVersion(libraryVersion)
-                    zoteroDBPicker.getZoteroDB().commitItemsToStorage()
-                    finishGetItems()
-                }
-
-                override fun onCachedComplete() {
-                    zoteroDBPicker.getZoteroDB().writeDatabaseUpdatedTimestamp()
-                    try {
-                        zoteroDBPicker.getZoteroDB().loadItemsFromStorage()
-                        finishGetItems()
-                    } catch (e: Exception) {
-                        Log.d("zotero", "there was an error loading cached items copy.")
-                        presenter.makeToastAlert("There was an error loading the cached copy of your library")
-                        requestItems(useCaching = false)
-                    }
-                }
-
-                override fun onNetworkFailure() {
-                    if (itemsDownloadAttempt < 3) {
-                        Log.d("zotero", "attempting another download of items")
-                        requestItems(useCaching)
-                    } else if (zoteroDBPicker.getZoteroDB().hasStorage()) {
-                        Log.d("zotero", "no internet connection. Using cached copy")
-                        presenter.makeToastAlert("No internet connection, using cached copy of library")
-                        zoteroDBPicker.getZoteroDB().loadItemsFromStorage()
+        val groupItemObservable =
+            zoteroAPI.getItems(db.getLibraryVersion(), useCaching, isGroup = false)
+        groupItemObservable.subscribeOn(Schedulers.io())
+            .observeOn(AndroidSchedulers.mainThread())
+            .unsubscribeOn(Schedulers.io())
+            .subscribe(object : Observer<ZoteroAPIItemsResponse> {
+                val items = LinkedList<Item>()
+                var libraryVersion = -1
+                override fun onComplete() {
+                    if (db.getLibraryVersion() == -1) {
+                        // these are all brand new items
+                        db.items = items
+                        db.commitItemsToStorage()
                     } else {
-                        if (shownNetworkError == false) {
-                            shownNetworkError = true
-                            presenter.createErrorAlert(
-                                "Network Error",
-                                "There was a problem downloading your library from the Zotero API.\n" +
-                                        "Please check your network connection and try again.",
-                                { shownNetworkError = false }
-                            )
-                        }
-                        zoteroDBPicker.getZoteroDB().items = LinkedList()
+                        //otherwise we just have changes and need to apply them.
+                        db.loadItemsFromStorage()
+                        db.applyChangesToItems(items)
+                        presenter.makeToastAlert("Updated ${items.size} items.")
                     }
+                    db.setItemsVersion(libraryVersion)
                     finishGetItems()
                 }
 
-                override fun onProgressUpdate(progress: Int, total: Int) {
-                    Log.d("zotero", "updating items, got $progress of $total")
-                    presenter.updateLibraryRefreshProgress(progress, total)
+                override fun onSubscribe(d: Disposable) {
+                    presenter.showLibraryLoadingAnimation()
+                }
+
+                override fun onNext(response: ZoteroAPIItemsResponse) {
+                    assert(response.isCached == false)
+                    this.libraryVersion = response.LastModifiedVersion
+                    Log.d("zotero", "lv=${response.LastModifiedVersion}")
+                    this.items.addAll(response.items)
+                    presenter.updateLibraryRefreshProgress(this.items.size, response.totalResults)
+                    Log.d("zotero", "got ${items.size} of ${response.totalResults} items")
+                }
+
+                override fun onError(e: Throwable) {
+                    if (e is UpToDateException) {
+                        db.loadItemsFromStorage()
+                        finishGetItems()
+                    } else {
+                        presenter.createErrorAlert("Error downloading items", "message: ${e}", {})
+                        Log.e("zotero", "${e}")
+                        Log.e("zotero", "${e.stackTrace}")
+                    }
                 }
             })
     }
@@ -272,54 +222,54 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
         loadingCollections = true
         collectionsDownloadAttempt++
 
-        zoteroAPI.getCollections(
-            useCaching,
-            zoteroDBPicker.getZoteroDB().getLibraryVersion(),
-            object : ZoteroAPIDownloadCollectionListener {
-                override fun onProgressUpdate(progress: Int, total: Int) {
-                    // do nothing, don't care.
+        val db = zoteroDBPicker.getZoteroDB()
+
+        val collectionsObservable =
+            zoteroAPI.getCollections(
+                zoteroDBPicker.getZoteroDB().getLibraryVersion(),
+                useCaching,
+                isGroup = false
+            )
+        collectionsObservable.subscribeOn(Schedulers.io())
+            .observeOn(AndroidSchedulers.mainThread())
+            .unsubscribeOn(Schedulers.io())
+            .subscribe(object : Observer<List<Collection>> {
+                val collections = LinkedList<Collection>()
+                override fun onComplete() {
+                    db.collections = collections
+                    db.commitCollectionsToStorage()
+                    finishGetCollections()
                 }
 
-                override fun onCachedComplete() {
-                    try {
-                        zoteroDBPicker.getZoteroDB().loadCollectionsFromStorage()
+                override fun onSubscribe(d: Disposable) {
+                }
+
+                override fun onNext(collections: List<Collection>) {
+                    this.collections.addAll(collections)
+                }
+
+                override fun onError(e: Throwable) {
+                    if (e is UpToDateException) {
+                        db.loadCollectionsFromStorage()
                         finishGetCollections()
-                    } catch (e: Exception) {
-                        Log.d("zotero", "there was an error loading cached collections copy.")
-                        requestCollections(useCaching = false)
-                    }
-                }
-
-
-                override fun onDownloadComplete(collections: List<Collection>) {
-                    zoteroDBPicker.getZoteroDB().collections = collections
-                    zoteroDBPicker.getZoteroDB().commitCollectionsToStorage()
-                    finishGetCollections()
-                }
-
-                override fun onNetworkFailure() {
-                    if (collectionsDownloadAttempt < 3) {
-                        Log.d("zotero", "attempting another download of collections")
-                        requestCollections(useCaching)
-                    } else if (zoteroDBPicker.getZoteroDB().hasStorage()) {
-                        Log.d("zotero", "no internet connection. Using cached copy")
-                        zoteroDBPicker.getZoteroDB().loadCollectionsFromStorage()
+                    } else if (e is APIKeyRevokedException) {
+                        presenter.createErrorAlert(
+                            "Invalid API Key",
+                            "Your API Key is invalid. To rectify this issue please clear app data for the app. " +
+                                    "Then relogin."
+                        ) {}
                     } else {
-                        if (shownNetworkError == false) {
-                            shownNetworkError = true
-                            presenter.createErrorAlert(
-                                "Network Error",
-                                "There was a problem downloading your library from the Zotero API.\n" +
-                                        "Please check your network connection and try again.",
-                                { shownNetworkError = false }
-                            )
-                        }
-                        val params = Bundle()
-                        firebaseAnalytics.logEvent("error_loading_collections", params)
+                        presenter.createErrorAlert(
+                            "Error downloading Group Collections",
+                            "Message: ${e}"
+                        ) {}
 
-                        zoteroDBPicker.getZoteroDB().collections = LinkedList()
+                        if (db.hasStorage()) {
+                            Log.d("zotero", "no internet connection. Using cached copy")
+                            db.loadCollectionsFromStorage()
+                            finishGetCollections()
+                        }
                     }
-                    finishGetCollections()
                 }
             })
     }
@@ -646,7 +596,8 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
         }
         val useCaching = modifiedSince != -1 // largely useless. a relic from before.
 
-        val groupItemObservable = zoteroAPI.getItemsFromGroup(group.id, useCaching, modifiedSince)
+        val groupItemObservable =
+            zoteroAPI.getItems(modifiedSince, useCaching, isGroup = true, groupID = group.id)
         groupItemObservable.subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())
             .unsubscribeOn(Schedulers.io())
@@ -701,7 +652,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
             })
 
         val groupCollectionsObservable =
-            zoteroAPI.getCollectionsFromGroup(group.id, modifiedSince, useCaching)
+            zoteroAPI.getCollections(modifiedSince, useCaching, isGroup = true, groupID = group.id)
         groupCollectionsObservable.subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())
             .unsubscribeOn(Schedulers.io())
@@ -728,6 +679,12 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                         if (db.items != null) {
                             finishLoadingGroups(group)
                         }
+                    } else if (e is APIKeyRevokedException) {
+                        presenter.createErrorAlert(
+                            "Permission Error",
+                            "403: Unauthorized access attempt. Please verify your api key hasn't been revoked and you" +
+                                    "still have readable access to the group."
+                        ) {}
                     } else {
                         presenter.createErrorAlert(
                             "Error downloading Group Collections",
