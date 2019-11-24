@@ -32,8 +32,8 @@ import java.util.*
 
 const val BASE_URL = "https://api.zotero.org"
 
-class UpToDateException(message: String) : Exception(message)
-class APIKeyRevokedException(message: String) : Exception(message)
+class UpToDateException(message: String) : RuntimeException(message)
+class APIKeyRevokedException(message: String) : RuntimeException(message)
 
 class ZoteroAPI(
     val API_KEY: String,
@@ -376,7 +376,7 @@ class ZoteroAPI(
                     0,
                     isGroup,
                     groupID
-                ).doOnError { emitter.onError(it) }
+                )
                 val response = s.blockingSingle()
                 val total = response.totalResults
                 itemCount += response.items.size
@@ -388,7 +388,7 @@ class ZoteroAPI(
                         itemCount,
                         isGroup,
                         groupID
-                    ).doOnError { emitter.onError(it) }.blockingSingle()
+                    ).blockingSingle()
                     itemCount += res.items.size
                     emitter.onNext(res)
                 }
@@ -445,12 +445,13 @@ class ZoteroAPI(
 
         val observable = Observable.create(object : ObservableOnSubscribe<List<Collection>> {
             override fun subscribe(emitter: ObservableEmitter<List<Collection>>) {
+
                 val s = getCollectionFromIndex(
                     isGroup,
                     groupID,
                     useCaching,
                     libraryVersion
-                ).doOnError { emitter.onError(it) }
+                )
                 val response = s.blockingSingle()
                 val total = response.totalResults
                 emitter.onNext(response.collections)
@@ -462,7 +463,7 @@ class ZoteroAPI(
                         useCaching,
                         libraryVersion,
                         index = itemCount
-                    ).doOnError { emitter.onError(it) }.blockingSingle()
+                    ).blockingSingle()
                     itemCount += r.collections.size
                     emitter.onNext(r.collections)
                 }
