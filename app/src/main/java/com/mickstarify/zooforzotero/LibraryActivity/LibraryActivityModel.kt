@@ -261,7 +261,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                         ) {}
                     } else {
                         presenter.createErrorAlert(
-                            "Error downloading Group Collections",
+                            "Error downloading Collections",
                             "Message: ${e}"
                         ) {}
 
