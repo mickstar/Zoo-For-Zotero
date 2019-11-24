@@ -12,9 +12,6 @@ import com.mickstarify.zooforzotero.ZoteroAPI.Model.Collection
 import io.reactivex.Observable
 import io.reactivex.ObservableEmitter
 import io.reactivex.ObservableOnSubscribe
-import io.reactivex.Observer
-import io.reactivex.disposables.Disposable
-import io.reactivex.functions.Consumer
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.ResponseBody
@@ -322,7 +319,7 @@ class ZoteroAPI(
     private fun getItemsFromIndex(
         modificationSinceVersion: Int,
         useCaching: Boolean,
-        index: Int = 0,
+        index: Int,
         isGroup: Boolean,
         groupID: Int
     ): Observable<ZoteroAPIItemsResponse> {
@@ -362,7 +359,6 @@ class ZoteroAPI(
     fun getItems(
         libraryVersion: Int = -1,
         useCaching: Boolean = false,
-        index: Int = 0,
         isGroup: Boolean = false,
         groupID: Int = -1
     ): Observable<ZoteroAPIItemsResponse> {
@@ -372,64 +368,31 @@ class ZoteroAPI(
         }
 
         val observable = Observable.create(object : ObservableOnSubscribe<ZoteroAPIItemsResponse> {
-            var itemCount = index
             override fun subscribe(emitter: ObservableEmitter<ZoteroAPIItemsResponse>) {
-                val observable =
-                    getItemsFromIndex(libraryVersion, useCaching, itemCount, isGroup, groupID)
-                observable.subscribe(object : Observer<ZoteroAPIItemsResponse> {
-                    override fun onComplete() {
-                    }
-
-                    override fun onSubscribe(d: Disposable) {
-                    }
-
-                    override fun onNext(response: ZoteroAPIItemsResponse) {
-                        if (response.isCached) {
-                            throw(UpToDateException("304. Already Downloaded."))
-                        }
-                        itemCount += response.items.size
-                        // initial emit of items
-                        emitter.onNext(
-                            ZoteroAPIItemsResponse(
-                                false,
-                                response.items,
-                                response.LastModifiedVersion,
-                                response.totalResults
-                            )
-                        )
-                        // then if there is more items, we will need to continue to download.
-                        if (itemCount < response.totalResults) {
-                            val s =
-                                getItems(libraryVersion, useCaching, itemCount, isGroup, groupID)
-
-                            s.subscribe(object : Observer<ZoteroAPIItemsResponse> {
-                                override fun onComplete() {
-                                    emitter.onComplete()
-                                }
-
-                                override fun onSubscribe(d: Disposable) {
-                                    // nothing
-                                }
-
-                                override fun onNext(t: ZoteroAPIItemsResponse) {
-                                    emitter.onNext(t)
-                                }
-
-                                override fun onError(e: Throwable) {
-                                    emitter.onError(e)
-                                }
-
-                            })
-                        } else {
-                            // otherwise we can finish.
-                            emitter.onComplete()
-                        }
-                    }
-
-                    override fun onError(e: Throwable) {
-                        emitter.onError(e)
-                    }
-                })
+                var itemCount = 0
+                val s = getItemsFromIndex(
+                    libraryVersion,
+                    useCaching,
+                    0,
+                    isGroup,
+                    groupID
+                ).doOnError { emitter.onError(it) }
+                val response = s.blockingSingle()
+                val total = response.totalResults
+                itemCount += response.items.size
+                emitter.onNext(response)
+                while (itemCount < total) {
+                    val res = getItemsFromIndex(
+                        libraryVersion,
+                        useCaching,
+                        itemCount,
+                        isGroup,
+                        groupID
+                    ).doOnError { emitter.onError(it) }.blockingSingle()
+                    itemCount += res.items.size
+                    emitter.onNext(res)
+                }
+                emitter.onComplete()
             }
         })
         return observable
@@ -481,38 +444,29 @@ class ZoteroAPI(
         }
 
         val observable = Observable.create(object : ObservableOnSubscribe<List<Collection>> {
-            var itemCount = index
             override fun subscribe(emitter: ObservableEmitter<List<Collection>>) {
-                val observable =
-                    getCollectionFromIndex(isGroup, groupID, useCaching, libraryVersion, index)
-                observable.subscribe(object : Observer<ZoteroAPICollectionsResponse> {
-                    override fun onComplete() {
-                    }
-
-                    override fun onSubscribe(d: Disposable) {
-                    }
-
-                    override fun onNext(response: ZoteroAPICollectionsResponse) {
-                        itemCount += response.collections.size
-                        emitter.onNext(response.collections)
-                        if (itemCount < response.totalResults) {
-                            val s = getCollections(
-                                libraryVersion,
-                                useCaching,
-                                itemCount,
-                                isGroup,
-                                groupID
-                            )
-                            s.blockingForEach(Consumer { t -> emitter.onNext(t) })
-                        }
-                        emitter.onComplete()
-                    }
-
-                    override fun onError(e: Throwable) {
-                        emitter.onError(e)
-                    }
-
-                })
+                val s = getCollectionFromIndex(
+                    isGroup,
+                    groupID,
+                    useCaching,
+                    libraryVersion
+                ).doOnError { emitter.onError(it) }
+                val response = s.blockingSingle()
+                val total = response.totalResults
+                emitter.onNext(response.collections)
+                var itemCount = response.collections.size
+                while (itemCount < total) {
+                    val r = getCollectionFromIndex(
+                        isGroup,
+                        groupID,
+                        useCaching,
+                        libraryVersion,
+                        index = itemCount
+                    ).doOnError { emitter.onError(it) }.blockingSingle()
+                    itemCount += r.collections.size
+                    emitter.onNext(r.collections)
+                }
+                emitter.onComplete()
             }
         })
         return observable
