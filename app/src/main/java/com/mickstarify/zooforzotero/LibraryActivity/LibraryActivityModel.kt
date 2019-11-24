@@ -246,6 +246,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
 
                 override fun onNext(collections: List<Collection>) {
                     this.collections.addAll(collections)
+                    Log.d("zotero", "got ${this.collections.size}")
                 }
 
                 override fun onError(e: Throwable) {
@@ -315,9 +316,9 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
     }
 
     override fun filterCollections(query: String): List<Collection> {
-        val queryUpper = query.toUpperCase(Locale.getDefault())
+        val queryUpper = query.toUpperCase(Locale.ROOT)
         return zoteroDBPicker.getZoteroDB().collections?.filter {
-            it.getName().toUpperCase(Locale.getDefault()).contains(queryUpper)
+            it.getName().toUpperCase(Locale.ROOT).contains(queryUpper)
         } ?: LinkedList()
     }
 
@@ -577,6 +578,11 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
         refresh: Boolean
     ) {
         /* This gets the items/catalogs for a group and does the respective callbacks to display the group.*/
+
+        if (loadingItems || loadingCollections) {
+            Log.e("zotero", "already loading group data!")
+            return
+        }
 
         loadingItems = true
         loadingCollections = true

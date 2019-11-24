@@ -13,12 +13,12 @@ import java.util.*
 class LibraryActivityPresenter(val view: Contract.View, context: Context) : Contract.Presenter {
     val sortMethod = compareBy<Item> {
         when (model.preferences.getSortMethod()) {
-            SortMethod.TITLE -> it.getTitle().toLowerCase(Locale.getDefault())
+            SortMethod.TITLE -> it.getTitle().toLowerCase(Locale.ROOT)
             SortMethod.DATE -> it.getSortableDateString()
-            SortMethod.AUTHOR -> it.getAuthor().toLowerCase(Locale.getDefault())
+            SortMethod.AUTHOR -> it.getAuthor().toLowerCase(Locale.ROOT)
             SortMethod.DATE_ADDED -> it.getSortableDateAddedString()
         }
-    }.thenBy { it.getTitle().toLowerCase(Locale.getDefault()) }
+    }.thenBy { it.getTitle().toLowerCase(Locale.ROOT) }
 
     override fun openGroup(groupTitle: String) {
         model.getGroupByTitle(groupTitle)?.also {
@@ -82,7 +82,7 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
         val items = model.filterItems(query).sort()
 
         val entries = LinkedList<ListEntry>()
-        entries.addAll(collections.sortedBy { it.getName().toLowerCase(Locale.getDefault()) }
+        entries.addAll(collections.sortedBy { it.getName().toLowerCase(Locale.ROOT) }
             .map { ListEntry(it) })
         entries.addAll(
             items
@@ -195,7 +195,7 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
             entries.addAll(model.getCollections().filter {
                 !it.hasParent()
             }.sortedBy {
-                it.getName().toLowerCase(Locale.getDefault())
+                it.getName().toLowerCase(Locale.ROOT)
             }.map { ListEntry(it) })
             entries.addAll(model.getLibraryItems().sort().map { ListEntry(it) })
             model.isDisplayingItems = entries.size > 0
@@ -206,7 +206,7 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
             view.setTitle(collectionName)
             val entries = LinkedList<ListEntry>()
             entries.addAll(model.getSubCollections(collectionName).sortedBy {
-                it.getName().toLowerCase(Locale.getDefault())
+                it.getName().toLowerCase(Locale.ROOT)
             }.map { ListEntry(it) })
 
             entries.addAll(model.getItemsFromCollection(collectionName).sort().map { ListEntry(it) })
@@ -223,7 +223,7 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
         view.clearSidebar()
         for (collection: Collection in collections.filter {
             !it.hasParent()
-        }.sortedBy { it.getName().toLowerCase(Locale.getDefault()) }) {
+        }.sortedBy { it.getName().toLowerCase(Locale.ROOT) }) {
             Log.d("zotero", "Got collection ${collection.getName()}")
             view.addNavigationEntry(collection, "Catalog")
         }

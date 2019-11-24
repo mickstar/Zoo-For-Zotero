@@ -73,14 +73,14 @@ open class Item(
     /* Matches the query text against the metadata stored in item,
     * checks to see if we can find the text anywhere. Useful for search. */
     fun query(queryText: String): Boolean {
-        val queryUpper = queryText.toUpperCase(Locale.getDefault())
+        val queryUpper = queryText.toUpperCase(Locale.ROOT)
 
-        return this.ItemKey.toUpperCase(Locale.getDefault()).contains(queryUpper) ||
-                this.tags.joinToString("_").toUpperCase(Locale.getDefault()).contains(queryUpper) ||
-                this.data.values.joinToString("_").toUpperCase(Locale.getDefault()).contains(
+        return this.ItemKey.toUpperCase(Locale.ROOT).contains(queryUpper) ||
+                this.tags.joinToString("_").toUpperCase(Locale.ROOT).contains(queryUpper) ||
+                this.data.values.joinToString("_").toUpperCase(Locale.ROOT).contains(
                     queryUpper
                 ) || this.creators.map {
-            it.makeString().toUpperCase(Locale.getDefault())
+            it.makeString().toUpperCase(Locale.ROOT)
         }.joinToString("_").contains(queryUpper)
     }
 
