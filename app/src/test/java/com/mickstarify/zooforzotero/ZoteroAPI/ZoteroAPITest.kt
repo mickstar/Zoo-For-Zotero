@@ -22,4 +22,9 @@ class ZoteroAPITest {
             assertTrue(status)
         }
     }
+
+    @Test
+    fun testGetUploadAuthorization() {
+
+    }
 }

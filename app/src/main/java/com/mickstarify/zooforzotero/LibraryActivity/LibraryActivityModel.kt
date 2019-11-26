@@ -60,8 +60,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
 
     override fun refreshLibrary() {
         if (!state.usingGroup) {
-            this.requestItems(useCaching = true)
-            this.requestCollections(useCaching = true)
+            downloadLibrary(refresh = true)
         } else {
             this.loadGroup(state.currentGroup!!, refresh = true)
         }
@@ -154,61 +153,6 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
         }
     }
 
-    override fun requestItems(useCaching: Boolean) {
-        loadingItems = true
-        itemsDownloadAttempt++
-
-        val db = zoteroDBPicker.getZoteroDB()
-
-        val groupItemObservable =
-            zoteroAPI.getItems(db.getLibraryVersion(), useCaching, isGroup = false)
-        groupItemObservable.subscribeOn(Schedulers.io())
-            .observeOn(AndroidSchedulers.mainThread())
-            .unsubscribeOn(Schedulers.io())
-            .subscribe(object : Observer<ZoteroAPIItemsResponse> {
-                val items = LinkedList<Item>()
-                var libraryVersion = -1
-                override fun onComplete() {
-                    if (db.getLibraryVersion() == -1) {
-                        // these are all brand new items
-                        db.items = items
-                        db.commitItemsToStorage()
-                    } else {
-                        //otherwise we just have changes and need to apply them.
-                        db.loadItemsFromStorage()
-                        db.applyChangesToItems(items)
-                        presenter.makeToastAlert("Updated ${items.size} items.")
-                    }
-                    db.setItemsVersion(libraryVersion)
-                    finishGetItems()
-                }
-
-                override fun onSubscribe(d: Disposable) {
-                    presenter.showLibraryLoadingAnimation()
-                }
-
-                override fun onNext(response: ZoteroAPIItemsResponse) {
-                    assert(response.isCached == false)
-                    this.libraryVersion = response.LastModifiedVersion
-                    Log.d("zotero", "lv=${response.LastModifiedVersion}")
-                    this.items.addAll(response.items)
-                    presenter.updateLibraryRefreshProgress(this.items.size, response.totalResults)
-                    Log.d("zotero", "got ${items.size} of ${response.totalResults} items")
-                }
-
-                override fun onError(e: Throwable) {
-                    if (e is UpToDateException) {
-                        db.loadItemsFromStorage()
-                        finishGetItems()
-                    } else {
-                        presenter.createErrorAlert("Error downloading items", "message: ${e}", {})
-                        Log.e("zotero", "${e}")
-                        Log.e("zotero", "${e.stackTrace}")
-                    }
-                }
-            })
-    }
-
     override fun loadCollectionsLocally() {
         doAsync {
             zoteroDBPicker.getZoteroDB().loadCollectionsFromStorage()
@@ -218,11 +162,17 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
         }
     }
 
-    override fun requestCollections(useCaching: Boolean) {
+    override fun downloadLibrary(refresh: Boolean) {
+        /* This function updates the local copies of the items and collections databases.*/
         loadingCollections = true
-        collectionsDownloadAttempt++
+        loadingItems = true
 
         val db = zoteroDBPicker.getZoteroDB()
+        if (db.isPopulated() && refresh == false) {
+            Log.d("zotero", "already loaded.")
+            return
+        }
+        val useCaching = db.getLibraryVersion() > -1
 
         val collectionsObservable =
             zoteroAPI.getCollections(
@@ -260,6 +210,9 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                                     "Then relogin."
                         ) {}
                     } else {
+                        val bundle = Bundle()
+                        bundle.putString("error_message", e.message)
+                        firebaseAnalytics.logEvent("error_download_collections", bundle)
                         presenter.createErrorAlert(
                             "Error downloading Collections",
                             "Message: ${e}"
@@ -270,6 +223,62 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                             db.loadCollectionsFromStorage()
                             finishGetCollections()
                         }
+                    }
+                }
+            })
+
+        val itemsObservable =
+            zoteroAPI.getItems(db.getLibraryVersion(), useCaching, isGroup = false)
+        itemsObservable.subscribeOn(Schedulers.io())
+            .observeOn(AndroidSchedulers.mainThread())
+            .unsubscribeOn(Schedulers.io())
+            .subscribe(object : Observer<ZoteroAPIItemsResponse> {
+                val items = LinkedList<Item>()
+                var libraryVersion = -1
+                override fun onComplete() {
+                    if (db.getLibraryVersion() == -1) {
+                        // these are all brand new items
+                        db.items = items
+                        db.commitItemsToStorage()
+                    } else {
+                        //otherwise we just have changes and need to apply them.
+                        db.loadItemsFromStorage()
+                        db.applyChangesToItems(items)
+                        presenter.makeToastAlert("Updated ${items.size} items.")
+                    }
+                    db.setItemsVersion(libraryVersion)
+                    finishGetItems()
+                }
+
+                override fun onSubscribe(d: Disposable) {
+                    presenter.showLibraryLoadingAnimation()
+                }
+
+                override fun onNext(response: ZoteroAPIItemsResponse) {
+                    if (response.isCached == false) {
+                        this.libraryVersion = response.LastModifiedVersion
+                        this.items.addAll(response.items)
+                        presenter.updateLibraryRefreshProgress(
+                            this.items.size,
+                            response.totalResults
+                        )
+                        Log.d("zotero", "got ${items.size} of ${response.totalResults} items")
+                    } else {
+                        Log.d("zotero", "got back cached response for items.")
+                    }
+                }
+
+                override fun onError(e: Throwable) {
+                    if (e is UpToDateException) {
+                        db.loadItemsFromStorage()
+                        finishGetItems()
+                    } else {
+                        val bundle = Bundle()
+                        bundle.putString("error_message", e.message)
+                        firebaseAnalytics.logEvent("error_download_items", bundle)
+                        presenter.createErrorAlert("Error downloading items", "message: ${e}", {})
+                        Log.e("zotero", "${e}")
+                        Log.e("zotero", "${e.stackTrace}")
                     }
                 }
             })
@@ -517,7 +526,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
             .unsubscribeOn(Schedulers.io())
             .subscribe(object : MaybeObserver<List<GroupInfo>> {
                 override fun onSuccess(groupInfo: List<GroupInfo>) {
-                    Log.d("zotero", "complted")
+                    Log.d("zotero", "completed get group info.")
                     this@LibraryActivityModel.groups = groupInfo
                     presenter.displayGroupsOnActionBar(groupInfo)
                 }
@@ -624,6 +633,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                         db.applyChangesToItems(items)
                         presenter.makeToastAlert("Updated ${items.size} items.")
                     }
+                    Log.d("zotero", "Setting your library version: ${libraryVersion}")
                     db.setItemsVersion(libraryVersion)
                     db.commitItemsToStorage()
                     if (db.collections != null) {

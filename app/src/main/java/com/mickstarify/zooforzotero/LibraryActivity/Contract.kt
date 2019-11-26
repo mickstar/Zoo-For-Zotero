@@ -56,8 +56,7 @@ interface Contract {
     }
 
     interface Model {
-        fun requestItems(useCaching: Boolean = true)
-        fun requestCollections(useCaching: Boolean = true)
+        fun downloadLibrary(refresh: Boolean = false)
         fun getLibraryItems(): List<Item>
         fun getItemsFromCollection(collectionName: String): List<Item>
         fun refreshLibrary()

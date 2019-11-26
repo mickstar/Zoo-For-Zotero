@@ -262,6 +262,7 @@ class ZoteroDB(val context: Context, val prefix: String = "") {
     }
 
     fun setItemsVersion(libraryVersion: Int) {
+        Log.d("zotero", "setting library version ${libraryVersion} on ${namespace}")
         val sharedPreferences = context.getSharedPreferences(namespace, MODE_PRIVATE)
         val editor = sharedPreferences.edit()
         editor.putInt("ItemsLibraryVersion", libraryVersion)

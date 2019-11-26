@@ -19,6 +19,7 @@ import okhttp3.logging.HttpLoggingInterceptor
 import org.jetbrains.anko.doAsync
 import org.jetbrains.anko.onComplete
 import org.jetbrains.anko.runOnUiThread
+import org.json.JSONObject
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -34,7 +35,7 @@ const val BASE_URL = "https://api.zotero.org"
 
 class UpToDateException(message: String) : RuntimeException(message)
 class APIKeyRevokedException(message: String) : RuntimeException(message)
-
+class AlreadyUploadedException(message: String) : RuntimeException(message)
 class ZoteroAPI(
     val API_KEY: String,
     val userID: String,
@@ -43,12 +44,13 @@ class ZoteroAPI(
     private fun buildZoteroAPI(
         useCaching: Boolean,
         libraryVersion: Int,
-        ifModifiedSinceVersion: Int = -1
+        ifModifiedSinceVersion: Int = -1,
+        md5IfMatch: String = ""
     ): ZoteroAPIService {
         val httpClient = OkHttpClient().newBuilder().apply {
             if (BuildConfig.DEBUG) {
                 addInterceptor(HttpLoggingInterceptor().apply {
-                    this.level = HttpLoggingInterceptor.Level.BODY
+                    this.level = HttpLoggingInterceptor.Level.HEADERS
                 })
             }
             addInterceptor(object : Interceptor {
@@ -61,6 +63,9 @@ class ZoteroAPI(
                     }
                     if (ifModifiedSinceVersion >= 0) {
                         request.addHeader("If-Unmodified-Since-Version", "$ifModifiedSinceVersion")
+                    }
+                    if (md5IfMatch != "") {
+                        request.addHeader("If-Match", "$md5IfMatch")
                     }
                     return chain.proceed(request.build())
                 }
@@ -340,9 +345,12 @@ class ZoteroAPI(
 
         }
 
+        Log.d("zotero", "got msv=$modificationSinceVersion useCaching=$useCaching")
+
         return observable.map { response: Response<ResponseBody> ->
             if (response.code() == 304) {
-                ZoteroAPIItemsResponse(true, LinkedList(), -1, -1)
+                throw UpToDateException("304 Items already loaded.")
+                ZoteroAPIItemsResponse(true, LinkedList(), modificationSinceVersion, 0)
             } else if (response.code() == 200) {
                 val s = response.body()?.string() ?: "[]"
                 val newItems = ItemJSONConverter().deserialize(s)
@@ -495,20 +503,48 @@ class ZoteroAPI(
     }
 
     fun uploadPDF(parent: Item, attachment: File) {
-//        val zoteroAPI = buildZoteroAPI(useCaching = false, libraryVersion = -1)
-//        val call: Call<ResponseBody> = zoteroAPI.writeItem(userID, note.asJsonArray())
-//
-//        call.enqueue(object : Callback<ResponseBody> {
-//            override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
-//                if (response.code() == 200) {
-//                    Log.d("zotero", "success on note upload")
-//                } else {
-//                    Log.d("zotero", "got back code ${response.code()} from note upload.")
-//                }
-//            }
-//
-//            override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
-//            }
-//        })
+
+        val authorizationObservable = getUploadAuthorization(parent)
+        val observable = authorizationObservable.map { t ->
+            if (t.exists) {
+                throw AlreadyUploadedException("File already uploaded")
+            } else {
+                t
+            }
+        }.map {
+
+        }
+
+    }
+
+    private fun getUploadAuthorization(item: Item): Observable<ZoteroAPIAuthorizationRequestResponse> {
+        val service = buildZoteroAPI(false, -1, md5IfMatch = item.data["md5"]!!)
+        val observable = service.uploadAttachmentAuthorization(
+            userID,
+            item.ItemKey,
+            "blah",
+            "filename.txt",
+            0,
+            0
+        )
+        return observable.map { response ->
+            if (response.code() == 200) {
+                val jsonObject = JSONObject(response.body()!!.string())
+                if (jsonObject.has("exists")) {
+                    ZoteroAPIAuthorizationRequestResponse(true, "", "", "", "", "")
+                } else {
+                    ZoteroAPIAuthorizationRequestResponse(
+                        false,
+                        jsonObject.getString("url"),
+                        jsonObject.getString("contentType"),
+                        jsonObject.getString("prefix"),
+                        jsonObject.getString("suffix"),
+                        jsonObject.getString("uploadKey")
+                    )
+                }
+            } else {
+                throw Exception("Server Response: ${response.code()} ${response.body()}")
+            }
+        }
     }
 }

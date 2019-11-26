@@ -248,9 +248,8 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
         view.showLoadingAnimation(true)
         view.showLibraryContentDisplay("Loading your library content.")
         if (model.shouldIUpdateLibrary()) {
-            model.requestCollections()
-            model.requestItems()
             model.loadGroups()
+            model.downloadLibrary()
         } else {
             model.loadCollectionsLocally()
             model.loadItemsLocally()
