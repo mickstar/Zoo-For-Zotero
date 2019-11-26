@@ -97,4 +97,21 @@ interface ZoteroAPIService {
         @Path("user") user: String,
         @Path("itemKey") itemKey: String
     ): Call<ResponseBody>
+
+    @POST("users/{user}/items/{itemKey}/file")
+    fun uploadAttachmentAuthorization(
+        @Path("user") user: String,
+        @Path("itemKey") itemKey: String,
+        @Query("md5") md5: String,
+        @Query("filename") filename: String,
+        @Query("filesize") filesize: Int,
+        @Query("mtime") mtime: Long
+    ): Observable<Response<ResponseBody>>
+
+    @POST("users/{user}/items/{itemKey}/file")
+    fun uploadAttachment(
+        @Path("user") user: String,
+        @Path("itemKey") itemKey: String,
+        @Query("upload") uploadKey: String
+    )
 }
