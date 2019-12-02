@@ -375,7 +375,7 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
         progressBar?.progress = progress
         if (total == -1) {
             progressBar?.isIndeterminate = true
-            textView.text = "Starting to download your library."
+            textView.text = getString(R.string.loading_library_text)
         } else {
             progressBar?.max = total
             progressBar?.isIndeterminate = false

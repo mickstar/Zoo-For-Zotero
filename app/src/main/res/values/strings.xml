@@ -39,4 +39,5 @@
     <string name="unfiled_items">Unfiled Items</string>
     <string name="my_library">My Library</string>
     <string name="title_activity_web_davsetup">WebDAV Setup</string>
+    <string name="loading_library_text">Loading your library</string>
 </resources>

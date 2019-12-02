@@ -111,7 +111,7 @@ class ItemViewFragment : BottomSheetDialogFragment(), ItemNoteEntry.OnNoteIntera
             this.addCreators(listOf(Creator("Author", "", "")))
         }
         for ((key, value) in item.data) {
-            if (key != "itemType" && key != "title") {
+            if (value != "" && key != "itemType" && key != "title") {
                 addTextEntry(key, value)
             }
         }
