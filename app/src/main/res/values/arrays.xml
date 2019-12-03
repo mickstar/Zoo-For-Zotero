@@ -17,4 +17,14 @@
         <item>DATE</item>
         <item>DATE_ADDED</item>
     </string-array>
+
+    <string-array name="attachment_storage_location_entries">
+        <item>External Cache</item>
+        <item>Custom Path</item>
+    </string-array>
+
+    <string-array name="attachment_storage_location_values">
+        <item>EXTERNAL_CACHE</item>
+        <item>CUSTOM</item>
+    </string-array>
 </resources>

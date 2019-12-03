@@ -27,12 +27,13 @@
                 app:title="@string/sync_method"
                 app:useSimpleSummaryProvider="true" />
 
-        <!--        <SwitchPreferenceCompat-->
-        <!--                app:defaultValue="true"-->
-        <!--                app:key="sync_only_new"-->
-        <!--                app:summaryOff="@string/sync_only_new_summary_off"-->
-        <!--                app:summaryOn="@string/sync_only_new_summary_on"-->
-        <!--                app:title="@string/sync_only_new" />-->
+        <ListPreference
+                app:defaultValue="EXTERNAL_CACHE"
+                app:entries="@array/attachment_storage_location_entries"
+                app:entryValues="@array/attachment_storage_location_values"
+                app:key="attachment_sync_location"
+                app:title="@string/setting_sync_attachments_location"
+                app:useSimpleSummaryProvider="true" />
 
     </PreferenceCategory>
     <PreferenceCategory android:title="Web DAV">
