@@ -1,6 +1,7 @@
 package com.mickstarify.zooforzotero.LibraryActivity
 
 import android.app.Activity
+import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -28,6 +29,7 @@ import java.io.File
 import java.util.*
 import java.util.concurrent.Future
 import java.util.concurrent.TimeUnit
+
 
 class LibraryActivityModel(private val presenter: Contract.Presenter, val context: Context) :
     Contract.Model {
@@ -359,7 +361,29 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
 
         }
-        context.startActivity(intent)
+        try {
+            context.startActivity(intent)
+        } catch (exception: ActivityNotFoundException) {
+            presenter.createErrorAlert("No PDF Viewer installed",
+                "There is no app that handles pdf documents available on your device. Would you like to install one?",
+                onClick = {
+                    try {
+                        context.startActivity(
+                            Intent(
+                                Intent.ACTION_VIEW,
+                                Uri.parse("market://details?id=com.xodo.pdf.reader")
+                            )
+                        )
+                    } catch (e: ActivityNotFoundException) {
+                        context.startActivity(
+                            Intent(
+                                Intent.ACTION_VIEW,
+                                Uri.parse("https://play.google.com/store/apps/details?id=com.xodo.pdf.reader")
+                            )
+                        )
+                    }
+                })
+        }
     }
 
     override fun filterItems(query: String): List<Item> {
