@@ -59,21 +59,21 @@ dependencies {
     implementation "androidx.navigation:navigation-fragment-ktx:2.1.0"
     implementation "androidx.navigation:navigation-ui-ktx:2.1.0"
     implementation 'com.google.android.material:material:1.0.0'
-    implementation 'com.google.android.material:material:1.2.0-alpha01'
-    api 'com.google.guava:guava:28.0-android'
+    implementation 'com.google.android.material:material:1.2.0-alpha02'
+    api 'com.google.guava:guava:28.1-jre'
     implementation 'oauth.signpost:oauth-signpost:1.2.1.2'
-    implementation("com.squareup.okhttp3:logging-interceptor:4.0.1")
+    implementation('com.squareup.okhttp3:logging-interceptor:4.2.2')
     implementation('oauth.signpost:signpost-commonshttp4:1.2.1.2') {
         exclude group: 'org.apache.httpcomponents'
     }
-    implementation 'com.squareup.retrofit2:retrofit:2.6.1'
-    implementation 'com.squareup.retrofit2:adapter-rxjava2:2.6.1'
+    implementation 'com.squareup.retrofit2:retrofit:2.6.2'
+    implementation 'com.squareup.retrofit2:adapter-rxjava2:2.6.2'
     implementation 'io.reactivex.rxjava2:rxjava:2.2.14'
     implementation 'io.reactivex.rxjava2:rxandroid:2.1.1'
-    implementation 'com.squareup.retrofit2:converter-gson:2.6.1'
-    implementation 'org.jetbrains.anko:anko:0.10.8'
+    implementation 'com.squareup.retrofit2:converter-gson:2.6.2'
+    implementation 'org.jetbrains.anko:anko:0.10.8' //TODO REMOVE
     implementation 'androidx.legacy:legacy-support-v4:1.0.0'
-    implementation 'androidx.recyclerview:recyclerview:1.0.0'
+    implementation 'androidx.recyclerview:recyclerview:1.1.0'
     implementation 'androidx.preference:preference:1.1.0'
     testImplementation 'junit:junit:4.12'
     testImplementation "org.mockito:mockito-core:2.28.2"
@@ -83,11 +83,21 @@ dependencies {
     implementation 'androidx.gridlayout:gridlayout:1.0.0'
     implementation 'com.google.firebase:firebase-analytics:17.2.1'
     implementation 'com.thegrizzlylabs.sardine-android:sardine-android:0.5'
-    implementation 'net.lingala.zip4j:zip4j:2.2.4'
+    implementation 'net.lingala.zip4j:zip4j:2.2.7'
     releaseImplementation 'com.crashlytics.sdk.android:crashlytics:2.10.1'
-    implementation "androidx.room:room-runtime:2.2.1"
-    implementation 'androidx.room:room-rxjava2:2.2.1'
-    kapt "androidx.room:room-compiler:2.2.1"
+
+    // Room Dependencies
+    implementation "androidx.room:room-runtime:2.2.2"
+    implementation 'androidx.room:room-rxjava2:2.2.2'
+    kapt "androidx.room:room-compiler:2.2.2"
+
+    // Dagger Dependencies
+    api 'com.google.dagger:dagger:2.25.2'
+    api 'com.google.dagger:dagger-android:2.25.2'
+    api 'com.google.dagger:dagger-android-support:2.25.2' // if you use the support libraries
+    annotationProcessor 'com.google.dagger:dagger-compiler:2.25.2'
+    annotationProcessor 'com.google.dagger:dagger-android-processor:2.25.2'
+
     configurations {
         all*.exclude group: 'xpp3', module: 'xpp3'
     }

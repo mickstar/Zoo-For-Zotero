@@ -8,7 +8,6 @@ import com.mickstarify.zooforzotero.BuildConfig
 import com.mickstarify.zooforzotero.PreferenceManager
 import com.mickstarify.zooforzotero.ZoteroAPI.Database.GroupInfo
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.*
-import com.mickstarify.zooforzotero.ZoteroAPI.Model.Collection
 import io.reactivex.Observable
 import io.reactivex.ObservableEmitter
 import io.reactivex.ObservableOnSubscribe
@@ -424,7 +423,7 @@ class ZoteroAPI(
             service.getCollections(userID, index)
         }
 
-        return observable.map { response: Response<List<Collection>> ->
+        return observable.map { response: Response<List<CollectionPOJO>> ->
             if (response.code() == 304) {
                 throw UpToDateException("304 Collections up to date.")
             } else if (response.code() == 403) {
@@ -443,7 +442,7 @@ class ZoteroAPI(
         index: Int = 0,
         isGroup: Boolean = false,
         groupID: Int = -1
-    ): Observable<List<Collection>> {
+    ): Observable<List<CollectionPOJO>> {
         /* This method provides access to the zotero api collections endpoint.
         *  It allows for both user personal access as well as shared collections (group) access.
         *  You must specify useGroup, as well as provide a groupID*/
@@ -452,8 +451,8 @@ class ZoteroAPI(
             throw Exception("Error, if isGroup=true, you must specify a groupID. Likewise if it is false, groupID cannot be given.")
         }
 
-        val observable = Observable.create(object : ObservableOnSubscribe<List<Collection>> {
-            override fun subscribe(emitter: ObservableEmitter<List<Collection>>) {
+        val observable = Observable.create(object : ObservableOnSubscribe<List<CollectionPOJO>> {
+            override fun subscribe(emitter: ObservableEmitter<List<CollectionPOJO>>) {
 
                 val s = getCollectionFromIndex(
                     isGroup,

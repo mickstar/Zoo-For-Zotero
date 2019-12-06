@@ -6,17 +6,23 @@ import android.util.ArrayMap
 import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
-import com.mickstarify.zooforzotero.ZoteroAPI.Model.Collection
+import com.mickstarify.zooforzotero.ZoteroAPI.Database.Collection
+import com.mickstarify.zooforzotero.ZoteroAPI.Database.ZoteroDatabase
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Item
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Note
+import io.reactivex.schedulers.Schedulers
 import java.io.File
 import java.io.InputStreamReader
 import java.io.OutputStreamWriter
 import java.util.*
 import kotlin.collections.HashMap
 
-
-class ZoteroDB(val context: Context, val prefix: String = "") {
+class ZoteroDB(val context: Context, val zoteroDatabase: ZoteroDatabase, val prefix: String = "") {
+    val groupID = if (prefix == "") {
+        Collection.NO_GROUP_ID
+    } else {
+        prefix.toInt()
+    } //todo remove this.
     var collections: List<Collection>? = null
         set(value) {
             field = value
@@ -37,11 +43,6 @@ class ZoteroDB(val context: Context, val prefix: String = "") {
 
     // we are adding this prefix stuff so we can have concurrent zoteroDBs that will allow users to store
     // shared collections.
-    val COLLECTIONS_FILENAME = if (prefix == "") {
-        "collections.json"
-    } else {
-        "${prefix}_collections.json"
-    }
     val ITEMS_FILENAME = if (prefix == "") {
         "items.json"
     } else {
@@ -86,21 +87,18 @@ class ZoteroDB(val context: Context, val prefix: String = "") {
         return timestamp
     }
 
-    fun commitCollectionsToStorage() {
+    fun commitCollectionsToDatabase() {
         if (collections == null) {
             throw Exception("Error, ZoteroDB not initialized. Cannot Commit to storage.")
         }
+        zoteroDatabase.writeCollections(this.collections!!).subscribeOn(Schedulers.io()).subscribe()
+    }
 
-        val gson = Gson()
 
-        val collectionsOut =
-            OutputStreamWriter(context.openFileOutput(COLLECTIONS_FILENAME, MODE_PRIVATE))
-        try {
-            collectionsOut.write(gson.toJson(collections))
-            collectionsOut.close()
-        } catch (exception: OutOfMemoryError) {
-            Log.d("zotero", "could not cache collections, user has not enough space.")
-        }
+    //todo fix up
+    fun loadCollectionsFromDatabase() {
+        val observable = zoteroDatabase.getCollections(groupID)
+        collections = observable.blockingGet(LinkedList())
     }
 
     fun loadItemsFromStorage() {
@@ -118,28 +116,10 @@ class ZoteroDB(val context: Context, val prefix: String = "") {
         }
     }
 
-    fun loadCollectionsFromStorage() {
-        try {
-            val gson = Gson()
-            val typeToken = object : TypeToken<List<Collection>>() {}.type
-            val collectionsJsonReader =
-                InputStreamReader(context.openFileInput(COLLECTIONS_FILENAME))
-            this.collections = gson.fromJson(collectionsJsonReader, typeToken)
-            collectionsJsonReader.close()
-        } catch (e: Exception) {
-            Log.e("zotero", "error loading collections from storage, deleting file.")
-            this.deleteLocalStorage()
-            throw Exception("error loading collections")
-        }
-    }
 
     /* Deletes our cached copy of the library. */
     private fun deleteLocalStorage() {
-        val collectionsFile = File(COLLECTIONS_FILENAME)
         val itemsFile = File(ITEMS_FILENAME)
-        if (collectionsFile.exists()) {
-            collectionsFile.delete()
-        }
         if (itemsFile.exists()) {
             itemsFile.delete()
         }
@@ -147,9 +127,8 @@ class ZoteroDB(val context: Context, val prefix: String = "") {
 
 
     fun hasStorage(): Boolean {
-        val collectionsFile = context.getFileStreamPath(COLLECTIONS_FILENAME)
         val itemsFile = context.getFileStreamPath(ITEMS_FILENAME)
-        return (collectionsFile.exists() && itemsFile.exists())
+        return (itemsFile.exists())
     }
 
     fun getAttachments(itemID: String): List<Item> {
@@ -287,7 +266,7 @@ class ZoteroDB(val context: Context, val prefix: String = "") {
     }
 
     fun getCollectionId(collectionName: String): String? {
-        return this.collections?.filter { it.getName() == collectionName }?.firstOrNull()?.key
+        return this.collections?.filter { it.name == collectionName }?.firstOrNull()?.key
     }
 
     fun getSubCollectionsFor(collectionKey: String): List<Collection> {

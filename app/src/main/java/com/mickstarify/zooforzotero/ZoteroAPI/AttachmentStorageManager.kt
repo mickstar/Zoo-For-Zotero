@@ -10,12 +10,16 @@ import com.google.common.hash.Hashing
 import com.google.common.io.Files
 import com.mickstarify.zooforzotero.PreferenceManager
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Item
+import dagger.Module
 import java.io.File
 import java.io.IOException
 import java.io.OutputStream
+import javax.inject.Singleton
 
 const val STORAGE_ACCESS_REQUEST = 1  // The request code
 
+@Module
+@Singleton
 class AttachmentStorageManager(val context: Context) {
     val preferenceManager = PreferenceManager(context)
 
@@ -27,6 +31,7 @@ class AttachmentStorageManager(val context: Context) {
 
     var storageMode: StorageMode = StorageMode.NONE_SET
     var rootDocFile: DocumentFile? = null // will get inited in testStorage()
+
     init {
         val storageModeString = preferenceManager.getStorageMode()
         storageMode = when (storageModeString) {

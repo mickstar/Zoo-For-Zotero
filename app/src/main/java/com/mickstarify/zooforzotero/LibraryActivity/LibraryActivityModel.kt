@@ -12,9 +12,10 @@ import com.google.firebase.analytics.FirebaseAnalytics
 import com.mickstarify.zooforzotero.PreferenceManager
 import com.mickstarify.zooforzotero.SyncSetup.AuthenticationStorage
 import com.mickstarify.zooforzotero.ZoteroAPI.*
+import com.mickstarify.zooforzotero.ZoteroAPI.Database.Collection
 import com.mickstarify.zooforzotero.ZoteroAPI.Database.GroupInfo
 import com.mickstarify.zooforzotero.ZoteroAPI.Database.ZoteroDatabase
-import com.mickstarify.zooforzotero.ZoteroAPI.Model.Collection
+import com.mickstarify.zooforzotero.ZoteroAPI.Model.CollectionPOJO
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Item
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Note
 import io.reactivex.MaybeObserver
@@ -49,9 +50,9 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
     private var firebaseAnalytics: FirebaseAnalytics
 
     private lateinit var zoteroAPI: ZoteroAPI
-    private val zoteroGroupDB = ZoteroGroupDB(context)
-    private var zoteroDBPicker = ZoteroDBPicker(ZoteroDB(context), zoteroGroupDB)
     private val zoteroDatabase = ZoteroDatabase(context)
+    private val zoteroGroupDB = ZoteroGroupDB(context, zoteroDatabase) //todo DAGGER2
+    private var zoteroDBPicker = ZoteroDBPicker(ZoteroDB(context, zoteroDatabase), zoteroGroupDB)
     private var groups: List<GroupInfo>? = null
 
     val preferences = PreferenceManager(context)
@@ -155,7 +156,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
 
     override fun loadCollectionsLocally() {
         doAsync {
-            zoteroDBPicker.getZoteroDB().loadCollectionsFromStorage()
+            zoteroDBPicker.getZoteroDB().loadCollectionsFromDatabase()
             onComplete {
                 finishGetCollections()
             }
@@ -183,26 +184,32 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
         collectionsObservable.subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())
             .unsubscribeOn(Schedulers.io())
-            .subscribe(object : Observer<List<Collection>> {
-                val collections = LinkedList<Collection>()
+            .subscribe(object : Observer<List<CollectionPOJO>> {
+                val collections = LinkedList<CollectionPOJO>()
                 override fun onComplete() {
-                    db.collections = collections
-                    db.commitCollectionsToStorage()
+                    val collectionObjects =
+                        collections.map { Collection(it, Collection.NO_GROUP_ID) }
+                    zoteroDBPicker.getZoteroDB().collections = collectionObjects
+                    zoteroDBPicker.getZoteroDB().commitCollectionsToDatabase()
                     finishGetCollections()
                 }
 
                 override fun onSubscribe(d: Disposable) {
                 }
 
-                override fun onNext(collections: List<Collection>) {
+                override fun onNext(collections: List<CollectionPOJO>) {
                     this.collections.addAll(collections)
                     Log.d("zotero", "got ${this.collections.size}")
                 }
 
                 override fun onError(e: Throwable) {
                     if (e is UpToDateException) {
-                        db.loadCollectionsFromStorage()
-                        finishGetCollections()
+                        doAsync {
+                            db.loadCollectionsFromDatabase()
+                            onComplete {
+                                finishGetCollections()
+                            }
+                        }
                     } else if (e is APIKeyRevokedException) {
                         presenter.createErrorAlert(
                             "Invalid API Key",
@@ -220,7 +227,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
 
                         if (db.hasStorage()) {
                             Log.d("zotero", "no internet connection. Using cached copy")
-                            db.loadCollectionsFromStorage()
+                            db.loadCollectionsFromDatabase()
                             finishGetCollections()
                         }
                     }
@@ -327,7 +334,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
     override fun filterCollections(query: String): List<Collection> {
         val queryUpper = query.toUpperCase(Locale.ROOT)
         return zoteroDBPicker.getZoteroDB().collections?.filter {
-            it.getName().toUpperCase(Locale.ROOT).contains(queryUpper)
+            it.name.toUpperCase(Locale.ROOT).contains(queryUpper)
         } ?: LinkedList()
     }
 
@@ -672,11 +679,12 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
         groupCollectionsObservable.subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())
             .unsubscribeOn(Schedulers.io())
-            .subscribe(object : Observer<List<Collection>> {
-                val collections = LinkedList<Collection>()
+            .subscribe(object : Observer<List<CollectionPOJO>> {
+                val collections = LinkedList<CollectionPOJO>()
                 override fun onComplete() {
-                    db.collections = collections
-                    db.commitCollectionsToStorage()
+                    val collectionObjects = collections.map { Collection(it, group.id) }
+                    db.collections = collectionObjects
+                    db.commitCollectionsToDatabase()
                     if (db.items != null) {
                         finishLoadingGroups(group)
                     }
@@ -685,16 +693,21 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                 override fun onSubscribe(d: Disposable) {
                 }
 
-                override fun onNext(collections: List<Collection>) {
+                override fun onNext(collections: List<CollectionPOJO>) {
                     this.collections.addAll(collections)
                 }
 
                 override fun onError(e: Throwable) {
                     if (e is UpToDateException) {
-                        db.loadCollectionsFromStorage()
-                        if (db.items != null) {
-                            finishLoadingGroups(group)
+                        doAsync {
+                            db.loadCollectionsFromDatabase()
+                            onComplete {
+                                if (db.items != null) {
+                                    finishLoadingGroups(group)
+                                }
+                            }
                         }
+
                     } else if (e is APIKeyRevokedException) {
                         presenter.createErrorAlert(
                             "Permission Error",
@@ -708,7 +721,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                         ) {}
 
                         if (db.hasStorage()) {
-                            db.loadCollectionsFromStorage()
+                            db.loadCollectionsFromDatabase()
                             if (db.items != null) {
                                 finishLoadingGroups(group)
                             }

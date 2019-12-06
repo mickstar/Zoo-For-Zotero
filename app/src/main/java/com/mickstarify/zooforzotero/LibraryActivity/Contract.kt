@@ -1,7 +1,7 @@
 package com.mickstarify.zooforzotero.LibraryActivity
 
+import com.mickstarify.zooforzotero.ZoteroAPI.Database.Collection
 import com.mickstarify.zooforzotero.ZoteroAPI.Database.GroupInfo
-import com.mickstarify.zooforzotero.ZoteroAPI.Model.Collection
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Item
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Note
 import java.io.File

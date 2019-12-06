@@ -27,8 +27,8 @@ import com.mickstarify.zooforzotero.LibraryActivity.ItemView.ItemViewFragment
 import com.mickstarify.zooforzotero.LibraryActivity.WebDAV.WebDAVSetup
 import com.mickstarify.zooforzotero.R
 import com.mickstarify.zooforzotero.SettingsActivity
+import com.mickstarify.zooforzotero.ZoteroAPI.Database.Collection
 import com.mickstarify.zooforzotero.ZoteroAPI.Database.GroupInfo
-import com.mickstarify.zooforzotero.ZoteroAPI.Model.Collection
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Item
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Note
 import kotlinx.android.synthetic.main.activity_library.*
@@ -87,7 +87,7 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
 
 
     override fun addNavigationEntry(collection: Collection, parent: String) {
-        collectionsMenu.add(R.id.group_collections, Menu.NONE, Menu.NONE, collection.getName())
+        collectionsMenu.add(R.id.group_collections, Menu.NONE, Menu.NONE, collection.name)
             .setIcon(R.drawable.ic_folder_black_24dp)
             .setCheckable(true)
 
@@ -205,7 +205,7 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
         listView.setOnItemClickListener { _, _, position: Int, _ ->
             val entry = listView.adapter.getItem(position) as ListEntry
             if (entry.isCollection()) {
-                presenter.setCollection(entry.getCollection().getName(), isSubCollection = true)
+                presenter.setCollection(entry.getCollection().name, isSubCollection = true)
             } else {
                 presenter.selectItem(entry.getItem())
             }

@@ -7,9 +7,10 @@ import androidx.room.RoomDatabase
 import io.reactivex.Completable
 import io.reactivex.Maybe
 
-@Database(entities = arrayOf(GroupInfo::class), version = 1)
+@Database(entities = arrayOf(GroupInfo::class, Collection::class), version = 2)
 abstract class ZoteroRoomDatabase : RoomDatabase() {
     abstract fun groupInfoDao(): GroupInfoDao
+    abstract fun collectionDao(): CollectionDao
 }
 
 class ZoteroDatabase(val context: Context) {
@@ -30,5 +31,12 @@ class ZoteroDatabase(val context: Context) {
         return db.groupInfoDao().getNumber()
     }
 
+    fun getCollections(groupID: Int): Maybe<List<Collection>> {
+        return db.collectionDao().getCollectionsForGroup(groupID)
+    }
+
+    fun writeCollections(collections: List<Collection>): Completable {
+        return db.collectionDao().insertAllCollections(collections)
+    }
 
 }
