@@ -79,6 +79,7 @@ class WebDAVSetup : AppCompatActivity() {
         doAsync {
             var status = false // default to false incase we get an exception
             var hadAuthenticationError = false
+            var errorMessage = ""
             try {
                 status = webDav.testConnection()
             } catch (e: Exception) {
@@ -100,9 +101,9 @@ class WebDAVSetup : AppCompatActivity() {
                     setWebDAVAuthentication(address, username, password)
                 } else {
                     if (hadAuthenticationError) {
-                        notifyFailed("Authentication Error. Please check your username and password.")
+                        notifyFailed("Authentication Error. Message: ${errorMessage}")
                     } else {
-                        notifyFailed()
+                        notifyFailed("Error setting up webdav, message: $errorMessage")
                     }
                 }
             }

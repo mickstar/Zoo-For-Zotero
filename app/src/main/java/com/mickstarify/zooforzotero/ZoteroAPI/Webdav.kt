@@ -75,7 +75,11 @@ class Webdav(address: String, val username: String, val password: String) {
         this.address = if (address.endsWith("/zotero")) {
             address
         } else {
-            address + "/zotero"
+            if (address.endsWith("/")) { // so we don't get server.com//zotero
+                address + "zotero"
+            } else {
+                address + "/zotero"
+            }
         }
     }
 
