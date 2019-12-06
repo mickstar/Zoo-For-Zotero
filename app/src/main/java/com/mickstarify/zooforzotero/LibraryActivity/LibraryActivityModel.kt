@@ -754,11 +754,13 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
     init {
         firebaseAnalytics = FirebaseAnalytics.getInstance(context)
         val auth = AuthenticationStorage(context)
+        val attachmentStorageManager = AttachmentStorageManager(context.applicationContext)
         if (auth.hasCredentials()) {
             zoteroAPI = ZoteroAPI(
                 auth.getUserKey()!!,
                 auth.getUserID()!!,
-                auth.getUsername()!!
+                auth.getUsername()!!,
+                attachmentStorageManager
             )
         } else {
             presenter.createErrorAlert(

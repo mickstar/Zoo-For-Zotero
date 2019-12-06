@@ -39,7 +39,8 @@ class AlreadyUploadedException(message: String) : RuntimeException(message)
 class ZoteroAPI(
     val API_KEY: String,
     val userID: String,
-    val username: String
+    val username: String,
+    val attachmentStorageManager: AttachmentStorageManager
 ) {
     private fun buildZoteroAPI(
         useCaching: Boolean,

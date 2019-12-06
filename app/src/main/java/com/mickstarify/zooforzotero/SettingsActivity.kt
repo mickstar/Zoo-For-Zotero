@@ -8,10 +8,11 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.preference.EditTextPreference
 import androidx.preference.PreferenceFragmentCompat
 import androidx.preference.SwitchPreference
-import com.mickstarify.zooforzotero.ZoteroAPI.StorageManager
+import com.mickstarify.zooforzotero.ZoteroAPI.AttachmentStorageManager
+import com.mickstarify.zooforzotero.ZoteroAPI.STORAGE_ACCESS_REQUEST
 
 class SettingsActivity : AppCompatActivity() {
-
+    lateinit var myStorageManager: AttachmentStorageManager
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.settings_activity)
@@ -20,16 +21,22 @@ class SettingsActivity : AppCompatActivity() {
             .replace(R.id.settings, SettingsFragment())
             .commit()
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
+
+        myStorageManager = AttachmentStorageManager(this)
     }
 
     fun openStoragePicker() {
-        val storageManager = StorageManager(this)
-        storageManager.getAccess(this)
+        myStorageManager.askUserForPath(this)
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         Log.d("zotero", "got back result request=$requestCode result=$resultCode data=$data")
+        when (requestCode) {
+            STORAGE_ACCESS_REQUEST -> {
+                myStorageManager.setStorage(data?.dataString)
+            }
+        }
     }
 
     class SettingsFragment : PreferenceFragmentCompat(),

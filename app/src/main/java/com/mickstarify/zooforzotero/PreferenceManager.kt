@@ -148,6 +148,21 @@ class PreferenceManager(context: Context) {
         return sharedPreferences.getBoolean("use_webdav_shared_libraries", false)
     }
 
+    fun setCustomAttachmentStorage(data: String) {
+        val editor = sharedPreferences.edit()
+        editor.putString("custom_attachment_storage_location", data)
+        editor.apply()
+    }
+
+    fun getCustomAttachmentStorageLocation(): String {
+        return sharedPreferences.getString("custom_attachment_storage_location", "") ?: ""
+    }
+
+    fun getStorageMode(): String {
+        return sharedPreferences.getString("attachment_storage_mode", "") ?: ""
+    }
+
+
     companion object {
         val SORT_METHOD_ASCENDING = "ASCENDING"
         val SORT_METHOD_DESCENDING = "DESCENDING"
