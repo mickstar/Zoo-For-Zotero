@@ -10,6 +10,8 @@ import com.mickstarify.zooforzotero.ZoteroAPI.Database.Collection
 import com.mickstarify.zooforzotero.ZoteroAPI.Database.ZoteroDatabase
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Item
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Note
+import io.reactivex.Completable
+import io.reactivex.CompletableOnSubscribe
 import io.reactivex.schedulers.Schedulers
 import java.io.File
 import java.io.InputStreamReader
@@ -17,12 +19,17 @@ import java.io.OutputStreamWriter
 import java.util.*
 import kotlin.collections.HashMap
 
-class ZoteroDB(val context: Context, val zoteroDatabase: ZoteroDatabase, val prefix: String = "") {
-    val groupID = if (prefix == "") {
-        Collection.NO_GROUP_ID
+class ZoteroDB constructor(
+    val context: Context,
+    val zoteroDatabase: ZoteroDatabase,
+    val groupID: Int
+) {
+    val prefix = if (groupID == Collection.NO_GROUP_ID) {
+        ""
     } else {
-        prefix.toInt()
-    } //todo remove this.
+        groupID.toString()
+    }
+
     var collections: List<Collection>? = null
         set(value) {
             field = value
@@ -53,6 +60,7 @@ class ZoteroDB(val context: Context, val zoteroDatabase: ZoteroDatabase, val pre
     } else {
         "zoteroDB_${prefix}"
     }
+
     fun isPopulated(): Boolean {
         return !(collections == null || items == null)
     }
@@ -94,11 +102,13 @@ class ZoteroDB(val context: Context, val zoteroDatabase: ZoteroDatabase, val pre
         zoteroDatabase.writeCollections(this.collections!!).subscribeOn(Schedulers.io()).subscribe()
     }
 
-
-    //todo fix up
-    fun loadCollectionsFromDatabase() {
+    fun loadCollectionsFromDatabase(): Completable {
         val observable = zoteroDatabase.getCollections(groupID)
-        collections = observable.blockingGet(LinkedList())
+
+        return Completable.create(CompletableOnSubscribe { emitter ->
+            collections = observable.blockingGet()
+            emitter.onComplete()
+        })
     }
 
     fun loadItemsFromStorage() {

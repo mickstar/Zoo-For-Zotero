@@ -12,7 +12,7 @@ class ZoteroGroupDB(val context: Context, val zoteroDatabase: ZoteroDatabase) {
         if (groups.keys.contains(groupID)) {
             return groups[groupID]!!
         }
-        val zoteroDB = ZoteroDB(context, zoteroDatabase, prefix = groupID.toString())
+        val zoteroDB = ZoteroDB(context, zoteroDatabase, groupID)
         groups[groupID] = zoteroDB
         return zoteroDB
     }

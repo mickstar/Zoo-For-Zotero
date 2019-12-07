@@ -6,6 +6,8 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import io.reactivex.Completable
 import io.reactivex.Maybe
+import javax.inject.Inject
+import javax.inject.Singleton
 
 @Database(entities = arrayOf(GroupInfo::class, Collection::class), version = 2)
 abstract class ZoteroRoomDatabase : RoomDatabase() {
@@ -13,7 +15,8 @@ abstract class ZoteroRoomDatabase : RoomDatabase() {
     abstract fun collectionDao(): CollectionDao
 }
 
-class ZoteroDatabase(val context: Context) {
+@Singleton
+class ZoteroDatabase @Inject constructor(val context: Context) {
     val db = Room.databaseBuilder(
         context.applicationContext,
         ZoteroRoomDatabase::class.java, "zotero"
