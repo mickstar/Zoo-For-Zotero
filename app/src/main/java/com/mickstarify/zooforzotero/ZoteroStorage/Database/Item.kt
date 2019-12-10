@@ -1,4 +1,4 @@
-package com.mickstarify.zooforzotero.ZoteroAPI.Database
+package com.mickstarify.zooforzotero.ZoteroStorage.Database
 
 import android.util.ArrayMap
 import androidx.room.*

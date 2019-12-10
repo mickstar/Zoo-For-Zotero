@@ -3,10 +3,10 @@ package com.mickstarify.zooforzotero.LibraryActivity
 import android.content.Context
 import android.util.Log
 import com.mickstarify.zooforzotero.SortMethod
-import com.mickstarify.zooforzotero.ZoteroAPI.Database.Collection
-import com.mickstarify.zooforzotero.ZoteroAPI.Database.GroupInfo
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Item
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Note
+import com.mickstarify.zooforzotero.ZoteroStorage.Database.Collection
+import com.mickstarify.zooforzotero.ZoteroStorage.Database.GroupInfo
 import java.io.File
 import java.util.*
 

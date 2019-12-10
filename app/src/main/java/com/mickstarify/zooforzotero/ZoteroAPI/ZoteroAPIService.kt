@@ -6,6 +6,7 @@ import com.mickstarify.zooforzotero.ZoteroAPI.Model.CollectionPOJO
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.GroupPojo
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.KeyInfo
 import io.reactivex.Observable
+import okhttp3.RequestBody
 import okhttp3.ResponseBody
 import retrofit2.Call
 import retrofit2.Response
@@ -78,6 +79,12 @@ interface ZoteroAPIService {
         @Path("itemKey") itemKey: String
     ): Call<ResponseBody>
 
+    @Streaming
+    @GET("users/{user}/items/{itemKey}/file")
+    fun getItemFileRx(
+        @Path("user") user: String,
+        @Path("itemKey") itemKey: String
+    ): Observable<Response<ResponseBody>>
 
     @POST("users/{user}/items")
     fun writeItem(
@@ -104,14 +111,40 @@ interface ZoteroAPIService {
         @Path("itemKey") itemKey: String,
         @Query("md5") md5: String,
         @Query("filename") filename: String,
-        @Query("filesize") filesize: Int,
-        @Query("mtime") mtime: Long
+        @Query("filesize") filesize: Long,
+        @Query("mtime") mtime: Long,
+        @Query("params") params: Int = 1,
+        @Body bodyText: String
     ): Observable<Response<ResponseBody>>
 
     @POST("users/{user}/items/{itemKey}/file")
-    fun uploadAttachment(
+    fun registerUpload(
         @Path("user") user: String,
         @Path("itemKey") itemKey: String,
-        @Query("upload") uploadKey: String
-    )
+        @Query("upload") uploadKey: String,
+        @Body body: String
+    ): Observable<Response<ResponseBody>>
+
+    @POST
+    fun uploadAttachmentToAmazon(
+        @Url url: String,
+        @Body data: RequestBody
+    ): Observable<Response<ResponseBody>>
+
+    @Multipart
+    @POST
+    fun uploadAttachmentToAmazonMulti(
+        @Url url: String,
+        @Part("key") key: RequestBody,
+        @Part("acl") acl: RequestBody,
+        @Part("Content-MD5") content_MD5: RequestBody,
+        @Part("success_action_status") success_action_status: RequestBody,
+        @Part("policy") policy: RequestBody,
+        @Part("x-amz-algorithm") x_amz_algorithm: RequestBody,
+        @Part("x-amz-credential") x_amz_credential: RequestBody,
+        @Part("x-amz-date") x_amz_date: RequestBody,
+        @Part("x-amz-signature") x_amz_signature: RequestBody,
+        @Part("x-amz-security-token") x_amz_security_token: RequestBody,
+        @Part("file") attachmentData: RequestBody
+    ): Observable<Response<ResponseBody>>
 }

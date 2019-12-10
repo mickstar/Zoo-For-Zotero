@@ -1,4 +1,4 @@
-package com.mickstarify.zooforzotero.ZoteroAPI
+package com.mickstarify.zooforzotero.ZoteroStorage.ZoteroDB
 
 import android.content.Context
 import android.content.Context.MODE_PRIVATE
@@ -6,10 +6,10 @@ import android.util.ArrayMap
 import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
-import com.mickstarify.zooforzotero.ZoteroAPI.Database.Collection
-import com.mickstarify.zooforzotero.ZoteroAPI.Database.ZoteroDatabase
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Item
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Note
+import com.mickstarify.zooforzotero.ZoteroStorage.Database.Collection
+import com.mickstarify.zooforzotero.ZoteroStorage.Database.ZoteroDatabase
 import io.reactivex.Completable
 import io.reactivex.CompletableOnSubscribe
 import io.reactivex.schedulers.Schedulers
@@ -327,5 +327,9 @@ class ZoteroDB constructor(
         newItems.addAll(toAdd)
         this.items = newItems
         this.commitItemsToStorage()
+    }
+
+    fun getItemWithKey(itemKey: String): Item? {
+        return items?.filter { it -> it.ItemKey == itemKey }?.firstOrNull()
     }
 }

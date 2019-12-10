@@ -1,24 +1,30 @@
 package com.mickstarify.zooforzotero.ZoteroAPI
 
 import android.content.Context
+import android.net.Uri
 import android.util.Log
+import androidx.core.net.toUri
 import com.google.common.hash.Hashing
 import com.google.common.io.Files
+import com.google.gson.Gson
 import com.mickstarify.zooforzotero.BuildConfig
 import com.mickstarify.zooforzotero.PreferenceManager
-import com.mickstarify.zooforzotero.ZoteroAPI.Database.GroupInfo
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.*
+import com.mickstarify.zooforzotero.ZoteroStorage.AttachmentStorageManager
+import com.mickstarify.zooforzotero.ZoteroStorage.Database.GroupInfo
+import io.reactivex.*
 import io.reactivex.Observable
-import io.reactivex.ObservableEmitter
-import io.reactivex.ObservableOnSubscribe
+import io.reactivex.Observer
+import io.reactivex.disposables.Disposable
 import okhttp3.Interceptor
+import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
+import okhttp3.RequestBody
 import okhttp3.ResponseBody
 import okhttp3.logging.HttpLoggingInterceptor
 import org.jetbrains.anko.doAsync
 import org.jetbrains.anko.onComplete
 import org.jetbrains.anko.runOnUiThread
-import org.json.JSONObject
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -28,6 +34,7 @@ import retrofit2.converter.gson.GsonConverterFactory
 import java.io.File
 import java.io.IOException
 import java.util.*
+import java.util.concurrent.TimeUnit
 
 
 const val BASE_URL = "https://api.zotero.org"
@@ -35,6 +42,8 @@ const val BASE_URL = "https://api.zotero.org"
 class UpToDateException(message: String) : RuntimeException(message)
 class APIKeyRevokedException(message: String) : RuntimeException(message)
 class AlreadyUploadedException(message: String) : RuntimeException(message)
+class PreconditionFailedException(message: String) : RuntimeException(message)
+class ServerAlreadyExistsException(message: String) : RuntimeException(message)
 class ZoteroAPI(
     val API_KEY: String,
     val userID: String,
@@ -45,14 +54,19 @@ class ZoteroAPI(
         useCaching: Boolean,
         libraryVersion: Int,
         ifModifiedSinceVersion: Int = -1,
-        md5IfMatch: String = ""
+        md5IfMatch: String = "",
+        contentType: String = ""
     ): ZoteroAPIService {
         val httpClient = OkHttpClient().newBuilder().apply {
             if (BuildConfig.DEBUG) {
                 addInterceptor(HttpLoggingInterceptor().apply {
-                    this.level = HttpLoggingInterceptor.Level.HEADERS
+                    this.level = HttpLoggingInterceptor.Level.BODY
                 })
             }
+            writeTimeout(
+                10,
+                TimeUnit.MINUTES
+            ) // so socket doesn't timeout on large uploads (attachments)
             addInterceptor(object : Interceptor {
                 override fun intercept(chain: Interceptor.Chain): okhttp3.Response {
                     val request = chain.request().newBuilder()
@@ -66,10 +80,36 @@ class ZoteroAPI(
                     }
                     if (md5IfMatch != "") {
                         request.addHeader("If-Match", "$md5IfMatch")
+
+                    }
+                    if (contentType != "") {
+                        // "application/x-www-form-urlencoded"
+                        request.addHeader("Content-Type", contentType)
                     }
                     return chain.proceed(request.build())
                 }
             })
+        }.build()
+
+        return Retrofit.Builder()
+            .baseUrl(BASE_URL)
+            .client(httpClient)
+            .addConverterFactory(GsonConverterFactory.create())
+            .addCallAdapterFactory(RxJava2CallAdapterFactory.create())
+            .build().create(ZoteroAPIService::class.java)
+    }
+
+    fun buildAmazonService(): ZoteroAPIService {
+        val httpClient = OkHttpClient().newBuilder().apply {
+            if (BuildConfig.DEBUG) {
+                addInterceptor(HttpLoggingInterceptor().apply {
+                    this.level = HttpLoggingInterceptor.Level.BODY
+                })
+            }
+            writeTimeout(
+                10,
+                TimeUnit.MINUTES
+            ) // so socket doesn't timeout on large uploads (attachments)
         }.build()
 
         return Retrofit.Builder()
@@ -133,7 +173,7 @@ class ZoteroAPI(
 
             onComplete {
                 if (outputFile != null) {
-                    listener.onComplete(outputFile)
+                    listener.onComplete(outputFile.toUri()) //todo update
                 } else {
                     if (hadIOError) {
                         listener.onFailure("Error, ${item.ItemKey.toUpperCase()}.zip was not found on the webDAV server.")
@@ -149,6 +189,66 @@ class ZoteroAPI(
 
     }
 
+    fun downloadItemRx(
+        item: Item,
+        groupID: Int = 0
+    ): Observable<DownloadProgress> {
+
+        val service = buildZoteroAPI(useCaching = false, libraryVersion = -1)
+
+        val outputFileStream = attachmentStorageManager.getItemOutputStream(item)
+
+        val observable = Observable.create<DownloadProgress> { emitter ->
+            val downloader = service.getItemFileRx(userID, item.ItemKey)
+            downloader.subscribe(object : Observer<Response<ResponseBody>> {
+                override fun onComplete() {
+                    emitter.onComplete()
+                }
+
+                override fun onSubscribe(d: Disposable) {
+                    // do nothing.
+                }
+
+                override fun onNext(response: Response<ResponseBody>) {
+                    val inputStream = response.body()?.byteStream()
+                    val fileSize = response.body()?.contentLength() ?: 0
+                    if (response.code() == 200) {
+                        val buffer = ByteArray(32768)
+                        var read = inputStream?.read(buffer) ?: 0
+                        var progress: Long = 0
+                        while (read > 0) {
+                            try {
+                                progress += read
+                                emitter.onNext(
+                                    DownloadProgress(
+                                        progress = progress,
+                                        total = fileSize
+                                    )
+                                )
+                                outputFileStream.write(buffer, 0, read)
+                                read = inputStream?.read(buffer) ?: 0
+                            } catch (e: java.io.InterruptedIOException) {
+                                outputFileStream.close()
+                                inputStream?.close()
+                                throw (e)
+                            }
+                            progress += read
+                        }
+                    } else {
+                        Log.e("zotero", "network error. response: ${response.body()}")
+                        throw RuntimeException("Zotero gave back ${response.code()}")
+                    }
+                }
+
+                override fun onError(e: Throwable) {
+                    emitter.onError(e)
+                }
+
+            })
+        }
+        return observable
+    }
+
     fun downloadItem(
         context: Context,
         item: Item,
@@ -160,11 +260,12 @@ class ZoteroAPI(
             Log.d("zotero", "got download request for item that isn't attachment")
         }
 
-        val outputFile = getFileForDownload(context, item)
-        if (checkIfFileExists(outputFile, item)) {
-            listener.onComplete(outputFile)
+        if (attachmentStorageManager.checkIfAttachmentExists(item, checkMd5 = true)) {
+            listener.onComplete(attachmentStorageManager.getAttachmentUri(item))
             return
         }
+
+        val outputFileStream = attachmentStorageManager.getItemOutputStream(item)
 
         val preferenceManager = PreferenceManager(context)
         // we will delegate to a webdav download if the user has webdav enabled.
@@ -191,7 +292,6 @@ class ZoteroAPI(
                 }
                 if (response.code() == 200) {
                     val task = doAsync {
-                        val outputFileStream = outputFile.outputStream()
                         var failure = false
                         val buffer = ByteArray(32768)
                         var read = inputStream.read(buffer)
@@ -224,7 +324,7 @@ class ZoteroAPI(
                             outputFileStream.close()
                             inputStream.close()
                             if (failure == false) {
-                                listener.onComplete(outputFile)
+                                listener.onComplete(attachmentStorageManager.getAttachmentUri(item))
                             }
                         }
                     }
@@ -350,7 +450,6 @@ class ZoteroAPI(
         return observable.map { response: Response<ResponseBody> ->
             if (response.code() == 304) {
                 throw UpToDateException("304 Items already loaded.")
-                ZoteroAPIItemsResponse(true, LinkedList(), modificationSinceVersion, 0)
             } else if (response.code() == 200) {
                 val s = response.body()?.string() ?: "[]"
                 val newItems = ItemJSONConverter().deserialize(s)
@@ -439,7 +538,6 @@ class ZoteroAPI(
     fun getCollections(
         libraryVersion: Int,
         useCaching: Boolean,
-        index: Int = 0,
         isGroup: Boolean = false,
         groupID: Int = -1
     ): Observable<List<CollectionPOJO>> {
@@ -502,44 +600,156 @@ class ZoteroAPI(
         }
     }
 
-    fun uploadPDF(parent: Item, attachment: File) {
+    fun updateAttachment(attachment: Item): Completable {
+        val attachmentUri: Uri = attachmentStorageManager.getAttachmentUri(attachment)
+        var md5Key = attachment.data["md5"] ?: ""
+        if (md5Key == "") {
+            Log.d("zotero", "no md5key provided for Item: ${attachment.getTitle()}")
+            md5Key = "*"
+        }
+        val service = buildZoteroAPI(false, -1, md5IfMatch = md5Key)
 
-        val authorizationObservable = getUploadAuthorization(parent)
-        val observable = authorizationObservable.map { t ->
-            if (t.exists) {
-                throw AlreadyUploadedException("File already uploaded")
-            } else {
-                t
-            }
-        }.map {
+        val newMd5 = attachmentStorageManager.calculateMd5(attachment)
+        if (md5Key == newMd5) {
+            throw AlreadyUploadedException("Local attachment version is the same as Zotero's.")
+        }
+        val mtime = attachmentStorageManager.getMtime(attachmentUri)
+        val filename = attachmentStorageManager.getFilenameForItem(attachment)
+        val filesize = attachmentStorageManager.getFileSize(attachmentUri)
 
+        val authorizationObservable =
+            getUploadAuthorization(attachment, newMd5, filename, filesize, mtime, service)
+
+
+        val chain = authorizationObservable.map { authorizationPojo ->
+            Log.d("zotero", "t ${authorizationPojo.uploadKey}")
+            Log.d("zotero", "about to upload ${authorizationPojo.uploadKey}")
+            val requestBody = RequestBody.create(
+                "multipart/form-data".toMediaType(),
+                attachmentStorageManager.readBytes(
+                    attachment
+                )
+            )
+            buildAmazonService().uploadAttachmentToAmazonMulti(
+                authorizationPojo.url,
+                RequestBody.create(
+                    "multipart/form-data".toMediaType(),
+                    authorizationPojo.params.key
+                ),
+                RequestBody.create(
+                    "multipart/form-data".toMediaType(),
+                    authorizationPojo.params.acl
+                ),
+                RequestBody.create(
+                    "multipart/form-data".toMediaType(),
+                    authorizationPojo.params.content_MD5
+                ),
+                RequestBody.create(
+                    "multipart/form-data".toMediaType(),
+                    authorizationPojo.params.success_action_status
+                ),
+                RequestBody.create(
+                    "multipart/form-data".toMediaType(),
+                    authorizationPojo.params.policy
+                ),
+                RequestBody.create(
+                    "multipart/form-data".toMediaType(),
+                    authorizationPojo.params.x_amz_algorithm
+                ),
+                RequestBody.create(
+                    "multipart/form-data".toMediaType(),
+                    authorizationPojo.params.x_amz_credential
+                ),
+                RequestBody.create(
+                    "multipart/form-data".toMediaType(),
+                    authorizationPojo.params.x_amz_date
+                ),
+                RequestBody.create(
+                    "multipart/form-data".toMediaType(),
+                    authorizationPojo.params.x_amz_signature
+                ),
+                RequestBody.create(
+                    "multipart/form-data".toMediaType(),
+                    authorizationPojo.params.x_amz_security_token
+                ),
+                requestBody
+            ).flatMap { amazonResponse ->
+                if (amazonResponse.code() == 421) {
+                    throw PreconditionFailedException("412 Precondition failed when uploading ${attachment.ItemKey}")
+                }
+                if (amazonResponse.code() == 201) {
+                    // SUCCESS
+                    service.registerUpload(
+                        userID,
+                        attachment.ItemKey,
+                        authorizationPojo.uploadKey,
+                        "upload=${authorizationPojo.uploadKey}"
+                    )
+                } else {
+                    throw RuntimeException("Amazon Attachment Server Gave server error: ${amazonResponse.code()}")
+                }
+            }.blockingSingle()
         }
 
+        return Completable.create({ emitter ->
+            chain.subscribe(object : Observer<Response<ResponseBody>> {
+                override fun onComplete() {
+                }
+
+                override fun onSubscribe(d: Disposable) {
+                }
+
+                override fun onNext(zoteroRegisterResponse: Response<ResponseBody>) {
+                    when (zoteroRegisterResponse.code()) {
+                        204 -> {
+                            emitter.onComplete()
+                        }
+                        412 -> {
+                            throw PreconditionFailedException("register upload returned")
+                        }
+                        else -> {
+                            throw Exception("Zotero server replied: ${zoteroRegisterResponse.code()}")
+                        }
+                    }
+                }
+
+                override fun onError(e: Throwable) {
+                    Log.e("zotero", "chain subscriber got error ${e}")
+                    emitter.onError(e)
+                }
+
+            })
+        })
     }
 
-    private fun getUploadAuthorization(item: Item): Observable<ZoteroAPIAuthorizationRequestResponse> {
-        val service = buildZoteroAPI(false, -1, md5IfMatch = item.data["md5"]!!)
+    private fun getUploadAuthorization(
+        item: Item,
+        newMd5: String,
+        filename: String,
+        filesize: Long,
+        mtime: Long,
+        service: ZoteroAPIService
+    ): Observable<ZoteroUploadAuthorizationPojo> {
+        Log.d("zotero", "upload requested, ${item.ItemKey}")
         val observable = service.uploadAttachmentAuthorization(
             userID,
             item.ItemKey,
-            "blah",
-            "filename.txt",
-            0,
-            0
+            newMd5,
+            filename,
+            filesize, //in bytes
+            mtime, //this is in milli
+            1,
+            "Content-Type: application/x-www-form-urlencoded"
         )
         return observable.map { response ->
             if (response.code() == 200) {
-                val jsonObject = JSONObject(response.body()!!.string())
-                if (jsonObject.has("exists")) {
-                    ZoteroAPIAuthorizationRequestResponse(true, "", "", "", "", "")
+                val jsonString = response.body()!!.string()
+                if (jsonString == "{ \"exists\": 1 }") {
+                    throw AlreadyUploadedException("File already uploaded")
                 } else {
-                    ZoteroAPIAuthorizationRequestResponse(
-                        false,
-                        jsonObject.getString("url"),
-                        jsonObject.getString("contentType"),
-                        jsonObject.getString("prefix"),
-                        jsonObject.getString("suffix"),
-                        jsonObject.getString("uploadKey")
+                    Gson().fromJson(
+                        jsonString,
+                        ZoteroUploadAuthorizationPojo::class.java
                     )
                 }
             } else {

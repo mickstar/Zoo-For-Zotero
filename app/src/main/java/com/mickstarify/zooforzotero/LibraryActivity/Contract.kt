@@ -1,9 +1,9 @@
 package com.mickstarify.zooforzotero.LibraryActivity
 
-import com.mickstarify.zooforzotero.ZoteroAPI.Database.Collection
-import com.mickstarify.zooforzotero.ZoteroAPI.Database.GroupInfo
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Item
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Note
+import com.mickstarify.zooforzotero.ZoteroStorage.Database.Collection
+import com.mickstarify.zooforzotero.ZoteroStorage.Database.GroupInfo
 import java.io.File
 
 interface Contract {
@@ -75,8 +75,7 @@ interface Contract {
         fun deleteNote(note: Note)
         fun openPDF(attachment: File)
         fun deleteAttachment(item: Item)
-        fun uploadAttachment(parent: Item, attachment: File)
-        fun updateAttachment(item: Item, attachment: File)
+        fun uploadAttachment(attachment: Item)
         fun getUnfiledItems(): List<Item>
         fun loadGroup(group: GroupInfo, refresh: Boolean = false)
         fun usePersonalLibrary()

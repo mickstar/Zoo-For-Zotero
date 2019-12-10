@@ -1,7 +1,7 @@
 package com.mickstarify.zooforzotero.LibraryActivity
 
-import com.mickstarify.zooforzotero.ZoteroAPI.Database.Collection
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Item
+import com.mickstarify.zooforzotero.ZoteroStorage.Database.Collection
 
 // holds either a collection or an Item
 class ListEntry {

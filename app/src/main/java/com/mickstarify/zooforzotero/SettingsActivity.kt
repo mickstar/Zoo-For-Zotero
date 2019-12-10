@@ -8,8 +8,8 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.preference.EditTextPreference
 import androidx.preference.PreferenceFragmentCompat
 import androidx.preference.SwitchPreference
-import com.mickstarify.zooforzotero.ZoteroAPI.AttachmentStorageManager
-import com.mickstarify.zooforzotero.ZoteroAPI.STORAGE_ACCESS_REQUEST
+import com.mickstarify.zooforzotero.ZoteroStorage.AttachmentStorageManager
+import com.mickstarify.zooforzotero.ZoteroStorage.STORAGE_ACCESS_REQUEST
 
 class SettingsActivity : AppCompatActivity() {
     lateinit var myStorageManager: AttachmentStorageManager
@@ -22,7 +22,10 @@ class SettingsActivity : AppCompatActivity() {
             .commit()
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
-        myStorageManager = AttachmentStorageManager(this)
+        myStorageManager =
+            AttachmentStorageManager(
+                this
+            )
     }
 
     fun openStoragePicker() {

@@ -159,7 +159,7 @@ class PreferenceManager(context: Context) {
     }
 
     fun getStorageMode(): String {
-        return sharedPreferences.getString("attachment_storage_mode", "") ?: ""
+        return sharedPreferences.getString("attachment_sync_location", "") ?: ""
     }
 
 

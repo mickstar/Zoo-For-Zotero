@@ -36,7 +36,7 @@ class Webdav(address: String, val username: String, val password: String) {
     }
 
     fun downloadFile(webpath: String, outputFile: File): Boolean {
-        var inputStream: InputStream? = null
+        var inputStream: InputStream?
         try {
             inputStream = sardine.get(webpath)
         } catch (e: IllegalArgumentException) {

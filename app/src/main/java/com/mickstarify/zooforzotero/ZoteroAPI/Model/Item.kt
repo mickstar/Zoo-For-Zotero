@@ -19,6 +19,9 @@ open class Item(
     val collections: List<String>,
     var mtime: Double = 0.0
 ) : Parcelable {
+    companion object {
+        val ATTACHMENT_TYPE = "attachment"
+    }
 
     fun getValue(key: String): Any? {
         when (key) {

@@ -1,4 +1,4 @@
-package com.mickstarify.zooforzotero.ZoteroAPI
+package com.mickstarify.zooforzotero.ZoteroStorage.ZoteroDB
 
 import com.mickstarify.zooforzotero.LibraryActivity.LibraryActivityModel
 import kotlin.reflect.KProperty
