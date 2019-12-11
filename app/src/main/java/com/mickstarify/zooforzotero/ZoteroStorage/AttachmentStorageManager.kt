@@ -207,6 +207,10 @@ class AttachmentStorageManager(val context: Context) {
 
 
     fun testStorage(): Boolean {
+        if (storageMode == StorageMode.EXTERNAL_CACHE) {
+            return true //nothing to test.
+        }
+
         val location = preferenceManager.getCustomAttachmentStorageLocation()
         if (location == "") {
             return false
@@ -265,6 +269,11 @@ class AttachmentStorageManager(val context: Context) {
         inputSource.close()
         outputStream.close()
         return getAttachmentUri(attachment)
+    }
+
+    fun deleteFileFromUri(attachmentUri: Uri) {
+        val docFile = DocumentFile.fromSingleUri(context, attachmentUri)
+        docFile?.delete()
     }
 
     // todo Fix duplicate files (1)

@@ -338,6 +338,42 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
         progressDialog = null
     }
 
+    var uploadProgressDialog: ProgressDialog? = null
+    override fun showAttachmentUploadProgress(attachment: Item) {
+        uploadProgressDialog = ProgressDialog(this)
+        uploadProgressDialog?.setTitle("Uploading Attachment")
+        uploadProgressDialog?.setMessage(
+            "Uploading ${attachment.data["filename"]}." +
+                    "This may take a while, do not close the app."
+        )
+        uploadProgressDialog?.isIndeterminate = true
+        uploadProgressDialog?.show()
+    }
+
+    override fun hideAttachmentUploadProgress() {
+        uploadProgressDialog?.hide()
+        uploadProgressDialog = null
+    }
+
+    override fun createYesNoPrompt(
+        title: String,
+        message: String, yesText: String, noText: String,
+        onYesClick: () -> Unit,
+        onNoClick: () -> Unit
+    ) {
+        val alert = AlertDialog.Builder(this)
+        alert.setIcon(R.drawable.ic_error_black_24dp)
+        alert.setTitle(title)
+        alert.setMessage(message)
+        alert.setPositiveButton(yesText) { _, _ -> onYesClick() }
+        alert.setNegativeButton(noText) { _, _ -> onNoClick() }
+        try {
+            alert.show()
+        } catch (exception: WindowManager.BadTokenException) {
+            Log.e("zotero", "error creating window bro")
+        }
+    }
+
     /* Is called by the fragment when an attachment is openned by the user. */
     override fun openAttachmentFileListener(item: Item) {
         presenter.openAttachment(item)
@@ -360,6 +396,11 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
             Log.d(packageName, "got intent for library filter $query")
             presenter.filterEntries(query)
         }
+    }
+
+    override fun onRestoreInstanceState(savedInstanceState: Bundle) {
+        super.onRestoreInstanceState(savedInstanceState)
+        Log.d("zotero", "resumed!")
     }
 
     var progressBar: ProgressBar? = null

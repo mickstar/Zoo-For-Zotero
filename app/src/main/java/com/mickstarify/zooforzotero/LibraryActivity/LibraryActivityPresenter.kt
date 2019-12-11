@@ -26,6 +26,38 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
 
     }
 
+    override fun startUploadingAttachment(attachment: Item) {
+        view.showAttachmentUploadProgress(attachment)
+    }
+
+    override fun stopUploadingAttachment() {
+        view.hideAttachmentDownloadProgress()
+        view.makeToastAlert("Finished uploading attachment.")
+    }
+
+    override fun askToUploadAttachments(changedAttachments: List<Item>) {
+        // for the sake of sanity I will only ask to upload 1 attachment.
+        // this is because of limitations of only having 1 upload occur concurrently
+        // and my unwillingness to implement a chaining mechanism for uploads for what i expect to
+        // be a niche power user.
+        val attachment = changedAttachments.first()
+        val fileSizeBytes = model.attachmentStorageManager.getFileSize(
+            model.attachmentStorageManager.getAttachmentUri(attachment)
+        )
+        val sizeKiloBytes = "${fileSizeBytes / 1000}KB"
+
+        val message =
+            "${attachment.data["filename"]!!} ($sizeKiloBytes)is different to zotero's version. Would you like to upload this PDF to replace the remote version?"
+
+        view.createYesNoPrompt(
+            "Detected changes to attachment",
+            message,
+            "Upload",
+            "No",
+            { model.uploadAttachment(attachment) },
+            { model.removeFromRecentlyViewed(attachment) })
+    }
+
     override fun displayGroupsOnActionBar(groups: List<GroupInfo>) {
         groups.forEach { groupInfo: GroupInfo ->
             Log.d("zotero", "got group ${groupInfo.name}")
@@ -108,6 +140,23 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
     }
 
     override fun openAttachment(item: Item) {
+        if (model.attachmentStorageManager.checkIfAttachmentExists(
+                item,
+                checkMd5 = false
+            ) && (model.attachmentStorageManager.validateMd5ForItem(item) == false)
+        ) {
+            view.createYesNoPrompt(
+                "File conflict",
+                "Your local copy is different to the server's. Would you like to redownload the server's copy?",
+                "Yes", "No", {
+                    view.updateAttachmentDownloadProgress(0, -1)
+                    model.downloadAttachment(item)
+                }, {
+                    val uri = model.attachmentStorageManager.getAttachmentUri(item)
+                    model.openPDF(uri)
+                }
+            )
+        }
         view.updateAttachmentDownloadProgress(0, -1)
         model.downloadAttachment(item)
     }

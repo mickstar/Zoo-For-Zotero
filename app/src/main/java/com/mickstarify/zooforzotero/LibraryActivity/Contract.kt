@@ -1,10 +1,10 @@
 package com.mickstarify.zooforzotero.LibraryActivity
 
+import android.net.Uri
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Item
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Note
 import com.mickstarify.zooforzotero.ZoteroStorage.Database.Collection
 import com.mickstarify.zooforzotero.ZoteroStorage.Database.GroupInfo
-import java.io.File
 
 interface Contract {
     interface View {
@@ -25,6 +25,12 @@ interface Contract {
         fun hideLibraryContentDisplay()
         fun clearSidebar()
         fun closeItemView()
+        fun showAttachmentUploadProgress(attachment: Item)
+        fun hideAttachmentUploadProgress()
+        fun createYesNoPrompt(
+            title: String, message: String, yesText: String, noText: String, onYesClick: () -> Unit,
+            onNoClick: () -> Unit
+        )
     }
 
     interface Presenter {
@@ -53,6 +59,9 @@ interface Contract {
         fun refreshItemView()
         fun displayGroupsOnActionBar(groups: List<GroupInfo>)
         fun openGroup(itemId: String)
+        fun startUploadingAttachment(attachment: Item)
+        fun stopUploadingAttachment()
+        fun askToUploadAttachments(changedAttachments: List<Item>)
     }
 
     interface Model {
@@ -73,12 +82,13 @@ interface Contract {
         fun createNote(note: Note)
         fun modifyNote(note: Note)
         fun deleteNote(note: Note)
-        fun openPDF(attachment: File)
+        fun openPDF(attachmentUri: Uri)
         fun deleteAttachment(item: Item)
         fun uploadAttachment(attachment: Item)
         fun getUnfiledItems(): List<Item>
         fun loadGroup(group: GroupInfo, refresh: Boolean = false)
         fun usePersonalLibrary()
         fun getGroupByTitle(groupTitle: String): GroupInfo?
+        fun removeFromRecentlyViewed(attachment: Item)
     }
 }

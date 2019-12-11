@@ -29,7 +29,6 @@ import io.reactivex.functions.Consumer
 import io.reactivex.schedulers.Schedulers
 import org.jetbrains.anko.doAsync
 import org.jetbrains.anko.onComplete
-import java.io.File
 import java.io.FileNotFoundException
 import java.util.*
 import java.util.concurrent.Future
@@ -364,8 +363,8 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
         } ?: LinkedList()
     }
 
-    override fun openPDF(attachment: File) {
-
+    override fun openPDF(attachmentUri: Uri) {
+        attachmentStorageManager.openAttachment(attachmentUri)
     }
 
     override fun filterItems(query: String): List<Item> {
@@ -405,12 +404,26 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                 }
 
                 override fun onComplete(attachmentUri: Uri) {
-                    zoteroDatabase.addRecentlyOpenedAttachments(RecentlyOpenedAttachment(item.ItemKey))
-                        .subscribeOn(Schedulers.io()).subscribe()
+
+                    if (!attachmentStorageManager.validateMd5ForItem(item)) {
+                        presenter.createErrorAlert(
+                            "Error downloading",
+                            "The download process did not complete properly. Please retry",
+                            {})
+                        firebaseAnalytics.logEvent("error_downloading_file_corrupted", Bundle())
+                        attachmentStorageManager.deleteFileFromUri(attachmentUri)
+                        return
+                    }
+
+                    if (!preferences.isWebDAVEnabled()) {
+                        // todo add support for webdav and remove this.
+                        zoteroDatabase.addRecentlyOpenedAttachments(RecentlyOpenedAttachment(item.ItemKey))
+                            .subscribeOn(Schedulers.io()).subscribe()
+                    }
 
                     isDownloading = false
                     presenter.finishDownloadingAttachment()
-                    AttachmentStorageManager(context).openAttachment(attachmentUri)
+                    openPDF(attachmentUri)
                 }
 
                 override fun onFailure(message: String) {
@@ -612,15 +625,13 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                 itemsToUpload
             }.subscribe(Consumer { changedAttachments ->
                 for (attachment in changedAttachments) {
+                    presenter.askToUploadAttachments(changedAttachments)
                     Log.d(
                         "zotero",
                         "found change in ${attachment.getTitle()} ${attachment.ItemKey}"
                     )
-                    uploadAttachment(attachment)
                 }
-
-            }).dispose()
-
+            })
     }
 
     // todo proper UI for uploading Attachments
@@ -628,13 +639,13 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
         zoteroAPI.updateAttachment(attachment).subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread()).subscribe(object : CompletableObserver {
                 override fun onComplete() {
-                    presenter.makeToastAlert("successfully uploaded attachment.")
-                    zoteroDatabase.deleteRecentlyOpenedAttachment(attachment.ItemKey)
-                        .subscribeOn(Schedulers.io()).subscribe()
+                    presenter.stopUploadingAttachment()
+                    removeFromRecentlyViewed(attachment)
+                    refreshLibrary()
                 }
 
                 override fun onSubscribe(d: Disposable) {
-                    //do nothing.
+                    presenter.startUploadingAttachment(attachment)
                 }
 
                 override fun onError(e: Throwable) {
@@ -643,6 +654,11 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                 }
 
             })
+    }
+
+    override fun removeFromRecentlyViewed(attachment: Item) {
+        zoteroDatabase.deleteRecentlyOpenedAttachment(attachment.ItemKey)
+            .subscribeOn(Schedulers.io()).subscribe()
     }
 
     override fun loadGroup(
