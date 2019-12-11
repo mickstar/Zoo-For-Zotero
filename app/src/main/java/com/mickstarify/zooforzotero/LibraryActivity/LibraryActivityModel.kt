@@ -634,7 +634,6 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
             })
     }
 
-    // todo proper UI for uploading Attachments
     override fun uploadAttachment(attachment: Item) {
         zoteroAPI.updateAttachment(attachment).subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread()).subscribe(object : CompletableObserver {
@@ -649,8 +648,10 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                 }
 
                 override fun onError(e: Throwable) {
-                    //todo
+                    presenter.createErrorAlert("Error uploading Attachment", e.toString(), {})
                     Log.e("zotero", "got exception: $e")
+                    val bundle = Bundle().apply { putString("error_message", e.toString()) }
+                    firebaseAnalytics.logEvent("error_uploading_attachments", bundle)
                 }
 
             })

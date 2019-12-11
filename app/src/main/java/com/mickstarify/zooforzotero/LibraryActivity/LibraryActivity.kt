@@ -398,9 +398,14 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
         }
     }
 
+    override fun onPostResume() {
+        super.onPostResume()
+        Log.e("zotero", "resumed")
+    }
+
     override fun onRestoreInstanceState(savedInstanceState: Bundle) {
         super.onRestoreInstanceState(savedInstanceState)
-        Log.d("zotero", "resumed!")
+        Log.e("zotero", "restored!")
     }
 
     var progressBar: ProgressBar? = null

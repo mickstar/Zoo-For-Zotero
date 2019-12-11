@@ -171,6 +171,17 @@ class PreferenceManager(context: Context) {
         editor.apply()
     }
 
+    fun firstRunForVersion21(): Boolean {
+        /*check to see if this is the first time the user is opening on version 2.1 (21)*/
+        val firstRun = sharedPreferences.getBoolean("firstrun_version21", true)
+        if (firstRun) {
+            val editor = sharedPreferences.edit()
+            editor.putBoolean("firstrun_version21", false)
+            editor.apply()
+        }
+        return firstRun
+    }
+
 
     companion object {
         val SORT_METHOD_ASCENDING = "ASCENDING"

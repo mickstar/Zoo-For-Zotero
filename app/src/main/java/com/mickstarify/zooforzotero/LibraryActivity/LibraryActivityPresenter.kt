@@ -302,8 +302,18 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
             model.loadItemsLocally()
             model.loadGroups()
         }
+
+        if (model.preferences.firstRunForVersion21()) {
+            view.createErrorAlert("New Changes!",
+                "Zoo now supports syncing of PDF modifications! " +
+                        "This isn't available by default however and you will have to set the attachment location " +
+                        "to a custom directory to have this functionality!",
+                {})
+        }
+
     }
 
+    // extension function to sort lists of items
     private fun List<Item>.sort(): List<Item> {
         if (model.preferences.isSortedAscendingly()) {
             return this.sortedWith(sortMethod)
