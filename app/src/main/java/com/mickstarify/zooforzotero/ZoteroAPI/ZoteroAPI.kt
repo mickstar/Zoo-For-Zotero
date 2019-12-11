@@ -3,7 +3,6 @@ package com.mickstarify.zooforzotero.ZoteroAPI
 import android.content.Context
 import android.net.Uri
 import android.util.Log
-import androidx.core.net.toUri
 import com.google.common.hash.Hashing
 import com.google.common.io.Files
 import com.google.gson.Gson
@@ -15,7 +14,9 @@ import com.mickstarify.zooforzotero.ZoteroStorage.Database.GroupInfo
 import io.reactivex.*
 import io.reactivex.Observable
 import io.reactivex.Observer
+import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposable
+import io.reactivex.schedulers.Schedulers
 import okhttp3.Interceptor
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -79,7 +80,7 @@ class ZoteroAPI(
                         request.addHeader("If-Unmodified-Since-Version", "$ifModifiedSinceVersion")
                     }
                     if (md5IfMatch != "") {
-                        request.addHeader("If-Match", "$md5IfMatch")
+                        request.addHeader("If-Match", md5IfMatch)
 
                     }
                     if (contentType != "") {
@@ -156,37 +157,33 @@ class ZoteroAPI(
             preferenceManager.getWebDAVPassword()
         )
 
-        val task = doAsync {
-            var outputFile: File? = null
-            var hadIOError = false
-            var illegalArgumentError = false
-            try {
-                outputFile = webdav!!.getAttachment(item.ItemKey, context)
-            } catch (e: IOException) {
-                hadIOError = true
-            } catch (e: IllegalArgumentException) {
-                illegalArgumentError = true
+        webdav.downloadFileRx(item, context, attachmentStorageManager)
+            .subscribeOn(Schedulers.io())
+            .observeOn(AndroidSchedulers.mainThread())
+            .subscribe(object : Observer<DownloadProgress> {
+                override fun onComplete() {
+                    listener.onComplete(attachmentStorageManager.getAttachmentUri(item))
+                }
 
-            } catch (e: Exception) {
+                override fun onSubscribe(d: Disposable) {
+                }
 
-            }
+                override fun onNext(t: DownloadProgress) {
+                    Log.d("zotero", "downloading webdav got ${t.progress} of ${t.total}")
+                    listener.onProgressUpdate(t.progress, t.total)
+                }
 
-            onComplete {
-                if (outputFile != null) {
-                    listener.onComplete(outputFile.toUri()) //todo update
-                } else {
-                    if (hadIOError) {
-                        listener.onFailure("Error, ${item.ItemKey.toUpperCase()}.zip was not found on the webDAV server.")
-                    } else if (illegalArgumentError) {
+                override fun onError(e: Throwable) {
+                    if (e is IOException) {
+                        listener.onFailure("Error, ${item.ItemKey.toUpperCase(Locale.ROOT)}.zip was not found on the webDAV server.")
+                    } else if (e is IllegalArgumentException) {
                         listener.onFailure("Error, your WebDAV is misconfigured. Please disable WebDAV in your settings, or reconfigure WebDAV from the menu.")
                     } else {
-                        listener.onFailure()
+                        listener.onFailure(e.toString())
                     }
                 }
-            }
-        }
-        listener.receiveTask(task)
 
+            })
     }
 
     fun downloadItemRx(
@@ -265,8 +262,6 @@ class ZoteroAPI(
             return
         }
 
-        val outputFileStream = attachmentStorageManager.getItemOutputStream(item)
-
         val preferenceManager = PreferenceManager(context)
         // we will delegate to a webdav download if the user has webdav enabled.
         // When the user has webdav enabled on personal account or for groups are the only two conditions.
@@ -283,8 +278,8 @@ class ZoteroAPI(
         }
         call.enqueue(object : Callback<ResponseBody> {
             override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
-
                 val inputStream = response.body()?.byteStream()
+                val outputFileStream = attachmentStorageManager.getItemOutputStream(item)
                 val fileSize = response.body()?.contentLength() ?: 0
                 if (inputStream == null) {
                     listener.onNetworkFailure()

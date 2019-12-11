@@ -37,7 +37,7 @@ interface Contract {
         fun showLibraryLoadingAnimation()
         fun hideLibraryLoadingAnimation()
         fun openAttachment(item: Item)
-        fun openPDF(attachment: File)
+        fun finishDownloadingAttachment()
         fun makeToastAlert(message: String)
         fun attachmentDownloadError(message: String = "")
         fun updateAttachmentDownloadProgress(progress: Long, total: Long)

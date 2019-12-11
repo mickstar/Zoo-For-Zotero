@@ -407,6 +407,9 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                 override fun onComplete(attachmentUri: Uri) {
                     zoteroDatabase.addRecentlyOpenedAttachments(RecentlyOpenedAttachment(item.ItemKey))
                         .subscribeOn(Schedulers.io()).subscribe()
+
+                    isDownloading = false
+                    presenter.finishDownloadingAttachment()
                     AttachmentStorageManager(context).openAttachment(attachmentUri)
                 }
 
@@ -578,8 +581,15 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
     }
 
     fun checkAllAttachmentsForModification() {
+        if (preferences.isWebDAVEnabled()) {
+            Log.d(
+                "zotero",
+                "not checking attachments because we do not support re-uploading for webdav."
+            )
+        }
+
         val recentlyOpened = zoteroDatabase.getRecentlyOpenedAttachments()
-        recentlyOpened.subscribeOn(Schedulers.io())
+        recentlyOpened.subscribeOn(Schedulers.io()).observeOn(AndroidSchedulers.mainThread())
             .map { listOfRecently ->
                 val itemsToUpload: MutableList<Item> = LinkedList()
                 for (recentlyOpenedAttachment in listOfRecently) {
@@ -609,17 +619,12 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                     uploadAttachment(attachment)
                 }
 
-            })
+            }).dispose()
 
     }
 
-    var runOnce = false
-
+    // todo proper UI for uploading Attachments
     override fun uploadAttachment(attachment: Item) {
-        if (runOnce) { //TODO REMOVE
-            Log.e("zotero", "already loaded! ${attachment.ItemKey}")
-        }
-        runOnce = true
         zoteroAPI.updateAttachment(attachment).subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread()).subscribe(object : CompletableObserver {
                 override fun onComplete() {
@@ -633,6 +638,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                 }
 
                 override fun onError(e: Throwable) {
+                    //todo
                     Log.e("zotero", "got exception: $e")
                 }
 
@@ -835,6 +841,18 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
             ) { (context as Activity).finish() }
             auth.destroyCredentials()
             zoteroDB.clearItemsVersion()
+        }
+
+        try {
+            if (attachmentStorageManager.testStorage() == false) {
+                throw Exception()
+            }
+        } catch (e: Exception) {
+            presenter.createErrorAlert(
+                "Permission Error",
+                "There was an error accessing your zotero attachment location. Please reconfigure in settings.",
+                {})
+            preferences.useExternalCache()
         }
     }
 }

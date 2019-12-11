@@ -7,7 +7,6 @@ import com.mickstarify.zooforzotero.ZoteroAPI.Model.Item
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Note
 import com.mickstarify.zooforzotero.ZoteroStorage.Database.Collection
 import com.mickstarify.zooforzotero.ZoteroStorage.Database.GroupInfo
-import java.io.File
 import java.util.*
 
 class LibraryActivityPresenter(val view: Contract.View, context: Context) : Contract.Presenter {
@@ -104,9 +103,8 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
         }
     }
 
-    override fun openPDF(attachment: File) {
+    override fun finishDownloadingAttachment() {
         view.hideAttachmentDownloadProgress()
-        model.openPDF(attachment)
     }
 
     override fun openAttachment(item: Item) {

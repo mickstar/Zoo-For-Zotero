@@ -11,15 +11,19 @@ import androidx.documentfile.provider.DocumentFile
 import com.mickstarify.zooforzotero.PreferenceManager
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Item
 import okhttp3.internal.toHexString
+import okio.buffer
+import okio.sink
+import okio.source
 import java.io.*
 import java.security.MessageDigest
+import java.util.*
 
 
 const val STORAGE_ACCESS_REQUEST = 1  // The request code
 
 /* This classes handles the data storage for all attachments. */
 
-
+//todo proper folder structure.
 class AttachmentStorageManager(val context: Context) {
     val preferenceManager = PreferenceManager(context)
 
@@ -28,8 +32,6 @@ class AttachmentStorageManager(val context: Context) {
         EXTERNAL_CACHE,
         NONE_SET
     }
-
-    var rootDocFile: DocumentFile? = null // will get inited in testStorage()
 
     val storageMode: StorageMode
         get() = when (preferenceManager.getStorageMode()) {
@@ -40,6 +42,9 @@ class AttachmentStorageManager(val context: Context) {
 
 
     init {
+    }
+
+    fun validateAccess() {
         if (storageMode == StorageMode.CUSTOM) {
             if (testStorage() == false) {
                 throw (IOException("Cannot Read Attachment Directory"))
@@ -60,7 +65,8 @@ class AttachmentStorageManager(val context: Context) {
     }
 
     fun checkIfAttachmentExists(item: Item, checkMd5: Boolean = true): Boolean {
-        testStorage()
+        val location = preferenceManager.getCustomAttachmentStorageLocation()
+        val rootDocFile = DocumentFile.fromTreeUri(context, Uri.parse(location))
         val filename = getFilenameForItem(item)
         if (storageMode == StorageMode.EXTERNAL_CACHE) {
             val outputDir = context.externalCacheDir
@@ -122,7 +128,10 @@ class AttachmentStorageManager(val context: Context) {
             return file.outputStream()
         } else if (storageMode == StorageMode.CUSTOM) {
             val documentTree = DocumentFile.fromTreeUri(context, getCustomStorageTreeURI())
-            val itemFile = documentTree!!.createFile(mimeType, filename)
+            var itemFile = documentTree!!.findFile(filename)
+            if (itemFile == null || !itemFile.exists()) {
+                itemFile = documentTree!!.createFile(mimeType, filename)
+            }
             return context.contentResolver.openOutputStream(itemFile!!.uri)!!
         }
         throw Exception("not implemented")
@@ -202,12 +211,20 @@ class AttachmentStorageManager(val context: Context) {
         if (location == "") {
             return false
         }
-        rootDocFile = DocumentFile.fromTreeUri(context, Uri.parse(location))
+        val rootDocFile = DocumentFile.fromTreeUri(context, Uri.parse(location))
         Log.d(
             "zotero",
             "testing dir canWrite=${rootDocFile?.canWrite()} canRead=${rootDocFile?.canRead()}"
         )
         return rootDocFile?.canWrite() == true
+    }
+
+    fun createTempFile(filename: String, fileExt: String): File {
+        val zipFile = File(context.cacheDir, "${filename.toUpperCase(Locale.ROOT)}.${fileExt}")
+        if (zipFile.exists()) {
+            zipFile.delete()
+        }
+        return zipFile
     }
 
     fun setStorage(location: String?) {
@@ -237,4 +254,19 @@ class AttachmentStorageManager(val context: Context) {
     fun readBytes(attachment: Item): ByteArray {
         return getItemInputStream(attachment).readBytes()
     }
+
+    fun writeAttachmentFromFile(file: File, attachment: Item): Uri {
+        val outputStream = getItemOutputStream(attachment)
+        val inputSource = file.inputStream().source()
+
+        val outputSinkBuffer = outputStream.sink().buffer()
+        outputSinkBuffer.writeAll(inputSource)
+        outputSinkBuffer.close()
+        inputSource.close()
+        outputStream.close()
+        return getAttachmentUri(attachment)
+    }
+
+    // todo Fix duplicate files (1)
+    // todo Fix External Cache for file uploading.
 }

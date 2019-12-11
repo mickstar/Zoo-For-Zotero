@@ -162,6 +162,15 @@ class PreferenceManager(context: Context) {
         return sharedPreferences.getString("attachment_sync_location", "") ?: ""
     }
 
+    fun useExternalCache() {
+        /*Sets the attachment storage location as being external cache.
+        * For use in case of errors related to the custom location. */
+        val editor = sharedPreferences.edit()
+        editor.putString("attachment_sync_location", "EXTERNAL_CACHE")
+        editor.putString("custom_attachment_storage_location", "")
+        editor.apply()
+    }
+
 
     companion object {
         val SORT_METHOD_ASCENDING = "ASCENDING"
