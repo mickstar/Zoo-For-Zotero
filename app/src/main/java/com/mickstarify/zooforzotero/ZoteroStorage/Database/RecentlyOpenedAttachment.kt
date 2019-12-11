@@ -13,7 +13,7 @@ data class RecentlyOpenedAttachment(
 @Dao
 interface RecentlyOpenedAttachmentDao {
 
-    @Query("select * from RecentlyOpenedAttachment")
+    @Query("SELECT * FROM RecentlyOpenedAttachment")
     fun getAll(): Maybe<List<RecentlyOpenedAttachment>>
 
     @Query("DELETE FROM RecentlyOpenedAttachment WHERE itemKey=:itemKey")

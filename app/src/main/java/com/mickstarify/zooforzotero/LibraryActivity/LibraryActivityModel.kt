@@ -1,7 +1,9 @@
 package com.mickstarify.zooforzotero.LibraryActivity
 
 import android.app.Activity
+import android.content.ActivityNotFoundException
 import android.content.Context
+import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.util.Log
@@ -20,6 +22,7 @@ import com.mickstarify.zooforzotero.ZoteroStorage.Database.ZoteroDatabase
 import com.mickstarify.zooforzotero.ZoteroStorage.ZoteroDB.ZoteroDB
 import com.mickstarify.zooforzotero.ZoteroStorage.ZoteroDB.ZoteroDBPicker
 import com.mickstarify.zooforzotero.ZoteroStorage.ZoteroDB.ZoteroGroupDB
+import io.reactivex.Completable
 import io.reactivex.CompletableObserver
 import io.reactivex.MaybeObserver
 import io.reactivex.Observer
@@ -363,8 +366,67 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
         } ?: LinkedList()
     }
 
-    override fun openPDF(attachmentUri: Uri) {
-        attachmentStorageManager.openAttachment(attachmentUri)
+    override fun openPDF(attachment: Item) {
+        Completable.create { emitter ->
+            if (!preferences.isWebDAVEnabled()) {
+                // todo add support for webdav and remove this.
+                zoteroDatabase.addRecentlyOpenedAttachments(RecentlyOpenedAttachment(attachment.ItemKey))
+                    .blockingAwait()
+                emitter.onComplete()
+            }
+        }.subscribeOn(Schedulers.io()).doOnComplete {
+            val uri = attachmentStorageManager.getAttachmentUri(attachment)
+            val intent = attachmentStorageManager.openAttachment(uri)
+            try {
+                context.startActivity(intent)
+            } catch (exception: ActivityNotFoundException) {
+                presenter.createErrorAlert("No PDF Viewer installed",
+                    "There is no app that handles pdf documents available on your device. Would you like to install one?",
+                    onClick = {
+                        try {
+                            context.startActivity(
+                                Intent(
+                                    Intent.ACTION_VIEW,
+                                    Uri.parse("market://details?id=com.xodo.pdf.reader")
+                                )
+                            )
+                        } catch (e: ActivityNotFoundException) {
+                            context.startActivity(
+                                Intent(
+                                    Intent.ACTION_VIEW,
+                                    Uri.parse("https://play.google.com/store/apps/details?id=com.xodo.pdf.reader")
+                                )
+                            )
+                        }
+                    })
+            }
+        }.subscribe().dispose()
+
+        val uri = attachmentStorageManager.getAttachmentUri(attachment)
+        val intent = attachmentStorageManager.openAttachment(uri)
+        try {
+            context.startActivity(intent)
+        } catch (exception: ActivityNotFoundException) {
+            presenter.createErrorAlert("No PDF Viewer installed",
+                "There is no app that handles pdf documents available on your device. Would you like to install one?",
+                onClick = {
+                    try {
+                        context.startActivity(
+                            Intent(
+                                Intent.ACTION_VIEW,
+                                Uri.parse("market://details?id=com.xodo.pdf.reader")
+                            )
+                        )
+                    } catch (e: ActivityNotFoundException) {
+                        context.startActivity(
+                            Intent(
+                                Intent.ACTION_VIEW,
+                                Uri.parse("https://play.google.com/store/apps/details?id=com.xodo.pdf.reader")
+                            )
+                        )
+                    }
+                })
+        }
     }
 
     override fun filterItems(query: String): List<Item> {
@@ -414,16 +476,9 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                         attachmentStorageManager.deleteFileFromUri(attachmentUri)
                         return
                     }
-
-                    if (!preferences.isWebDAVEnabled()) {
-                        // todo add support for webdav and remove this.
-                        zoteroDatabase.addRecentlyOpenedAttachments(RecentlyOpenedAttachment(item.ItemKey))
-                            .subscribeOn(Schedulers.io()).subscribe()
-                    }
-
                     isDownloading = false
                     presenter.finishDownloadingAttachment()
-                    openPDF(attachmentUri)
+                    openPDF(item)
                 }
 
                 override fun onFailure(message: String) {
@@ -599,13 +654,27 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                 "zotero",
                 "not checking attachments because we do not support re-uploading for webdav."
             )
+            return
+        }
+        if (isUsingGroups()) {
+            Log.d(
+                "zotero",
+                "not checking attachments because we do not support groups"
+            )
+            return
         }
 
+        if (!preferences.isAttachmentUploadingEnabled()) {
+            Log.d("zotero", "disabled by preferences")
+            return
+        }
+
+
         val recentlyOpened = zoteroDatabase.getRecentlyOpenedAttachments()
-        recentlyOpened.subscribeOn(Schedulers.io()).observeOn(AndroidSchedulers.mainThread())
-            .map { listOfRecently ->
+        recentlyOpened.map { listOfRecently ->
                 val itemsToUpload: MutableList<Item> = LinkedList()
                 for (recentlyOpenedAttachment in listOfRecently) {
+                    Log.d("zotero", "RECENTLY OPENED ${recentlyOpenedAttachment.itemKey}")
                     val item = zoteroDB.getItemWithKey(recentlyOpenedAttachment.itemKey)
                     if (item != null) {
                         try {
@@ -617,13 +686,14 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                                 "zotero",
                                 "could not find local attachment with itemKey ${item.ItemKey}"
                             )
-                            zoteroDatabase.deleteRecentlyOpenedAttachment(item.ItemKey)
-                                .blockingGet()
+                            removeFromRecentlyViewed(item)
                         }
                     }
                 }
                 itemsToUpload
-            }.subscribe(Consumer { changedAttachments ->
+        }.subscribeOn(Schedulers.io())
+            .observeOn(AndroidSchedulers.mainThread())
+            .subscribe(Consumer { changedAttachments ->
                 for (attachment in changedAttachments) {
                     presenter.askToUploadAttachments(changedAttachments)
                     Log.d(
@@ -631,7 +701,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                         "found change in ${attachment.getTitle()} ${attachment.ItemKey}"
                     )
                 }
-            })
+            }).dispose()
     }
 
     override fun uploadAttachment(attachment: Item) {

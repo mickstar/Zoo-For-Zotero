@@ -182,6 +182,9 @@ class PreferenceManager(context: Context) {
         return firstRun
     }
 
+    fun isAttachmentUploadingEnabled(): Boolean {
+        return sharedPreferences.getBoolean("attachments_uploading_enabled", true)
+    }
 
     companion object {
         val SORT_METHOD_ASCENDING = "ASCENDING"

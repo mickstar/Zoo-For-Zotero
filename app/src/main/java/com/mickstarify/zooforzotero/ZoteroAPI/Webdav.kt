@@ -146,7 +146,11 @@ class Webdav(
         this.address = if (address.endsWith("/zotero")) {
             address
         } else {
-            address + "/zotero"
+            if (address.endsWith("/")) { // so we don't get server.com//zotero
+                address + "zotero"
+            } else {
+                address + "/zotero"
+            }
         }
     }
 

@@ -1,6 +1,5 @@
 package com.mickstarify.zooforzotero.LibraryActivity
 
-import android.net.Uri
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Item
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Note
 import com.mickstarify.zooforzotero.ZoteroStorage.Database.Collection
@@ -62,6 +61,7 @@ interface Contract {
         fun startUploadingAttachment(attachment: Item)
         fun stopUploadingAttachment()
         fun askToUploadAttachments(changedAttachments: List<Item>)
+        fun onResume()
     }
 
     interface Model {
@@ -82,7 +82,7 @@ interface Contract {
         fun createNote(note: Note)
         fun modifyNote(note: Note)
         fun deleteNote(note: Note)
-        fun openPDF(attachmentUri: Uri)
+        fun openPDF(attachment: Item)
         fun deleteAttachment(item: Item)
         fun uploadAttachment(attachment: Item)
         fun getUnfiledItems(): List<Item>

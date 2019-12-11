@@ -187,7 +187,7 @@ class AttachmentStorageManager(val context: Context) {
         )
     }
 
-    fun openAttachment(attachmentUri: Uri) {
+    fun openAttachment(attachmentUri: Uri): Intent {
         var intent = Intent(Intent.ACTION_VIEW)
         Log.d("zotero", "opening PDF with Uri $attachmentUri")
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
@@ -195,6 +195,7 @@ class AttachmentStorageManager(val context: Context) {
             intent = Intent(Intent.ACTION_VIEW)
             intent.data = attachmentUri
             intent.flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
+            intent.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
         } else {
             intent.setDataAndType(attachmentUri, "application/pdf")
             intent.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY)
@@ -202,7 +203,7 @@ class AttachmentStorageManager(val context: Context) {
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
 
         }
-        context.startActivity(intent)
+        return intent
     }
 
 

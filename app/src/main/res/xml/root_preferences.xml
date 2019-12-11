@@ -35,6 +35,11 @@
                 app:title="@string/setting_sync_attachments_location"
                 app:useSimpleSummaryProvider="true" />
 
+        <SwitchPreference
+                android:defaultValue="true"
+                android:key="attachments_uploading_enabled"
+                android:title="Offer to upload attachments" />
+
     </PreferenceCategory>
     <PreferenceCategory android:title="Web DAV">
 
@@ -71,7 +76,7 @@
                 android:defaultValue="false"
                 android:dependency="use_webdav"
                 android:key="use_webdav_shared_libraries"
-                android:title="Use webdav for Shared Libraries" />
+                android:title="Use webdav for Group Libraries" />
     </PreferenceCategory>
     <PreferenceCategory app:title="@string/library_header">
         <ListPreference

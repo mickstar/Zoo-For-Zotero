@@ -31,7 +31,7 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
     }
 
     override fun stopUploadingAttachment() {
-        view.hideAttachmentDownloadProgress()
+        view.hideAttachmentUploadProgress()
         view.makeToastAlert("Finished uploading attachment.")
     }
 
@@ -47,7 +47,7 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
         val sizeKiloBytes = "${fileSizeBytes / 1000}KB"
 
         val message =
-            "${attachment.data["filename"]!!} ($sizeKiloBytes)is different to zotero's version. Would you like to upload this PDF to replace the remote version?"
+            "${attachment.data["filename"]!!} ($sizeKiloBytes) is different to Zotero's version. Would you like to upload this PDF to replace the remote version?"
 
         view.createYesNoPrompt(
             "Detected changes to attachment",
@@ -56,6 +56,12 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
             "No",
             { model.uploadAttachment(attachment) },
             { model.removeFromRecentlyViewed(attachment) })
+    }
+
+    override fun onResume() {
+        if (model.isLoaded()) {
+            model.checkAllAttachmentsForModification()
+        }
     }
 
     override fun displayGroupsOnActionBar(groups: List<GroupInfo>) {
@@ -152,10 +158,10 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
                     view.updateAttachmentDownloadProgress(0, -1)
                     model.downloadAttachment(item)
                 }, {
-                    val uri = model.attachmentStorageManager.getAttachmentUri(item)
-                    model.openPDF(uri)
+                    model.openPDF(item)
                 }
             )
+            return
         }
         view.updateAttachmentDownloadProgress(0, -1)
         model.downloadAttachment(item)
@@ -305,8 +311,8 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
 
         if (model.preferences.firstRunForVersion21()) {
             view.createErrorAlert("New Changes!",
-                "Zoo now supports syncing of PDF modifications! " +
-                        "This isn't available by default however and you will have to set the attachment location " +
+                "Zoo now supports syncing of PDF modifications using Zotero's API! (not webdav yet)" +
+                        "\nThis isn't enabled by default, you will have to set the attachment location " +
                         "to a custom directory to have this functionality!",
                 {})
         }

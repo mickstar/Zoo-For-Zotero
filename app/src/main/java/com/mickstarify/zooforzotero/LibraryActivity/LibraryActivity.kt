@@ -343,7 +343,7 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
         uploadProgressDialog = ProgressDialog(this)
         uploadProgressDialog?.setTitle("Uploading Attachment")
         uploadProgressDialog?.setMessage(
-            "Uploading ${attachment.data["filename"]}." +
+            "Uploading ${attachment.data["filename"]}. " +
                     "This may take a while, do not close the app."
         )
         uploadProgressDialog?.isIndeterminate = true
@@ -401,6 +401,7 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
     override fun onPostResume() {
         super.onPostResume()
         Log.e("zotero", "resumed")
+        presenter.onResume()
     }
 
     override fun onRestoreInstanceState(savedInstanceState: Bundle) {
