@@ -37,6 +37,7 @@ import java.util.*
 import java.util.concurrent.Future
 import java.util.concurrent.TimeUnit
 
+
 class LibraryActivityModel(private val presenter: Contract.Presenter, val context: Context) :
     Contract.Model {
 
