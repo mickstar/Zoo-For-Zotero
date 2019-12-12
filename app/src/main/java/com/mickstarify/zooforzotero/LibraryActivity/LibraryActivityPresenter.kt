@@ -1,7 +1,9 @@
 package com.mickstarify.zooforzotero.LibraryActivity
 
 import android.content.Context
+import android.os.Bundle
 import android.util.Log
+import com.google.firebase.analytics.FirebaseAnalytics
 import com.mickstarify.zooforzotero.SortMethod
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Item
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Note
@@ -44,6 +46,14 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
         val fileSizeBytes = model.attachmentStorageManager.getFileSize(
             model.attachmentStorageManager.getAttachmentUri(attachment)
         )
+
+        if (fileSizeBytes == 0L) {
+            Log.e("zotero", "avoiding uploading a garbage PDF")
+            FirebaseAnalytics.getInstance(model.context)
+                .logEvent("AVOIDED_UPLOAD_GARBAGE", Bundle())
+            model.removeFromRecentlyViewed(attachment)
+        }
+
         val sizeKiloBytes = "${fileSizeBytes / 1000}KB"
 
         val message =
@@ -149,7 +159,9 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
         if (model.attachmentStorageManager.checkIfAttachmentExists(
                 item,
                 checkMd5 = false
-            ) && (model.attachmentStorageManager.validateMd5ForItem(item) == false)
+            ) && (!model.preferences.isWebDAVEnabled() && !model.attachmentStorageManager.validateMd5ForItem(
+                item
+            ))
         ) {
             view.createYesNoPrompt(
                 "File conflict",
@@ -195,7 +207,7 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
         if (item.getItemType() == "attachment") {
             this.openAttachment(item)
         } else if (item.getItemType() == "note") {
-            //ignore
+            //todo implement note opening
         } else {
             model.selectedItem = item
             view.showItemDialog(
@@ -243,7 +255,7 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
             model.isDisplayingItems = entries.size > 0
             view.populateEntries(entries)
         } else if (collectionName == "group_all" && model.isUsingGroups()) {
-            view.setTitle(model.getCurrentGroup()!!.name)
+            view.setTitle(model.getCurrentGroup().name)
             val entries = LinkedList<ListEntry>()
             entries.addAll(model.getCollections().filter {
                 !it.hasParent()
@@ -311,9 +323,9 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
 
         if (model.preferences.firstRunForVersion21()) {
             view.createErrorAlert("New Changes!",
-                "Zoo now supports syncing of PDF modifications using Zotero's API! (not webdav yet)" +
-                        "\nThis isn't enabled by default, you will have to set the attachment location " +
-                        "to a custom directory to have this functionality!",
+                "Zoo now supports syncing of PDF modifications using Zotero's API! (not webdav)" +
+                        "\nFor this to work you will need to use a PDF editor that saves modifications directly to the file " +
+                        "rather than creating a copy of the file. I recommend using Xodo PDF Viewer. Adobe Acrobat will not work.",
                 {})
         }
 

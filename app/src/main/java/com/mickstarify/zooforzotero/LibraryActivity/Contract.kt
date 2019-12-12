@@ -57,7 +57,7 @@ interface Contract {
         fun deleteNote(note: Note)
         fun refreshItemView()
         fun displayGroupsOnActionBar(groups: List<GroupInfo>)
-        fun openGroup(itemId: String)
+        fun openGroup(groupTitle: String)
         fun startUploadingAttachment(attachment: Item)
         fun stopUploadingAttachment()
         fun askToUploadAttachments(changedAttachments: List<Item>)

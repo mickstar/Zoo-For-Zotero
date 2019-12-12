@@ -23,7 +23,6 @@ const val STORAGE_ACCESS_REQUEST = 1  // The request code
 
 /* This classes handles the data storage for all attachments. */
 
-//todo proper folder structure.
 class AttachmentStorageManager(val context: Context) {
     val preferenceManager = PreferenceManager(context)
 
@@ -65,11 +64,12 @@ class AttachmentStorageManager(val context: Context) {
     }
 
     fun checkIfAttachmentExists(item: Item, checkMd5: Boolean = true): Boolean {
-        val location = preferenceManager.getCustomAttachmentStorageLocation()
-        val rootDocFile = DocumentFile.fromTreeUri(context, Uri.parse(location))
         val filename = getFilenameForItem(item)
         if (storageMode == StorageMode.EXTERNAL_CACHE) {
-            val outputDir = context.externalCacheDir
+            val outputDir = File(context.externalCacheDir, item.ItemKey.toUpperCase(Locale.ROOT))
+            if (!outputDir.exists() || outputDir.isDirectory == false) {
+                return false
+            }
             val file = File(outputDir, filename)
             if (checkMd5) {
                 return file.exists() && calculateMd5(file.inputStream()) == item.data["md5"]
@@ -78,13 +78,19 @@ class AttachmentStorageManager(val context: Context) {
             }
 
         } else if (storageMode == StorageMode.CUSTOM) {
-            val file = rootDocFile!!.findFile(filename)
+            val location = preferenceManager.getCustomAttachmentStorageLocation()
+            val rootDocFile = DocumentFile.fromTreeUri(context, Uri.parse(location))
+            var directory = rootDocFile?.findFile(item.ItemKey.toUpperCase(Locale.ROOT))
+            if (directory == null || directory.isDirectory == false) {
+                directory = rootDocFile?.createDirectory(item.ItemKey.toUpperCase(Locale.ROOT))
+            }
+            val file = directory?.findFile(filename)
             if (file == null) {
                 return false
             }
-            val exists = rootDocFile?.findFile(filename)?.exists() == true
-            if (checkMd5) {
-                return exists && (calculateMd5(context.contentResolver.openInputStream(file.uri)!!) == item.data["md5"])
+            val exists = file.exists()
+            if (file.exists() && checkMd5) {
+                return calculateMd5(context.contentResolver.openInputStream(file.uri)!!) == item.data["md5"]
             } else {
                 return exists
             }
@@ -112,7 +118,7 @@ class AttachmentStorageManager(val context: Context) {
 
         inputStream.close()
         var result = ""
-        var checksumByteArray = complete.digest()
+        val checksumByteArray = complete.digest()
         for (i in 0 until checksumByteArray.size) {
             result += ((checksumByteArray.get(i).toInt() and 0xff) + 0x100).toHexString()
                 .substring(1)
@@ -124,13 +130,17 @@ class AttachmentStorageManager(val context: Context) {
         val filename = getFilenameForItem(item)
         val mimeType = item.data["contentType"] ?: "application/pdf"
         if (storageMode == StorageMode.EXTERNAL_CACHE) {
-            val file = File(context.externalCacheDir, filename)
+            val file = getAttachmentFile(item)
             return file.outputStream()
         } else if (storageMode == StorageMode.CUSTOM) {
             val documentTree = DocumentFile.fromTreeUri(context, getCustomStorageTreeURI())
-            var itemFile = documentTree!!.findFile(filename)
+            var directory = documentTree?.findFile(item.ItemKey.toUpperCase(Locale.ROOT))
+            if (directory == null || directory.isDirectory == false) {
+                directory = documentTree?.createDirectory(item.ItemKey.toUpperCase(Locale.ROOT))
+            }
+            var itemFile = directory!!.findFile(filename)
             if (itemFile == null || !itemFile.exists()) {
-                itemFile = documentTree!!.createFile(mimeType, filename)
+                itemFile = directory.createFile(mimeType, filename)
             }
             return context.contentResolver.openOutputStream(itemFile!!.uri)!!
         }
@@ -141,13 +151,10 @@ class AttachmentStorageManager(val context: Context) {
         val filename = getFilenameForItem(item)
         val mimeType = item.data["contentType"] ?: "application/pdf"
         if (storageMode == StorageMode.EXTERNAL_CACHE) {
-            val file = File(context.externalCacheDir, filename)
+            val file = getAttachmentFile(item)
             return file.inputStream()
         } else if (storageMode == StorageMode.CUSTOM) {
-            val documentTree = DocumentFile.fromTreeUri(context, getCustomStorageTreeURI())
-            val itemFile = documentTree?.findFile(filename)
-                ?: throw(FileNotFoundException("cannot open inputstream."))
-            return context.contentResolver.openInputStream(itemFile.uri)!!
+            return context.contentResolver.openInputStream(getAttachmentUri(item))!!
         }
         throw Exception("not implemented")
     }
@@ -155,7 +162,7 @@ class AttachmentStorageManager(val context: Context) {
     fun getAttachmentUri(item: Item): Uri {
         val filename = getFilenameForItem(item)
         if (storageMode == StorageMode.EXTERNAL_CACHE) {
-            val file = File(context.externalCacheDir, filename)
+            val file = getAttachmentFile(item)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                 return FileProvider.getUriForFile(
                     context,
@@ -168,7 +175,8 @@ class AttachmentStorageManager(val context: Context) {
 
         } else if (storageMode == StorageMode.CUSTOM) {
             val documentTree = DocumentFile.fromTreeUri(context, getCustomStorageTreeURI())
-            val file = documentTree?.findFile(filename) ?: throw IOException("File not found! null")
+            val directory = documentTree?.findFile(item.ItemKey.toUpperCase(Locale.ROOT))
+            val file = directory?.findFile(filename) ?: throw IOException("File not found! null")
             if (file.exists()) {
                 return file.uri
             }
@@ -246,9 +254,28 @@ class AttachmentStorageManager(val context: Context) {
         return Uri.parse(preferenceManager.getCustomAttachmentStorageLocation())
     }
 
-    fun getMtime(attachmentUri: Uri): Long {
-        val docFile = DocumentFile.fromSingleUri(context, attachmentUri)
-        return docFile?.lastModified() ?: throw FileNotFoundException()
+    fun getMtime(attachment: Item): Long {
+        when (storageMode) {
+            StorageMode.EXTERNAL_CACHE -> {
+                val file = getAttachmentFile(attachment)
+                return file.lastModified()
+            }
+            StorageMode.CUSTOM -> {
+                val docFile = DocumentFile.fromSingleUri(context, getAttachmentUri(attachment))
+                return docFile?.lastModified() ?: throw FileNotFoundException()
+            }
+            else -> throw Exception("Invalid storage mode")
+        }
+
+    }
+
+    private fun getAttachmentFile(attachment: Item): File {
+        val filename = getFilenameForItem(attachment)
+        val directory = File(context.externalCacheDir, attachment.ItemKey.toUpperCase(Locale.ROOT))
+        if (!directory.exists()) {
+            directory.mkdirs()
+        }
+        return File(directory, filename)
     }
 
     fun getFileSize(attachmentUri: Uri): Long {
@@ -272,11 +299,17 @@ class AttachmentStorageManager(val context: Context) {
         return getAttachmentUri(attachment)
     }
 
-    fun deleteFileFromUri(attachmentUri: Uri) {
-        val docFile = DocumentFile.fromSingleUri(context, attachmentUri)
-        docFile?.delete()
+    fun deleteAttachment(attachment: Item) {
+        when (storageMode) {
+            StorageMode.EXTERNAL_CACHE -> {
+                getAttachmentFile(attachment).delete()
+            }
+            StorageMode.CUSTOM -> {
+                val docFile = DocumentFile.fromSingleUri(context, getAttachmentUri(attachment))
+                docFile?.delete()
+            }
+            else -> throw Exception("bad storage mode")
+        }
     }
 
-    // todo Fix duplicate files (1)
-    // todo Fix External Cache for file uploading.
 }

@@ -3,8 +3,6 @@ package com.mickstarify.zooforzotero.ZoteroAPI
 import android.content.Context
 import android.net.Uri
 import android.util.Log
-import com.google.common.hash.Hashing
-import com.google.common.io.Files
 import com.google.gson.Gson
 import com.mickstarify.zooforzotero.BuildConfig
 import com.mickstarify.zooforzotero.PreferenceManager
@@ -136,15 +134,6 @@ class ZoteroAPI(
         return file
     }
 
-    private fun checkIfFileExists(file: File, item: Item): Boolean {
-        if (file.exists()) {
-            val md5 = item.data["md5"] ?: ""
-            val md5Key = Files.hash(file, Hashing.md5()).toString()
-            return md5Key == md5
-        }
-        return false
-    }
-
     private fun downloadItemWithWebDAV(
         context: Context,
         item: Item,
@@ -257,12 +246,17 @@ class ZoteroAPI(
             Log.d("zotero", "got download request for item that isn't attachment")
         }
 
-        if (attachmentStorageManager.checkIfAttachmentExists(item, checkMd5 = true)) {
+        val preferenceManager = PreferenceManager(context)
+
+        val checkMd5 =
+            !preferenceManager.isWebDAVEnabled() // we're not checking MD5 is the user isn't on zotero api.
+
+        if (attachmentStorageManager.checkIfAttachmentExists(item, checkMd5)) {
             listener.onComplete(attachmentStorageManager.getAttachmentUri(item))
             return
         }
 
-        val preferenceManager = PreferenceManager(context)
+
         // we will delegate to a webdav download if the user has webdav enabled.
         // When the user has webdav enabled on personal account or for groups are the only two conditions.
         if ((!useGroup && preferenceManager.isWebDAVEnabled()) || (useGroup && preferenceManager.isWebDAVEnabledForGroups())) {
@@ -608,7 +602,7 @@ class ZoteroAPI(
         if (md5Key == newMd5) {
             throw AlreadyUploadedException("Local attachment version is the same as Zotero's.")
         }
-        val mtime = attachmentStorageManager.getMtime(attachmentUri)
+        val mtime = attachmentStorageManager.getMtime(attachment)
         val filename = attachmentStorageManager.getFilenameForItem(attachment)
         val filesize = attachmentStorageManager.getFileSize(attachmentUri)
 
