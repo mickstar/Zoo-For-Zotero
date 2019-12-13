@@ -189,6 +189,9 @@ class AttachmentStorageManager(val context: Context) {
         /* Attempts to get access to a directory to store zotero storage. */
         val intent = Intent()
         intent.setAction(Intent.ACTION_OPEN_DOCUMENT_TREE)
+        intent.addFlags(Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION)
+        intent.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
+        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         activity.startActivityForResult(
             intent,
             STORAGE_ACCESS_REQUEST
@@ -232,8 +235,8 @@ class AttachmentStorageManager(val context: Context) {
         return rootDocFile?.canWrite() == true
     }
 
-    fun createTempFile(filename: String, fileExt: String): File {
-        val zipFile = File(context.cacheDir, "${filename.toUpperCase(Locale.ROOT)}.${fileExt}")
+    fun createTempFile(filename: String): File {
+        val zipFile = File(context.cacheDir, filename)
         if (zipFile.exists()) {
             zipFile.delete()
         }
@@ -245,6 +248,18 @@ class AttachmentStorageManager(val context: Context) {
             Log.e("zotero", "error got null for location in setStorage()")
             return
         }
+
+        val uri = Uri.parse(location)
+
+        context.contentResolver.takePersistableUriPermission(
+            uri,
+            Intent.FLAG_GRANT_READ_URI_PERMISSION or
+                    Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+        )
+        context.contentResolver.takePersistableUriPermission(
+            uri,
+            Intent.FLAG_GRANT_READ_URI_PERMISSION
+        )
 
         preferenceManager.setCustomAttachmentStorage(location)
         testStorage()

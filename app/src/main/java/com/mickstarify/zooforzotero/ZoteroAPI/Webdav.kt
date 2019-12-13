@@ -4,9 +4,12 @@ import android.content.Context
 import android.util.Log
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Item
 import com.mickstarify.zooforzotero.ZoteroStorage.AttachmentStorageManager
-import com.thegrizzlylabs.sardineandroid.Sardine
 import com.thegrizzlylabs.sardineandroid.impl.OkHttpSardine
 import io.reactivex.Observable
+import net.lingala.zip4j.ZipFile
+import okio.buffer
+import okio.sink
+import okio.source
 import java.io.File
 import java.io.IOException
 import java.io.InputStream
@@ -17,29 +20,12 @@ class Webdav(
     val username: String,
     val password: String
 ) {
-    var sardine: Sardine = OkHttpSardine()
+    var sardine: OkHttpSardine
     var address: String
     fun testConnection(): Boolean {
         return sardine.exists(address)
     }
 
-    fun getAttachment(itemKey: String, context: Context): File? {
-        val zipFile = File(context.cacheDir, "/${itemKey.toUpperCase()}.zip")
-        if (zipFile.exists()) {
-            zipFile.delete()
-        }
-        val status = downloadFile(address + "/${itemKey.toUpperCase()}.zip", zipFile)
-        if (status == false) {
-            return null
-        }
-        val zipFile2 = net.lingala.zip4j.ZipFile(zipFile)
-        val attachmentFilename =
-            zipFile2.fileHeaders.firstOrNull()?.fileName ?: throw Exception("Error empty zipfile.")
-        net.lingala.zip4j.ZipFile(zipFile).extractAll(context.externalCacheDir!!.absolutePath)
-        zipFile.delete() // don't need this anymore.
-        return File(context.externalCacheDir, attachmentFilename)
-
-    }
 
     fun downloadFileRx(
         attachment: Item,
@@ -61,8 +47,7 @@ class Webdav(
 
             val zipFile =
                 attachmentStorageManager.createTempFile(
-                    attachment.ItemKey.toUpperCase(Locale.ROOT),
-                    "zip"
+                    "${attachment.ItemKey.toUpperCase(Locale.ROOT)}.pdf"
                 )
             val downloadOutputStream = zipFile.outputStream()
 
@@ -106,39 +91,37 @@ class Webdav(
         }
     }
 
-    fun downloadFile(webpath: String, outputFile: File): Boolean {
-        var inputStream: InputStream?
-        try {
-            inputStream = sardine.get(webpath)
-        } catch (e: IllegalArgumentException) {
-            Log.e("zotero", "${e}")
-            throw(e)
-        } catch (e: Exception) {
-            Log.e("zotero", "${e}")
-            throw(IOException("File not found."))
-        }
-        val outputStream = outputFile.outputStream()
-        val buffer = ByteArray(32768)
-        var read = inputStream.read(buffer)
-        var failed = false
-        while (read > 0) {
-            try {
-                outputStream.write(buffer, 0, read)
-                read = inputStream.read(buffer)
-            } catch (e: Exception) {
-                Log.e("zotero", "exception downloading webdav attachment ${e.message}")
-                failed = true
-                break
-            }
-        }
-        outputStream.close()
-        if (read > 0 || failed) {
-            return false
-        }
-        return true
+    fun uploadAttachment(attachment: Item, attachmentStorageManager: AttachmentStorageManager) {
+        /*Uploading will take 3 steps,
+        * 1. Compress attachment into a ZIP file (using internal cache dir)
+        * 2. Upload to webdav server as F3FXJF_NEW.zip and F3FXJF_NEW.info
+        * 3. send a delete request and  rename request to server so we have
+        *  F3FXJF.zip + F3FXJF.info resulting*/
+
+//        val observable: Observable<C> = Observable.create({emitter ->
+//
+//        })
+        // STEP 1 CREATE ZIP
+        val fileInputStream = attachmentStorageManager.getItemInputStream(attachment).source()
+        val filename = attachmentStorageManager.getFilenameForItem(attachment)
+        val tempFile = attachmentStorageManager.createTempFile(filename)
+        val sinkBuffer = tempFile.outputStream().sink().buffer()
+        sinkBuffer.writeAll(fileInputStream)
+        sinkBuffer.close()
+        fileInputStream.close()
+
+        val zipFile =
+            ZipFile("${attachment.ItemKey.toUpperCase(Locale.ROOT)}_NEW.zip").addFile(tempFile)
+
+        // STEP 2 UPLOAD FILE TO SERVER
+
+
+
     }
 
     init {
+        sardine = OkHttpSardine()
+        sardine.allowForInsecureSSL()
         if (username != "" && password != "") {
             sardine.setCredentials(username, password)
         }

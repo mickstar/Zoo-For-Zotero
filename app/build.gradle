@@ -84,9 +84,10 @@ dependencies {
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0'
     implementation 'androidx.gridlayout:gridlayout:1.0.0'
     implementation 'com.google.firebase:firebase-analytics:17.2.1'
-    implementation 'com.thegrizzlylabs.sardine-android:sardine-android:0.5'
     implementation 'net.lingala.zip4j:zip4j:2.2.7'
     releaseImplementation 'com.crashlytics.sdk.android:crashlytics:2.10.1'
+
+//    implementation 'com.github.mickstar:sardine-android:v0.6'
 
     // Room Dependencies
     implementation "androidx.room:room-runtime:2.2.2"
@@ -96,6 +97,7 @@ dependencies {
     // Dagger Dependencies
     implementation 'com.google.dagger:dagger:2.25.2'
     kapt 'com.google.dagger:dagger-compiler:2.25.2'
+    implementation project(path: ':sardine-android')
 
     configurations {
         all*.exclude group: 'xpp3', module: 'xpp3'
