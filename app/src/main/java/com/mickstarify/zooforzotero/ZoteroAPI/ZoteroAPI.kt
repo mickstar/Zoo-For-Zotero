@@ -589,6 +589,16 @@ class ZoteroAPI(
         }
     }
 
+    fun uploadAttachmentWithWebdav(attachment: Item, context: Context): Completable {
+        val preferenceManager = PreferenceManager(context)
+        val webdav = Webdav(
+            preferenceManager.getWebDAVAddress(),
+            preferenceManager.getWebDAVUsername(),
+            preferenceManager.getWebDAVPassword()
+        )
+        return webdav.uploadAttachment(attachment, attachmentStorageManager)
+    }
+
     fun updateAttachment(attachment: Item): Completable {
         val attachmentUri: Uri = attachmentStorageManager.getAttachmentUri(attachment)
         var md5Key = attachment.data["md5"] ?: ""

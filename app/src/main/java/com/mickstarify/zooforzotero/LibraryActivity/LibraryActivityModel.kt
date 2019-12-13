@@ -28,6 +28,7 @@ import io.reactivex.MaybeObserver
 import io.reactivex.Observer
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposable
+import io.reactivex.functions.Action
 import io.reactivex.functions.Consumer
 import io.reactivex.schedulers.Schedulers
 import org.jetbrains.anko.doAsync
@@ -710,6 +711,32 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
     }
 
     override fun uploadAttachment(attachment: Item) {
+        if (preferences.isWebDAVEnabled()) {
+            val sub = zoteroAPI.uploadAttachmentWithWebdav(attachment, context)
+                .subscribeOn(Schedulers.io()).observeOn(AndroidSchedulers.mainThread()).subscribe(
+                object : CompletableObserver {
+                    override fun onComplete() {
+                        presenter.stopUploadingAttachment()
+                        removeFromRecentlyViewed(attachment)
+                        refreshLibrary()
+                    }
+
+                    override fun onSubscribe(d: Disposable) {
+                        presenter.startUploadingAttachment(attachment)
+                    }
+
+                    override fun onError(e: Throwable) {
+                        presenter.createErrorAlert("Error uploading Attachment", e.toString(), {})
+                        Log.e("zotero", "got exception: $e")
+                        val bundle = Bundle().apply { putString("error_message", e.toString()) }
+                        firebaseAnalytics.logEvent("error_uploading_attachments", bundle)
+                        presenter.stopUploadingAttachment()
+                    }
+
+                })
+            return
+        }
+
         zoteroAPI.updateAttachment(attachment).subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread()).subscribe(object : CompletableObserver {
                 override fun onComplete() {

@@ -13,7 +13,7 @@ android {
     compileSdkVersion 29
     defaultConfig {
         applicationId "com.mickstarify.zooforzotero"
-        minSdkVersion 21
+        minSdkVersion 22
         targetSdkVersion 29
         versionCode 21
         versionName "2.1"
@@ -87,7 +87,7 @@ dependencies {
     implementation 'net.lingala.zip4j:zip4j:2.2.7'
     releaseImplementation 'com.crashlytics.sdk.android:crashlytics:2.10.1'
 
-//    implementation 'com.github.mickstar:sardine-android:v0.6'
+    implementation 'com.github.mickstar:sardine-android:v0.6'
 
     // Room Dependencies
     implementation "androidx.room:room-runtime:2.2.2"
@@ -97,7 +97,6 @@ dependencies {
     // Dagger Dependencies
     implementation 'com.google.dagger:dagger:2.25.2'
     kapt 'com.google.dagger:dagger-compiler:2.25.2'
-    implementation project(path: ':sardine-android')
 
     configurations {
         all*.exclude group: 'xpp3', module: 'xpp3'

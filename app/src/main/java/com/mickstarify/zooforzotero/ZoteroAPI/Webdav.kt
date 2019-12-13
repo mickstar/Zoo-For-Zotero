@@ -5,7 +5,11 @@ import android.util.Log
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Item
 import com.mickstarify.zooforzotero.ZoteroStorage.AttachmentStorageManager
 import com.thegrizzlylabs.sardineandroid.impl.OkHttpSardine
+import io.reactivex.Completable
 import io.reactivex.Observable
+import io.reactivex.Single
+import io.reactivex.SingleEmitter
+import io.reactivex.functions.Action
 import net.lingala.zip4j.ZipFile
 import okio.buffer
 import okio.sink
@@ -74,11 +78,11 @@ class Webdav(
                     )}.zip"
                 )
             }
-            val zipFile2 = net.lingala.zip4j.ZipFile(zipFile)
+            val zipFile2 = ZipFile(zipFile)
             val attachmentFilename =
                 zipFile2.fileHeaders.firstOrNull()?.fileName
                     ?: throw Exception("Error empty zipfile.")
-            net.lingala.zip4j.ZipFile(zipFile).extractAll(context.cacheDir.absolutePath)
+            ZipFile(zipFile).extractAll(context.cacheDir.absolutePath)
             zipFile.delete() // don't need this anymore.
             attachmentStorageManager.writeAttachmentFromFile(
                 File(
@@ -91,32 +95,36 @@ class Webdav(
         }
     }
 
-    fun uploadAttachment(attachment: Item, attachmentStorageManager: AttachmentStorageManager) {
+    fun uploadAttachment(attachment: Item, attachmentStorageManager: AttachmentStorageManager): Completable {
         /*Uploading will take 3 steps,
         * 1. Compress attachment into a ZIP file (using internal cache dir)
         * 2. Upload to webdav server as F3FXJF_NEW.zip and F3FXJF_NEW.info
         * 3. send a delete request and  rename request to server so we have
         *  F3FXJF.zip + F3FXJF.info resulting*/
 
-//        val observable: Observable<C> = Observable.create({emitter ->
-//
-//        })
-        // STEP 1 CREATE ZIP
-        val fileInputStream = attachmentStorageManager.getItemInputStream(attachment).source()
-        val filename = attachmentStorageManager.getFilenameForItem(attachment)
-        val tempFile = attachmentStorageManager.createTempFile(filename)
-        val sinkBuffer = tempFile.outputStream().sink().buffer()
-        sinkBuffer.writeAll(fileInputStream)
-        sinkBuffer.close()
-        fileInputStream.close()
+        val observable = Single.create(
+            { emitter: SingleEmitter<File> ->
+                // STEP 1 CREATE ZIP
+                val fileInputStream =
+                    attachmentStorageManager.getItemInputStream(attachment).source()
+                val filename = attachmentStorageManager.getFilenameForItem(attachment)
+                val tempFile = attachmentStorageManager.createTempFile(filename)
+                val sinkBuffer = tempFile.outputStream().sink().buffer()
+                sinkBuffer.writeAll(fileInputStream)
+                sinkBuffer.close()
+                fileInputStream.close()
 
-        val zipFile =
-            ZipFile("${attachment.ItemKey.toUpperCase(Locale.ROOT)}_NEW.zip").addFile(tempFile)
+                val zipFile =
+                    attachmentStorageManager.createTempFile("${attachment.ItemKey.toUpperCase(Locale.ROOT)}_NEW.zip")
 
-        // STEP 2 UPLOAD FILE TO SERVER
+                ZipFile(zipFile).addFile(tempFile)
+                emitter.onSuccess(zipFile)
+            }).map { zipFile ->
 
+            sardine.put(address, zipFile, "application/zip")
+        }
 
-
+        return Completable.fromSingle(observable)
     }
 
     init {
