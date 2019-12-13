@@ -180,7 +180,7 @@ class AttachmentStorageManager(val context: Context) {
             if (file.exists()) {
                 return file.uri
             }
-            throw IOException("File not found!")
+            throw FileNotFoundException()
         }
         throw Exception("not implemented")
     }
