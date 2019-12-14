@@ -321,14 +321,13 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
             model.loadGroups()
         }
 
-        if (model.preferences.firstRunForVersion21()) {
+        if (model.preferences.firstRunForVersion24()) {
             view.createErrorAlert("New Changes!",
                 "Zoo now supports syncing of PDF modifications using Zotero's API! (not webdav)" +
                         "\nFor this to work you will need to use a PDF editor that saves modifications directly to the file " +
                         "rather than creating a copy of the file. I recommend using Xodo PDF Viewer. Adobe Acrobat will not work.",
                 {})
         }
-
     }
 
     // extension function to sort lists of items

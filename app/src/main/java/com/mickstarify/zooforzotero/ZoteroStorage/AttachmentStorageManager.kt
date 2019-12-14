@@ -9,6 +9,7 @@ import android.util.Log
 import androidx.core.content.FileProvider
 import androidx.documentfile.provider.DocumentFile
 import com.mickstarify.zooforzotero.PreferenceManager
+import com.mickstarify.zooforzotero.ZoteroAPI.Model.Attachment
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Item
 import okhttp3.internal.toHexString
 import okio.buffer
@@ -56,8 +57,12 @@ class AttachmentStorageManager(val context: Context) {
     }
 
     fun validateMd5ForItem(item: Item): Boolean {
-        if (item.getItemType() != Item.ATTACHMENT_TYPE || item.data["md5"] == null) {
+        if (item.getItemType() != Item.ATTACHMENT_TYPE) {
             throw(Exception("error invalid item ${item.ItemKey}: ${item.getItemType()} cannot calculate md5."))
+        }
+        if (item.data["md5"] == null){
+            Log.d("zotero", "error cannot check MD5, no MD5 Available")
+            return true
         }
         val md5Key = calculateMd5(item)
         return (md5Key == item.data["md5"])
@@ -198,8 +203,9 @@ class AttachmentStorageManager(val context: Context) {
         )
     }
 
-    fun openAttachment(attachmentUri: Uri): Intent {
+    fun openAttachment(attachment: Item): Intent {
         var intent = Intent(Intent.ACTION_VIEW)
+        var attachmentUri = getAttachmentUri(attachment)
         Log.d("zotero", "opening PDF with Uri $attachmentUri")
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             Log.d("zotero", "${attachmentUri.query}")

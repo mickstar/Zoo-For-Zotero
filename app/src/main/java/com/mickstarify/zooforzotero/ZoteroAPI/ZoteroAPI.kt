@@ -43,6 +43,7 @@ class APIKeyRevokedException(message: String) : RuntimeException(message)
 class AlreadyUploadedException(message: String) : RuntimeException(message)
 class PreconditionFailedException(message: String) : RuntimeException(message)
 class ServerAlreadyExistsException(message: String) : RuntimeException(message)
+
 class ZoteroAPI(
     val API_KEY: String,
     val userID: String,
@@ -119,21 +120,6 @@ class ZoteroAPI(
             .build().create(ZoteroAPIService::class.java)
     }
 
-    fun getFileForDownload(context: Context, item: Item): File {
-        val name = item.data.get("filename") ?: "unknown.pdf"
-        val outputDir = context.externalCacheDir
-
-//        var extension = when (item.data["contentType"]) {
-//            "application/pdf" -> "pdf"
-//            "text/html" -> "html"
-//            else -> ""
-//        }
-//        val filename = "${name}.${extension}"
-
-        val file = File(outputDir, name)
-        return file
-    }
-
     private fun downloadItemWithWebDAV(
         context: Context,
         item: Item,
@@ -151,7 +137,7 @@ class ZoteroAPI(
             .observeOn(AndroidSchedulers.mainThread())
             .subscribe(object : Observer<DownloadProgress> {
                 override fun onComplete() {
-                    listener.onComplete(attachmentStorageManager.getAttachmentUri(item))
+                    listener.onComplete()
                 }
 
                 override fun onSubscribe(d: Disposable) {
@@ -252,7 +238,7 @@ class ZoteroAPI(
             !preferenceManager.isWebDAVEnabled() // we're not checking MD5 is the user isn't on zotero api.
 
         if (attachmentStorageManager.checkIfAttachmentExists(item, checkMd5)) {
-            listener.onComplete(attachmentStorageManager.getAttachmentUri(item))
+            listener.onComplete()
             return
         }
 
@@ -313,7 +299,7 @@ class ZoteroAPI(
                             outputFileStream.close()
                             inputStream.close()
                             if (failure == false) {
-                                listener.onComplete(attachmentStorageManager.getAttachmentUri(item))
+                                listener.onComplete()
                             }
                         }
                     }

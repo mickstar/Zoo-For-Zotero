@@ -15,8 +15,8 @@ android {
         applicationId "com.mickstarify.zooforzotero"
         minSdkVersion 21
         targetSdkVersion 29
-        versionCode 23
-        versionName "2.1"
+        versionCode 24
+        versionName "2.1a"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "zotero_api_key", apikeyProperties['zotero_api_key'])
         buildConfigField("String", "zotero_api_secret", apikeyProperties['zotero_api_secret'])
@@ -88,6 +88,8 @@ dependencies {
     releaseImplementation 'com.crashlytics.sdk.android:crashlytics:2.10.1'
 
     implementation 'com.github.mickstar:sardine-android:v0.6'
+
+    debugImplementation 'com.squareup.leakcanary:leakcanary-android:2.0'
 
     // Room Dependencies
     implementation "androidx.room:room-runtime:2.2.2"

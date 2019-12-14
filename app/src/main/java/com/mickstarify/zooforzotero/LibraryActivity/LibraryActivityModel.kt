@@ -377,8 +377,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                 emitter.onComplete()
             }
         }.subscribeOn(Schedulers.io()).doOnComplete {
-            val uri = attachmentStorageManager.getAttachmentUri(attachment)
-            val intent = attachmentStorageManager.openAttachment(uri)
+            val intent = attachmentStorageManager.openAttachment(attachment)
             try {
                 context.startActivity(intent)
             } catch (exception: ActivityNotFoundException) {
@@ -401,34 +400,15 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                             )
                         }
                     })
+            } catch (e: IllegalArgumentException) {
+                presenter.createErrorAlert("Error opening File",
+                    "There was an error opening your PDF." +
+                            " If you are on a huawei device, this is a known error with their implementation of file" +
+                            " access. Try changing the storage location to a custom path in settings.",
+                    {})
+                firebaseAnalytics.logEvent("open_pdf_illegal_argument_exception", Bundle())
             }
         }.subscribe()
-
-        val uri = attachmentStorageManager.getAttachmentUri(attachment)
-        val intent = attachmentStorageManager.openAttachment(uri)
-        try {
-            context.startActivity(intent)
-        } catch (exception: ActivityNotFoundException) {
-            presenter.createErrorAlert("No PDF Viewer installed",
-                "There is no app that handles pdf documents available on your device. Would you like to install one?",
-                onClick = {
-                    try {
-                        context.startActivity(
-                            Intent(
-                                Intent.ACTION_VIEW,
-                                Uri.parse("market://details?id=com.xodo.pdf.reader")
-                            )
-                        )
-                    } catch (e: ActivityNotFoundException) {
-                        context.startActivity(
-                            Intent(
-                                Intent.ACTION_VIEW,
-                                Uri.parse("https://play.google.com/store/apps/details?id=com.xodo.pdf.reader")
-                            )
-                        )
-                    }
-                })
-        }
     }
 
     override fun filterItems(query: String): List<Item> {
@@ -467,7 +447,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                     isDownloading = false
                 }
 
-                override fun onComplete(attachmentUri: Uri) {
+                override fun onComplete() {
 
                     isDownloading = false
                     presenter.finishDownloadingAttachment()
@@ -714,26 +694,29 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
         if (preferences.isWebDAVEnabled()) {
             val sub = zoteroAPI.uploadAttachmentWithWebdav(attachment, context)
                 .subscribeOn(Schedulers.io()).observeOn(AndroidSchedulers.mainThread()).subscribe(
-                object : CompletableObserver {
-                    override fun onComplete() {
-                        presenter.stopUploadingAttachment()
-                        removeFromRecentlyViewed(attachment)
-                        refreshLibrary()
-                    }
+                    object : CompletableObserver {
+                        override fun onComplete() {
+                            presenter.stopUploadingAttachment()
+                            removeFromRecentlyViewed(attachment)
+                            refreshLibrary()
+                        }
 
-                    override fun onSubscribe(d: Disposable) {
-                        presenter.startUploadingAttachment(attachment)
-                    }
+                        override fun onSubscribe(d: Disposable) {
+                            presenter.startUploadingAttachment(attachment)
+                        }
 
-                    override fun onError(e: Throwable) {
-                        presenter.createErrorAlert("Error uploading Attachment", e.toString(), {})
-                        Log.e("zotero", "got exception: $e")
-                        val bundle = Bundle().apply { putString("error_message", e.toString()) }
-                        firebaseAnalytics.logEvent("error_uploading_attachments", bundle)
-                        presenter.stopUploadingAttachment()
-                    }
+                        override fun onError(e: Throwable) {
+                            presenter.createErrorAlert(
+                                "Error uploading Attachment",
+                                e.toString(),
+                                {})
+                            Log.e("zotero", "got exception: $e")
+                            val bundle = Bundle().apply { putString("error_message", e.toString()) }
+                            firebaseAnalytics.logEvent("error_uploading_attachments", bundle)
+                            presenter.stopUploadingAttachment()
+                        }
 
-                })
+                    })
             return
         }
 
@@ -973,6 +956,31 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                 "There was an error accessing your zotero attachment location. Please reconfigure in settings.",
                 {})
             preferences.useExternalCache()
+        }
+
+        if (preferences.firstRunForVersion24()) {
+            zoteroDB.setItemsVersion(-1) // forces a full refresh for collections
+        }
+        /*Do to a change in implementation this code will transition webdav configs.*/
+        if (preferences.firstRunForVersion25()) {
+            if (preferences.isWebDAVEnabled()) {
+                val address = preferences.getWebDAVAddress()
+                val newAddress = if (address.endsWith("/zotero")) {
+                    address
+                } else {
+                    if (address.endsWith("/")) { // so we don't get server.com//zotero
+                        address + "zotero"
+                    } else {
+                        address + "/zotero"
+                    }
+                }
+                preferences.setWebDAVAuthentication(
+                    newAddress,
+                    preferences.getWebDAVUsername(),
+                    preferences.getWebDAVPassword()
+                )
+            }
+
         }
     }
 }
