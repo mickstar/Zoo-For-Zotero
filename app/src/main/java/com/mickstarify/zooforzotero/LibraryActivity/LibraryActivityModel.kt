@@ -699,6 +699,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                             presenter.stopUploadingAttachment()
                             removeFromRecentlyViewed(attachment)
                             refreshLibrary()
+                            firebaseAnalytics.logEvent("upload_attachment_successful", Bundle())
                         }
 
                         override fun onSubscribe(d: Disposable) {
