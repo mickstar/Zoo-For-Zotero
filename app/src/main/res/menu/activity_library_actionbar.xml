@@ -27,4 +27,10 @@
             android:title="Setup WebDAV"
             app:showAsAction="collapseActionView" />
 
+    <item
+        android:id="@+id/zotero_save"
+        android:icon="@drawable/baseline_settings_applications_white_24"
+        android:title="Zotero Save"
+        app:showAsAction="collapseActionView" />
+
 </menu>
