@@ -1,5 +1,6 @@
 package com.mickstarify.zooforzotero
 
+import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Bundle
 import android.util.Log
@@ -7,9 +8,11 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.preference.EditTextPreference
 import androidx.preference.PreferenceFragmentCompat
 import androidx.preference.SwitchPreference
+import com.mickstarify.zooforzotero.ZoteroStorage.AttachmentStorageManager
+import com.mickstarify.zooforzotero.ZoteroStorage.STORAGE_ACCESS_REQUEST
 
 class SettingsActivity : AppCompatActivity() {
-
+    lateinit var myStorageManager: AttachmentStorageManager
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.settings_activity)
@@ -18,6 +21,25 @@ class SettingsActivity : AppCompatActivity() {
             .replace(R.id.settings, SettingsFragment())
             .commit()
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
+
+        myStorageManager =
+            AttachmentStorageManager(
+                this
+            )
+    }
+
+    fun openStoragePicker() {
+        myStorageManager.askUserForPath(this)
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        Log.d("zotero", "got back result request=$requestCode result=$resultCode data=$data")
+        when (requestCode) {
+            STORAGE_ACCESS_REQUEST -> {
+                myStorageManager.setStorage(data?.dataString)
+            }
+        }
     }
 
     class SettingsFragment : PreferenceFragmentCompat(),
@@ -67,6 +89,17 @@ class SettingsActivity : AppCompatActivity() {
             key: String?
         ) {
             Log.d("zotero", "sharedpreference change ${key}")
+            when (key) {
+                "attachment_sync_location" -> {
+                    if (sharedPreferences?.getString(
+                            "attachment_sync_location",
+                            "null"
+                        ) == "CUSTOM"
+                    ) {
+                        (this.activity as SettingsActivity).openStoragePicker()
+                    }
+                }
+            }
         }
     }
 }

@@ -148,6 +148,60 @@ class PreferenceManager(context: Context) {
         return sharedPreferences.getBoolean("use_webdav_shared_libraries", false)
     }
 
+    fun setCustomAttachmentStorage(data: String) {
+        val editor = sharedPreferences.edit()
+        editor.putString("custom_attachment_storage_location", data)
+        editor.apply()
+    }
+
+    fun getCustomAttachmentStorageLocation(): String {
+        return sharedPreferences.getString("custom_attachment_storage_location", "") ?: ""
+    }
+
+    fun getStorageMode(): String {
+        return sharedPreferences.getString("attachment_sync_location", "") ?: ""
+    }
+
+    fun useExternalCache() {
+        /*Sets the attachment storage location as being external cache.
+        * For use in case of errors related to the custom location. */
+        val editor = sharedPreferences.edit()
+        editor.putString("attachment_sync_location", "EXTERNAL_CACHE")
+        editor.putString("custom_attachment_storage_location", "")
+        editor.apply()
+    }
+
+    fun firstRunForVersion24(): Boolean {
+        /*check to see if this is the first time the user is opening on version 2.1 (21)*/
+        val firstRun = sharedPreferences.getBoolean("firstrun_version24", true)
+        if (firstRun) {
+            val editor = sharedPreferences.edit()
+            editor.putBoolean("firstrun_version24", false)
+            editor.apply()
+        }
+        return firstRun
+    }
+
+    fun isAttachmentUploadingEnabled(): Boolean {
+        return sharedPreferences.getBoolean("attachments_uploading_enabled", true)
+    }
+
+    fun firstRunForVersion25(): Boolean {
+        /*check to see if this is the first time the user is opening on version 2.1 (21)*/
+        val firstRun = sharedPreferences.getBoolean("firstrun_version25", true)
+        if (firstRun) {
+            val editor = sharedPreferences.edit()
+            editor.putBoolean("firstrun_version25", false)
+            editor.apply()
+        }
+        return firstRun
+
+    }
+
+    fun shouldOpenPDFOnOpen(): Boolean {
+        return sharedPreferences.getBoolean("should_open_pdf_on_open", false)
+    }
+
     companion object {
         val SORT_METHOD_ASCENDING = "ASCENDING"
         val SORT_METHOD_DESCENDING = "DESCENDING"

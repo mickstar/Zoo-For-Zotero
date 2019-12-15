@@ -27,14 +27,36 @@
                 app:title="@string/sync_method"
                 app:useSimpleSummaryProvider="true" />
 
-        <!--        <SwitchPreferenceCompat-->
-        <!--                app:defaultValue="true"-->
-        <!--                app:key="sync_only_new"-->
-        <!--                app:summaryOff="@string/sync_only_new_summary_off"-->
-        <!--                app:summaryOn="@string/sync_only_new_summary_on"-->
-        <!--                app:title="@string/sync_only_new" />-->
+        <ListPreference
+                app:defaultValue="EXTERNAL_CACHE"
+                app:entries="@array/attachment_storage_location_entries"
+                app:entryValues="@array/attachment_storage_location_values"
+                app:key="attachment_sync_location"
+                app:title="@string/setting_sync_attachments_location"
+                app:useSimpleSummaryProvider="true" />
+
+        <SwitchPreference
+                android:defaultValue="true"
+                android:key="attachments_uploading_enabled"
+                android:title="Offer to upload attachments" />
 
     </PreferenceCategory>
+
+    <PreferenceCategory app:title="@string/library_header">
+        <SwitchPreference
+            android:defaultValue="false"
+            android:key="should_open_pdf_on_open"
+            android:title="Default to opening Attachments" />
+
+        <ListPreference
+            app:defaultValue="TITLE"
+            app:entries="@array/sort_options_entries"
+            app:entryValues="@array/sort_options_values"
+            app:key="sort_method"
+            app:title="@string/sort_method_title"
+            app:useSimpleSummaryProvider="true" />
+    </PreferenceCategory>
+
     <PreferenceCategory android:title="Web DAV">
 
         <SwitchPreference
@@ -70,15 +92,6 @@
                 android:defaultValue="false"
                 android:dependency="use_webdav"
                 android:key="use_webdav_shared_libraries"
-                android:title="Use webdav for Shared Libraries" />
-    </PreferenceCategory>
-    <PreferenceCategory app:title="@string/library_header">
-        <ListPreference
-                app:defaultValue="TITLE"
-                app:entries="@array/sort_options_entries"
-                app:entryValues="@array/sort_options_values"
-                app:key="sort_method"
-                app:title="@string/sort_method_title"
-                app:useSimpleSummaryProvider="true" />
+                android:title="Use webdav for Group Libraries" />
     </PreferenceCategory>
 </PreferenceScreen>

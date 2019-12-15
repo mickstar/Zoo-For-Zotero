@@ -1,10 +1,9 @@
 package com.mickstarify.zooforzotero.LibraryActivity
 
-import com.mickstarify.zooforzotero.ZoteroAPI.Database.GroupInfo
-import com.mickstarify.zooforzotero.ZoteroAPI.Model.Collection
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Item
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Note
-import java.io.File
+import com.mickstarify.zooforzotero.ZoteroStorage.Database.Collection
+import com.mickstarify.zooforzotero.ZoteroStorage.Database.GroupInfo
 
 interface Contract {
     interface View {
@@ -25,6 +24,12 @@ interface Contract {
         fun hideLibraryContentDisplay()
         fun clearSidebar()
         fun closeItemView()
+        fun showAttachmentUploadProgress(attachment: Item)
+        fun hideAttachmentUploadProgress()
+        fun createYesNoPrompt(
+            title: String, message: String, yesText: String, noText: String, onYesClick: () -> Unit,
+            onNoClick: () -> Unit
+        )
     }
 
     interface Presenter {
@@ -32,12 +37,12 @@ interface Contract {
         fun testConnection()
         fun receiveCollections(collections: List<Collection>)
         fun setCollection(collectionName: String, isSubCollection: Boolean = false)
-        fun selectItem(item: Item)
+        fun selectItem(item: Item, longPress: Boolean = false)
         fun requestLibraryRefresh()
         fun showLibraryLoadingAnimation()
         fun hideLibraryLoadingAnimation()
         fun openAttachment(item: Item)
-        fun openPDF(attachment: File)
+        fun finishDownloadingAttachment()
         fun makeToastAlert(message: String)
         fun attachmentDownloadError(message: String = "")
         fun updateAttachmentDownloadProgress(progress: Long, total: Long)
@@ -52,7 +57,11 @@ interface Contract {
         fun deleteNote(note: Note)
         fun refreshItemView()
         fun displayGroupsOnActionBar(groups: List<GroupInfo>)
-        fun openGroup(itemId: String)
+        fun openGroup(groupTitle: String)
+        fun startUploadingAttachment(attachment: Item)
+        fun stopUploadingAttachment()
+        fun askToUploadAttachments(changedAttachments: List<Item>)
+        fun onResume()
     }
 
     interface Model {
@@ -73,13 +82,13 @@ interface Contract {
         fun createNote(note: Note)
         fun modifyNote(note: Note)
         fun deleteNote(note: Note)
-        fun openPDF(attachment: File)
+        fun openPDF(attachment: Item)
         fun deleteAttachment(item: Item)
-        fun uploadAttachment(parent: Item, attachment: File)
-        fun updateAttachment(item: Item, attachment: File)
+        fun uploadAttachment(attachment: Item)
         fun getUnfiledItems(): List<Item>
         fun loadGroup(group: GroupInfo, refresh: Boolean = false)
         fun usePersonalLibrary()
         fun getGroupByTitle(groupTitle: String): GroupInfo?
+        fun removeFromRecentlyViewed(attachment: Item)
     }
 }

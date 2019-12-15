@@ -8,8 +8,8 @@ import android.widget.BaseAdapter
 import android.widget.ImageView
 import android.widget.TextView
 import com.mickstarify.zooforzotero.R
-import com.mickstarify.zooforzotero.ZoteroAPI.Model.Collection
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Item
+import com.mickstarify.zooforzotero.ZoteroStorage.Database.Collection
 
 class ZoteroItemListAdapter(val context: Context, var list: List<ListEntry>) : BaseAdapter() {
 
@@ -176,7 +176,7 @@ class ZoteroItemListAdapter(val context: Context, var list: List<ListEntry>) : B
         val author = view.findViewById<TextView>(R.id.txt_author)
         val img: ImageView = view.findViewById(R.id.imageView) as ImageView
         img.setImageResource(R.drawable.treesource_collection_2x)
-        lbl_title.text = collection.getName()
+        lbl_title.text = collection.name
         author.text = "Subcollection"
     }
 

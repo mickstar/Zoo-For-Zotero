@@ -1,13 +1,14 @@
 package com.mickstarify.zooforzotero.LibraryActivity
 
 import android.content.Context
+import android.os.Bundle
 import android.util.Log
+import com.google.firebase.analytics.FirebaseAnalytics
 import com.mickstarify.zooforzotero.SortMethod
-import com.mickstarify.zooforzotero.ZoteroAPI.Database.GroupInfo
-import com.mickstarify.zooforzotero.ZoteroAPI.Model.Collection
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Item
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Note
-import java.io.File
+import com.mickstarify.zooforzotero.ZoteroStorage.Database.Collection
+import com.mickstarify.zooforzotero.ZoteroStorage.Database.GroupInfo
 import java.util.*
 
 class LibraryActivityPresenter(val view: Contract.View, context: Context) : Contract.Presenter {
@@ -25,6 +26,52 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
             model.loadGroup(it)
         }
 
+    }
+
+    override fun startUploadingAttachment(attachment: Item) {
+        view.showAttachmentUploadProgress(attachment)
+    }
+
+    override fun stopUploadingAttachment() {
+        view.hideAttachmentUploadProgress()
+        view.makeToastAlert("Finished uploading attachment.")
+    }
+
+    override fun askToUploadAttachments(changedAttachments: List<Item>) {
+        // for the sake of sanity I will only ask to upload 1 attachment.
+        // this is because of limitations of only having 1 upload occur concurrently
+        // and my unwillingness to implement a chaining mechanism for uploads for what i expect to
+        // be a niche power user.
+        val attachment = changedAttachments.first()
+        val fileSizeBytes = model.attachmentStorageManager.getFileSize(
+            model.attachmentStorageManager.getAttachmentUri(attachment)
+        )
+
+        if (fileSizeBytes == 0L) {
+            Log.e("zotero", "avoiding uploading a garbage PDF")
+            FirebaseAnalytics.getInstance(model.context)
+                .logEvent("AVOIDED_UPLOAD_GARBAGE", Bundle())
+            model.removeFromRecentlyViewed(attachment)
+        }
+
+        val sizeKiloBytes = "${fileSizeBytes / 1000}KB"
+
+        val message =
+            "${attachment.data["filename"]!!} ($sizeKiloBytes) is different to Zotero's version. Would you like to upload this PDF to replace the remote version?"
+
+        view.createYesNoPrompt(
+            "Detected changes to attachment",
+            message,
+            "Upload",
+            "No",
+            { model.uploadAttachment(attachment) },
+            { model.removeFromRecentlyViewed(attachment) })
+    }
+
+    override fun onResume() {
+        if (model.isLoaded()) {
+            model.checkAllAttachmentsForModification()
+        }
     }
 
     override fun displayGroupsOnActionBar(groups: List<GroupInfo>) {
@@ -82,7 +129,7 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
         val items = model.filterItems(query).sort()
 
         val entries = LinkedList<ListEntry>()
-        entries.addAll(collections.sortedBy { it.getName().toLowerCase(Locale.ROOT) }
+        entries.addAll(collections.sortedBy { it.name.toLowerCase(Locale.ROOT) }
             .map { ListEntry(it) })
         entries.addAll(
             items
@@ -104,12 +151,30 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
         }
     }
 
-    override fun openPDF(attachment: File) {
+    override fun finishDownloadingAttachment() {
         view.hideAttachmentDownloadProgress()
-        model.openPDF(attachment)
     }
 
     override fun openAttachment(item: Item) {
+        if (model.attachmentStorageManager.checkIfAttachmentExists(
+                item,
+                checkMd5 = false
+            ) && (!model.preferences.isWebDAVEnabled() && !model.attachmentStorageManager.validateMd5ForItem(
+                item
+            ))
+        ) {
+            view.createYesNoPrompt(
+                "File conflict",
+                "Your local copy is different to the server's. Would you like to redownload the server's copy?",
+                "Yes", "No", {
+                    view.updateAttachmentDownloadProgress(0, -1)
+                    model.downloadAttachment(item)
+                }, {
+                    model.openPDF(item)
+                }
+            )
+            return
+        }
         view.updateAttachmentDownloadProgress(0, -1)
         model.downloadAttachment(item)
     }
@@ -138,16 +203,30 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
         model.refreshLibrary()
     }
 
-    override fun selectItem(item: Item) {
+    override fun selectItem(
+        item: Item,
+        longPress: Boolean
+    ) {
         if (item.getItemType() == "attachment") {
             this.openAttachment(item)
         } else if (item.getItemType() == "note") {
-            //ignore
+            //todo implement note opening
         } else {
+            val itemAttachments = model.getAttachments(item.ItemKey)
+            if (!longPress && model.preferences.shouldOpenPDFOnOpen()) {
+                val pdfAttachment =
+                    itemAttachments.filter { it.data["contentType"] == "application/pdf" }.firstOrNull()
+                if (pdfAttachment != null) {
+                    openAttachment(pdfAttachment)
+                    return
+                }
+                // otherwise there is no PDF and we will continue and just open the itemview.
+            }
+
             model.selectedItem = item
             view.showItemDialog(
                 item,
-                model.getAttachments(item.ItemKey),
+                itemAttachments,
                 model.getNotes(item.ItemKey)
             )
         }
@@ -190,12 +269,12 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
             model.isDisplayingItems = entries.size > 0
             view.populateEntries(entries)
         } else if (collectionName == "group_all" && model.isUsingGroups()) {
-            view.setTitle(model.getCurrentGroup()!!.name)
+            view.setTitle(model.getCurrentGroup().name)
             val entries = LinkedList<ListEntry>()
             entries.addAll(model.getCollections().filter {
                 !it.hasParent()
             }.sortedBy {
-                it.getName().toLowerCase(Locale.ROOT)
+                it.name.toLowerCase(Locale.ROOT)
             }.map { ListEntry(it) })
             entries.addAll(model.getLibraryItems().sort().map { ListEntry(it) })
             model.isDisplayingItems = entries.size > 0
@@ -206,7 +285,7 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
             view.setTitle(collectionName)
             val entries = LinkedList<ListEntry>()
             entries.addAll(model.getSubCollections(collectionName).sortedBy {
-                it.getName().toLowerCase(Locale.ROOT)
+                it.name.toLowerCase(Locale.ROOT)
             }.map { ListEntry(it) })
 
             entries.addAll(model.getItemsFromCollection(collectionName).sort().map { ListEntry(it) })
@@ -223,8 +302,8 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
         view.clearSidebar()
         for (collection: Collection in collections.filter {
             !it.hasParent()
-        }.sortedBy { it.getName().toLowerCase(Locale.ROOT) }) {
-            Log.d("zotero", "Got collection ${collection.getName()}")
+        }.sortedBy { it.name.toLowerCase(Locale.ROOT) }) {
+            Log.d("zotero", "Got collection ${collection.name}")
             view.addNavigationEntry(collection, "Catalog")
         }
     }
@@ -255,8 +334,17 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
             model.loadItemsLocally()
             model.loadGroups()
         }
+
+        if (model.preferences.firstRunForVersion24()) {
+            view.createErrorAlert("New Changes!",
+                "Zoo now supports syncing of PDF modifications using Zotero's API! (not webdav)" +
+                        "\nFor this to work you will need to use a PDF editor that saves modifications directly to the file " +
+                        "rather than creating a copy of the file. I recommend using Xodo PDF Viewer. Adobe Acrobat will not work.",
+                {})
+        }
     }
 
+    // extension function to sort lists of items
     private fun List<Item>.sort(): List<Item> {
         if (model.preferences.isSortedAscendingly()) {
             return this.sortedWith(sortMethod)

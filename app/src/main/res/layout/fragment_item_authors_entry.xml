@@ -1,34 +1,43 @@
 <?xml version="1.0" encoding="utf-8"?>
 
-<LinearLayout
-        xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
         xmlns:tools="http://schemas.android.com/tools"
-        android:orientation="horizontal"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:orientation="horizontal"
         tools:context=".LibraryActivity.ItemView.ItemAuthorsEntry">
 
 
     <Spinner
+            android:id="@+id/spinner_creatorType"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
             android:layout_margin="@dimen/text_margin"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content" android:id="@+id/spinner_creatorType" android:layout_weight="0"
-            android:layout_gravity="center"/>
+            android:layout_weight="0" />
+
     <EditText
+            android:id="@+id/editText_lastname"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:inputType="textPersonName"
-            android:enabled="true"
-            android:text=""
+            android:layout_marginEnd="8dp"
+            android:layout_weight="2"
             android:ems="10"
-            android:id="@+id/editText_lastname" android:layout_weight="2" android:hint="(Last)" android:layout_marginEnd="8dp"/>
+            android:editable="false"
+            android:hint="(Last)"
+            android:text=""
+            android:textIsSelectable="true" />
+
     <EditText
+            android:id="@+id/editText_firstname"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:inputType="textPersonName"
-            android:enabled="true"
-            android:text=""
+            android:layout_marginEnd="16dp"
+            android:layout_weight="2"
+            android:editable="false"
+            android:hint="(First)"
             android:ems="10"
-            android:id="@+id/editText_firstname" android:layout_weight="2" android:hint="(First)"
-            android:layout_marginEnd="16dp"/>
+            android:inputType="textPersonName"
+            android:text=""
+            android:textIsSelectable="true" />
 </LinearLayout>

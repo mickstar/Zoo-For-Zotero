@@ -27,10 +27,10 @@ import com.mickstarify.zooforzotero.LibraryActivity.ItemView.ItemViewFragment
 import com.mickstarify.zooforzotero.LibraryActivity.WebDAV.WebDAVSetup
 import com.mickstarify.zooforzotero.R
 import com.mickstarify.zooforzotero.SettingsActivity
-import com.mickstarify.zooforzotero.ZoteroAPI.Database.GroupInfo
-import com.mickstarify.zooforzotero.ZoteroAPI.Model.Collection
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Item
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Note
+import com.mickstarify.zooforzotero.ZoteroStorage.Database.Collection
+import com.mickstarify.zooforzotero.ZoteroStorage.Database.GroupInfo
 import kotlinx.android.synthetic.main.activity_library.*
 
 
@@ -87,7 +87,7 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
 
 
     override fun addNavigationEntry(collection: Collection, parent: String) {
-        collectionsMenu.add(R.id.group_collections, Menu.NONE, Menu.NONE, collection.getName())
+        collectionsMenu.add(R.id.group_collections, Menu.NONE, Menu.NONE, collection.name)
             .setIcon(R.drawable.ic_folder_black_24dp)
             .setCheckable(true)
 
@@ -202,12 +202,23 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
         val listView: ListView = findViewById(R.id.library_listview)
         listView.adapter = ZoteroItemListAdapter(this, entries)
 
+
+        listView.setOnItemLongClickListener{_, _, position, _ ->
+            val entry = listView.adapter.getItem(position) as ListEntry
+            if (entry.isCollection()) {
+                presenter.setCollection(entry.getCollection().name, isSubCollection = true)
+            } else {
+                presenter.selectItem(entry.getItem(), longPress=true)
+            }
+            true
+        }
+
         listView.setOnItemClickListener { _, _, position: Int, _ ->
             val entry = listView.adapter.getItem(position) as ListEntry
             if (entry.isCollection()) {
-                presenter.setCollection(entry.getCollection().getName(), isSubCollection = true)
+                presenter.setCollection(entry.getCollection().name, isSubCollection = true)
             } else {
-                presenter.selectItem(entry.getItem())
+                presenter.selectItem(entry.getItem(), false)
             }
         }
 
@@ -281,7 +292,11 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
         supportActionBar?.setHomeButtonEnabled(false)
         val drawer = findViewById<DrawerLayout>(R.id.drawerlayout_library)
         val toggle = ActionBarDrawerToggle(
-            this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close
+            this,
+            drawer,
+            toolbar,
+            R.string.navigation_drawer_open,
+            R.string.navigation_drawer_close
         )
         drawer.addDrawerListener(toggle)
         toggle.syncState()
@@ -292,7 +307,11 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
         this.supportActionBar?.title = title
     }
 
-    override fun showItemDialog(item: Item, attachments: List<Item>, notes: List<Note>) {
+    override fun showItemDialog(
+        item: Item,
+        attachments: List<Item>,
+        notes: List<Note>
+    ) {
         itemView = ItemViewFragment.newInstance(item, attachments, notes)
         val fm = supportFragmentManager
         itemView?.show(fm, "hello world")
@@ -338,6 +357,42 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
         progressDialog = null
     }
 
+    var uploadProgressDialog: ProgressDialog? = null
+    override fun showAttachmentUploadProgress(attachment: Item) {
+        uploadProgressDialog = ProgressDialog(this)
+        uploadProgressDialog?.setTitle("Uploading Attachment")
+        uploadProgressDialog?.setMessage(
+            "Uploading ${attachment.data["filename"]}. " +
+                    "This may take a while, do not close the app."
+        )
+        uploadProgressDialog?.isIndeterminate = true
+        uploadProgressDialog?.show()
+    }
+
+    override fun hideAttachmentUploadProgress() {
+        uploadProgressDialog?.hide()
+        uploadProgressDialog = null
+    }
+
+    override fun createYesNoPrompt(
+        title: String,
+        message: String, yesText: String, noText: String,
+        onYesClick: () -> Unit,
+        onNoClick: () -> Unit
+    ) {
+        val alert = AlertDialog.Builder(this)
+        alert.setIcon(R.drawable.ic_error_black_24dp)
+        alert.setTitle(title)
+        alert.setMessage(message)
+        alert.setPositiveButton(yesText) { _, _ -> onYesClick() }
+        alert.setNegativeButton(noText) { _, _ -> onNoClick() }
+        try {
+            alert.show()
+        } catch (exception: WindowManager.BadTokenException) {
+            Log.e("zotero", "error creating window bro")
+        }
+    }
+
     /* Is called by the fragment when an attachment is openned by the user. */
     override fun openAttachmentFileListener(item: Item) {
         presenter.openAttachment(item)
@@ -362,6 +417,17 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
         }
     }
 
+    override fun onPostResume() {
+        super.onPostResume()
+        Log.e("zotero", "resumed")
+        presenter.onResume()
+    }
+
+    override fun onRestoreInstanceState(savedInstanceState: Bundle) {
+        super.onRestoreInstanceState(savedInstanceState)
+        Log.e("zotero", "restored!")
+    }
+
     var progressBar: ProgressBar? = null
     override fun updateLibraryLoadingProgress(progress: Int, total: Int) {
         if (progressBar == null) {
@@ -375,7 +441,7 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
         progressBar?.progress = progress
         if (total == -1) {
             progressBar?.isIndeterminate = true
-            textView.text = "Starting to download your library."
+            textView.text = getString(R.string.loading_library_text)
         } else {
             progressBar?.max = total
             progressBar?.isIndeterminate = false
@@ -389,7 +455,8 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
     }
 
     override fun showLibraryContentDisplay(message: String) {
-        val constraintLayout = findViewById<ConstraintLayout>(R.id.constraintLayout_library_content)
+        val constraintLayout =
+            findViewById<ConstraintLayout>(R.id.constraintLayout_library_content)
         constraintLayout.visibility = View.VISIBLE
         val textView = findViewById<TextView>(R.id.textView_Library_label)
         if (message == "") {
@@ -400,7 +467,8 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
     }
 
     override fun hideLibraryContentDisplay() {
-        val constraintLayout = findViewById<ConstraintLayout>(R.id.constraintLayout_library_content)
+        val constraintLayout =
+            findViewById<ConstraintLayout>(R.id.constraintLayout_library_content)
         constraintLayout.visibility = View.GONE
         progressBar?.visibility = View.GONE
         progressBar = null
@@ -442,7 +510,8 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
     }
 
     companion object {
-        const val ACTION_FILTER = "com.mickstarify.zooforzotero.intent.action.LIBRARY_FILTER_INTENT"
+        const val ACTION_FILTER =
+            "com.mickstarify.zooforzotero.intent.action.LIBRARY_FILTER_INTENT"
         const val EXTRA_QUERY = "com.mickstarify.zooforzotero.intent.EXTRA_QUERY_TEXT"
     }
 }

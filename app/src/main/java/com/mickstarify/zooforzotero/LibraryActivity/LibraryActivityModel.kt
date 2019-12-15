@@ -5,27 +5,35 @@ import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import android.os.Build
 import android.os.Bundle
 import android.util.Log
-import androidx.core.content.FileProvider
 import com.google.firebase.analytics.FirebaseAnalytics
 import com.mickstarify.zooforzotero.PreferenceManager
 import com.mickstarify.zooforzotero.SyncSetup.AuthenticationStorage
 import com.mickstarify.zooforzotero.ZoteroAPI.*
-import com.mickstarify.zooforzotero.ZoteroAPI.Database.GroupInfo
-import com.mickstarify.zooforzotero.ZoteroAPI.Database.ZoteroDatabase
-import com.mickstarify.zooforzotero.ZoteroAPI.Model.Collection
+import com.mickstarify.zooforzotero.ZoteroAPI.Model.CollectionPOJO
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Item
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Note
+import com.mickstarify.zooforzotero.ZoteroStorage.AttachmentStorageManager
+import com.mickstarify.zooforzotero.ZoteroStorage.Database.Collection
+import com.mickstarify.zooforzotero.ZoteroStorage.Database.GroupInfo
+import com.mickstarify.zooforzotero.ZoteroStorage.Database.RecentlyOpenedAttachment
+import com.mickstarify.zooforzotero.ZoteroStorage.Database.ZoteroDatabase
+import com.mickstarify.zooforzotero.ZoteroStorage.ZoteroDB.ZoteroDB
+import com.mickstarify.zooforzotero.ZoteroStorage.ZoteroDB.ZoteroDBPicker
+import com.mickstarify.zooforzotero.ZoteroStorage.ZoteroDB.ZoteroGroupDB
+import io.reactivex.Completable
+import io.reactivex.CompletableObserver
 import io.reactivex.MaybeObserver
 import io.reactivex.Observer
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposable
+import io.reactivex.functions.Action
+import io.reactivex.functions.Consumer
 import io.reactivex.schedulers.Schedulers
 import org.jetbrains.anko.doAsync
 import org.jetbrains.anko.onComplete
-import java.io.File
+import java.io.FileNotFoundException
 import java.util.*
 import java.util.concurrent.Future
 import java.util.concurrent.TimeUnit
@@ -51,14 +59,31 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
     private var firebaseAnalytics: FirebaseAnalytics
 
     private lateinit var zoteroAPI: ZoteroAPI
-    private val zoteroGroupDB = ZoteroGroupDB(context)
-    private var zoteroDBPicker = ZoteroDBPicker(ZoteroDB(context), zoteroGroupDB)
     private val zoteroDatabase = ZoteroDatabase(context)
+    val attachmentStorageManager =
+        AttachmentStorageManager(
+            context.applicationContext
+        )
+    private val zoteroGroupDB =
+        ZoteroGroupDB(
+            context,
+            zoteroDatabase
+        ) //todo DAGGER2
+    private var zoteroDBPicker =
+        ZoteroDBPicker(
+            ZoteroDB(
+                context,
+                zoteroDatabase,
+                groupID = -1
+            ), zoteroGroupDB
+        )
     private var groups: List<GroupInfo>? = null
 
     val preferences = PreferenceManager(context)
 
     val state = LibraryModelState()
+
+    private var zoteroDB: ZoteroDB by zoteroDBPicker
 
     override fun refreshLibrary() {
         if (!state.usingGroup) {
@@ -69,11 +94,11 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
     }
 
     fun shouldIUpdateLibrary(): Boolean {
-        if (!zoteroDBPicker.getZoteroDB().hasStorage()) {
+        if (!zoteroDB.hasStorage()) {
             return true
         }
         val currentTimestamp = System.currentTimeMillis()
-        val lastModified = zoteroDBPicker.getZoteroDB().getLastModifiedTimestamp()
+        val lastModified = zoteroDB.getLastModifiedTimestamp()
 
         if (TimeUnit.MILLISECONDS.toHours(currentTimestamp - lastModified) >= 24) {
             return true
@@ -82,7 +107,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
     }
 
     override fun isLoaded(): Boolean {
-        return zoteroDBPicker.getZoteroDB().isPopulated()
+        return zoteroDB.isPopulated()
     }
 
     private fun filterItems(items: List<Item>): List<Item> {
@@ -92,7 +117,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
         var newItems = items
         if (onlyNotes) {
             newItems =
-                newItems.filter { zoteroDBPicker.getZoteroDB().getNotes(it.ItemKey).isNotEmpty() }
+                newItems.filter { zoteroDB.getNotes(it.ItemKey).isNotEmpty() }
         }
         if (onlyPdfs) {
             newItems = newItems.filter {
@@ -113,33 +138,33 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
     }
 
     override fun getLibraryItems(): List<Item> {
-        return filterItems(zoteroDBPicker.getZoteroDB().getDisplayableItems())
+        return filterItems(zoteroDB.getDisplayableItems())
     }
 
     override fun getItemsFromCollection(collectionName: String): List<Item> {
-        val collectionKey = zoteroDBPicker.getZoteroDB().getCollectionId(collectionName)
+        val collectionKey = zoteroDB.getCollectionId(collectionName)
         if (collectionKey != null) {
-            val items = zoteroDBPicker.getZoteroDB().getItemsFromCollection(collectionKey)
+            val items = zoteroDB.getItemsFromCollection(collectionKey)
             return filterItems(items)
         }
         presenter.makeToastAlert("Error, could not open collection: $collectionName Try Refreshing your Library.")
         val bundle = Bundle()
-        bundle.putBoolean("collections_is_null", zoteroDBPicker.getZoteroDB().collections == null)
-        bundle.putBoolean("is_populated", zoteroDBPicker.getZoteroDB().isPopulated())
+        bundle.putBoolean("collections_is_null", zoteroDB.collections == null)
+        bundle.putBoolean("is_populated", zoteroDB.isPopulated())
         bundle.putString("collection_name", collectionName)
         firebaseAnalytics.logEvent("error_getting_subcollections_get_items", bundle)
         return LinkedList()
     }
 
     override fun getSubCollections(collectionName: String): List<Collection> {
-        val collectionKey = zoteroDBPicker.getZoteroDB().getCollectionId(collectionName)
+        val collectionKey = zoteroDB.getCollectionId(collectionName)
         if (collectionKey != null) {
-            return zoteroDBPicker.getZoteroDB().getSubCollectionsFor(collectionKey)
+            return zoteroDB.getSubCollectionsFor(collectionKey)
         }
         presenter.makeToastAlert("Error, could not open collection: $collectionName Try Refreshing your Library.")
         val bundle = Bundle()
-        bundle.putBoolean("collection_is_null", zoteroDBPicker.getZoteroDB().collections == null)
-        bundle.putBoolean("is_populated", zoteroDBPicker.getZoteroDB().isPopulated())
+        bundle.putBoolean("collection_is_null", zoteroDB.collections == null)
+        bundle.putBoolean("is_populated", zoteroDB.isPopulated())
         bundle.putString("collection_name", collectionName)
         firebaseAnalytics.logEvent("error_getting_subcollections_get_sub", bundle)
         return LinkedList()
@@ -148,7 +173,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
 
     fun loadItemsLocally() {
         doAsync {
-            zoteroDBPicker.getZoteroDB().loadItemsFromStorage()
+            zoteroDB.loadItemsFromStorage()
             onComplete {
                 finishGetItems()
             }
@@ -156,12 +181,11 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
     }
 
     override fun loadCollectionsLocally() {
-        doAsync {
-            zoteroDBPicker.getZoteroDB().loadCollectionsFromStorage()
-            onComplete {
-                finishGetCollections()
-            }
-        }
+        zoteroDB.loadCollectionsFromDatabase().subscribeOn(Schedulers.io())
+            .observeOn(AndroidSchedulers.mainThread())
+            .doOnComplete(
+                { finishGetCollections() }
+            ).subscribe()
     }
 
     override fun downloadLibrary(refresh: Boolean) {
@@ -169,7 +193,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
         loadingCollections = true
         loadingItems = true
 
-        val db = zoteroDBPicker.getZoteroDB()
+        val db = zoteroDB
         if (db.isPopulated() && refresh == false) {
             Log.d("zotero", "already loaded.")
             return
@@ -178,33 +202,38 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
 
         val collectionsObservable =
             zoteroAPI.getCollections(
-                zoteroDBPicker.getZoteroDB().getLibraryVersion(),
+                zoteroDB.getLibraryVersion(),
                 useCaching,
                 isGroup = false
             )
         collectionsObservable.subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())
             .unsubscribeOn(Schedulers.io())
-            .subscribe(object : Observer<List<Collection>> {
-                val collections = LinkedList<Collection>()
+            .subscribe(object : Observer<List<CollectionPOJO>> {
+                val collections = LinkedList<CollectionPOJO>()
                 override fun onComplete() {
-                    db.collections = collections
-                    db.commitCollectionsToStorage()
+                    val collectionObjects =
+                        collections.map { Collection(it, Collection.NO_GROUP_ID) }
+                    zoteroDB.collections = collectionObjects
+                    zoteroDB.commitCollectionsToDatabase()
                     finishGetCollections()
                 }
 
                 override fun onSubscribe(d: Disposable) {
                 }
 
-                override fun onNext(collections: List<Collection>) {
+                override fun onNext(collections: List<CollectionPOJO>) {
                     this.collections.addAll(collections)
                     Log.d("zotero", "got ${this.collections.size}")
                 }
 
                 override fun onError(e: Throwable) {
                     if (e is UpToDateException) {
-                        db.loadCollectionsFromStorage()
-                        finishGetCollections()
+                        db.loadCollectionsFromDatabase().subscribeOn(Schedulers.io())
+                            .observeOn(AndroidSchedulers.mainThread())
+                            .doOnComplete(
+                                { finishGetCollections() }
+                            ).subscribe()
                     } else if (e is APIKeyRevokedException) {
                         presenter.createErrorAlert(
                             "Invalid API Key",
@@ -222,8 +251,11 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
 
                         if (db.hasStorage()) {
                             Log.d("zotero", "no internet connection. Using cached copy")
-                            db.loadCollectionsFromStorage()
-                            finishGetCollections()
+                            db.loadCollectionsFromDatabase().subscribeOn(Schedulers.io())
+                                .observeOn(AndroidSchedulers.mainThread())
+                                .doOnComplete(
+                                    { finishGetCollections() }
+                                ).subscribe()
                         }
                     }
                 }
@@ -287,24 +319,25 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
     }
 
     private fun finishGetCollections() {
-        if (zoteroDBPicker.getZoteroDB().collections != null) {
+        if (zoteroDB.collections != null) {
             loadingCollections = false
-            if (zoteroDBPicker.getZoteroDB().items != null) {
+            if (!loadingItems) {
                 finishLoading()
             }
         }
     }
 
     private fun finishGetItems() {
-        if (zoteroDBPicker.getZoteroDB().items != null) {
+        if (zoteroDB.items != null) {
             loadingItems = false
-            if (zoteroDBPicker.getZoteroDB().collections != null) {
+            if (!loadingCollections) {
                 finishLoading()
             }
         }
     }
 
     private fun finishLoading() {
+        Log.d("zotero", "finishedLoadingCalled()")
         presenter.hideLibraryLoadingAnimation()
         presenter.receiveCollections(getCollections())
         if (state.currentCollection == "unset") {
@@ -312,82 +345,74 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
         } else {
             presenter.redisplayItems()
         }
+
+        this.checkAllAttachmentsForModification()
     }
 
     override fun getCollections(): List<Collection> {
-        return zoteroDBPicker.getZoteroDB().collections ?: LinkedList()
+        return zoteroDB.collections ?: LinkedList()
     }
 
     override fun getAttachments(itemKey: String): List<Item> {
-        return zoteroDBPicker.getZoteroDB().getAttachments(itemKey)
+        return zoteroDB.getAttachments(itemKey)
     }
 
     override fun getNotes(itemKey: String): List<Note> {
-        return zoteroDBPicker.getZoteroDB().getNotes(itemKey)
+        return zoteroDB.getNotes(itemKey)
     }
 
     override fun filterCollections(query: String): List<Collection> {
         val queryUpper = query.toUpperCase(Locale.ROOT)
-        return zoteroDBPicker.getZoteroDB().collections?.filter {
-            it.getName().toUpperCase(Locale.ROOT).contains(queryUpper)
+        return zoteroDB.collections?.filter {
+            it.name.toUpperCase(Locale.ROOT).contains(queryUpper)
         } ?: LinkedList()
     }
 
-    override fun openPDF(attachment: File) {
-        var intent = Intent(Intent.ACTION_VIEW)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            val uri: Uri?
-            try {
-                uri = FileProvider.getUriForFile(
-                    context,
-                    "${context.packageName}.fileprovider",
-                    attachment
-                )
-            } catch (exception: IllegalArgumentException) {
-                val params = Bundle()
-                params.putString("filename", attachment.name)
-                firebaseAnalytics.logEvent("error_opening_pdf", params)
-                presenter.makeToastAlert("Sorry an error occurred while trying to download your attachment.")
-                return
+    override fun openPDF(attachment: Item) {
+        Completable.create { emitter ->
+            if (!preferences.isWebDAVEnabled()) {
+                // todo add support for webdav and remove this.
+                zoteroDatabase.addRecentlyOpenedAttachments(RecentlyOpenedAttachment(attachment.ItemKey))
+                    .blockingAwait()
+                emitter.onComplete()
             }
-            Log.d("zotero", "${uri.query}")
-            intent = Intent(Intent.ACTION_VIEW)
-            intent.data = uri
-            intent.flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
-        } else {
-            intent.setDataAndType(Uri.fromFile(attachment), "application/pdf")
-            intent.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY)
-            intent = Intent.createChooser(intent, "Open File")
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-
-        }
-        try {
-            context.startActivity(intent)
-        } catch (exception: ActivityNotFoundException) {
-            presenter.createErrorAlert("No PDF Viewer installed",
-                "There is no app that handles pdf documents available on your device. Would you like to install one?",
-                onClick = {
-                    try {
-                        context.startActivity(
-                            Intent(
-                                Intent.ACTION_VIEW,
-                                Uri.parse("market://details?id=com.xodo.pdf.reader")
+        }.subscribeOn(Schedulers.io()).doOnComplete {
+            try {
+                val intent = attachmentStorageManager.openAttachment(attachment)
+                context.startActivity(intent)
+            } catch (exception: ActivityNotFoundException) {
+                presenter.createErrorAlert("No PDF Viewer installed",
+                    "There is no app that handles pdf documents available on your device. Would you like to install one?",
+                    onClick = {
+                        try {
+                            context.startActivity(
+                                Intent(
+                                    Intent.ACTION_VIEW,
+                                    Uri.parse("market://details?id=com.xodo.pdf.reader")
+                                )
                             )
-                        )
-                    } catch (e: ActivityNotFoundException) {
-                        context.startActivity(
-                            Intent(
-                                Intent.ACTION_VIEW,
-                                Uri.parse("https://play.google.com/store/apps/details?id=com.xodo.pdf.reader")
+                        } catch (e: ActivityNotFoundException) {
+                            context.startActivity(
+                                Intent(
+                                    Intent.ACTION_VIEW,
+                                    Uri.parse("https://play.google.com/store/apps/details?id=com.xodo.pdf.reader")
+                                )
                             )
-                        )
-                    }
-                })
-        }
+                        }
+                    })
+            } catch (e: IllegalArgumentException) {
+                presenter.createErrorAlert("Error opening File",
+                    "There was an error opening your PDF." +
+                            " If you are on a huawei device, this is a known error with their implementation of file" +
+                            " access. Try changing the storage location to a custom path in settings.",
+                    {})
+                firebaseAnalytics.logEvent("open_pdf_illegal_argument_exception", Bundle())
+            }
+        }.subscribe()
     }
 
     override fun filterItems(query: String): List<Item> {
-        val items = zoteroDBPicker.getZoteroDB().items?.filter {
+        val items = zoteroDB.items?.filter {
             it.query(query)
 
         } ?: LinkedList()
@@ -422,12 +447,24 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                     isDownloading = false
                 }
 
-                override fun onComplete(attachment: File) {
+                override fun onComplete() {
+
                     isDownloading = false
-                    if (attachment.exists()) {
-                        presenter.openPDF(attachment)
+                    presenter.finishDownloadingAttachment()
+
+                    if (!preferences.isWebDAVEnabled() && !attachmentStorageManager.validateMd5ForItem(
+                            item
+                        )
+                    ) {
+                        presenter.createErrorAlert(
+                            "Error downloading",
+                            "The download process did not complete properly. Please retry",
+                            {})
+                        firebaseAnalytics.logEvent("error_downloading_file_corrupted", Bundle())
+                        attachmentStorageManager.deleteAttachment(item)
+                        return
                     } else {
-                        presenter.attachmentDownloadError()
+                        openPDF(item)
                     }
                 }
 
@@ -446,11 +483,11 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
     }
 
     override fun getUnfiledItems(): List<Item> {
-        if (!zoteroDBPicker.getZoteroDB().isPopulated()) {
+        if (!zoteroDB.isPopulated()) {
             Log.e("zotero", "error zoteroDB not populated!")
             return LinkedList()
         }
-        return filterItems(zoteroDBPicker.getZoteroDB().getItemsWithoutCollection())
+        return filterItems(zoteroDB.getItemsWithoutCollection())
     }
 
     override fun cancelAttachmentDownload() {
@@ -473,7 +510,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
             presenter.makeToastAlert("Sorry, this isn't supported in shared collections.")
             return
         }
-        zoteroAPI.modifyNote(note, zoteroDBPicker.getZoteroDB().getLibraryVersion())
+        zoteroAPI.modifyNote(note, zoteroDB.getLibraryVersion())
     }
 
     override fun deleteNote(note: Note) {
@@ -485,7 +522,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
         zoteroAPI.deleteItem(note.key, note.version, object : DeleteItemListener {
             override fun success() {
                 presenter.makeToastAlert("Successfully deleted your note.")
-                zoteroDBPicker.getZoteroDB().deleteItem(note.key)
+                zoteroDB.deleteItem(note.key)
                 presenter.refreshItemView()
             }
 
@@ -512,7 +549,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
         zoteroAPI.deleteItem(item.ItemKey, item.version, object : DeleteItemListener {
             override fun success() {
                 presenter.makeToastAlert("Successfully deleted your attachment.")
-                zoteroDBPicker.getZoteroDB().deleteItem(item.ItemKey)
+                zoteroDB.deleteItem(item.ItemKey)
                 presenter.refreshItemView()
             }
 
@@ -533,14 +570,6 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                         "deleting your attachment. The server responded : ${code}", {})
             }
         })
-    }
-
-    override fun updateAttachment(item: Item, attachment: File) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-    }
-
-    override fun uploadAttachment(parent: Item, attachment: File) {
-        zoteroAPI.uploadPDF(parent, attachment)
     }
 
     fun displayGroupsOnUI() {
@@ -604,6 +633,120 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                 }
 
             })
+    }
+
+    fun checkAllAttachmentsForModification() {
+        if (preferences.isWebDAVEnabled()) {
+            Log.d(
+                "zotero",
+                "not checking attachments because we do not support re-uploading for webdav."
+            )
+            return
+        }
+        if (isUsingGroups()) {
+            Log.d(
+                "zotero",
+                "not checking attachments because we do not support groups"
+            )
+            return
+        }
+
+        if (!preferences.isAttachmentUploadingEnabled()) {
+            Log.d("zotero", "disabled by preferences")
+            return
+        }
+
+        val disposable = zoteroDatabase.getRecentlyOpenedAttachments()
+            .subscribeOn(Schedulers.io())
+            .observeOn(AndroidSchedulers.mainThread()).map { listOfRecently ->
+                val itemsToUpload: MutableList<Item> = LinkedList()
+                for (recentlyOpenedAttachment in listOfRecently) {
+                    Log.d("zotero", "RECENTLY OPENED ${recentlyOpenedAttachment.itemKey}")
+                    val item = zoteroDB.getItemWithKey(recentlyOpenedAttachment.itemKey)
+                    if (item != null) {
+                        try {
+                            if (attachmentStorageManager.validateMd5ForItem(item) == false) {
+                                // our attachment has been modified, we will offer to upload.
+                                itemsToUpload.add(item)
+                                Log.d(
+                                    "zotero",
+                                    "found change in ${item.getTitle()} ${item.ItemKey}"
+                                )
+                            }
+                        } catch (e: FileNotFoundException) {
+                            Log.d(
+                                "zotero",
+                                "could not find local attachment with itemKey ${item.ItemKey}"
+                            )
+                            removeFromRecentlyViewed(item)
+                        }
+                    }
+                }
+                itemsToUpload
+            }.subscribe(Consumer { itemsToUpload ->
+                if (itemsToUpload.isNotEmpty()) {
+                    presenter.askToUploadAttachments(itemsToUpload)
+                }
+            })
+    }
+
+    override fun uploadAttachment(attachment: Item) {
+        if (preferences.isWebDAVEnabled()) {
+            val sub = zoteroAPI.uploadAttachmentWithWebdav(attachment, context)
+                .subscribeOn(Schedulers.io()).observeOn(AndroidSchedulers.mainThread()).subscribe(
+                    object : CompletableObserver {
+                        override fun onComplete() {
+                            presenter.stopUploadingAttachment()
+                            removeFromRecentlyViewed(attachment)
+                            refreshLibrary()
+                            firebaseAnalytics.logEvent("upload_attachment_successful", Bundle())
+                        }
+
+                        override fun onSubscribe(d: Disposable) {
+                            presenter.startUploadingAttachment(attachment)
+                        }
+
+                        override fun onError(e: Throwable) {
+                            presenter.createErrorAlert(
+                                "Error uploading Attachment",
+                                e.toString(),
+                                {})
+                            Log.e("zotero", "got exception: $e")
+                            val bundle = Bundle().apply { putString("error_message", e.toString()) }
+                            firebaseAnalytics.logEvent("error_uploading_attachments", bundle)
+                            presenter.stopUploadingAttachment()
+                        }
+
+                    })
+            return
+        }
+
+        zoteroAPI.updateAttachment(attachment).subscribeOn(Schedulers.io())
+            .observeOn(AndroidSchedulers.mainThread()).subscribe(object : CompletableObserver {
+                override fun onComplete() {
+                    presenter.stopUploadingAttachment()
+                    removeFromRecentlyViewed(attachment)
+                    refreshLibrary()
+                }
+
+                override fun onSubscribe(d: Disposable) {
+                    presenter.startUploadingAttachment(attachment)
+                }
+
+                override fun onError(e: Throwable) {
+                    presenter.createErrorAlert("Error uploading Attachment", e.toString(), {})
+                    Log.e("zotero", "got exception: $e")
+                    val bundle = Bundle().apply { putString("error_message", e.toString()) }
+                    firebaseAnalytics.logEvent("error_uploading_attachments", bundle)
+                    presenter.stopUploadingAttachment()
+                }
+
+            })
+    }
+
+    override fun removeFromRecentlyViewed(attachment: Item) {
+        zoteroDatabase.deleteRecentlyOpenedAttachment(attachment.ItemKey)
+            .subscribeOn(Schedulers.io()).subscribe()
     }
 
     override fun loadGroup(
@@ -696,11 +839,12 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
         groupCollectionsObservable.subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())
             .unsubscribeOn(Schedulers.io())
-            .subscribe(object : Observer<List<Collection>> {
-                val collections = LinkedList<Collection>()
+            .subscribe(object : Observer<List<CollectionPOJO>> {
+                val collections = LinkedList<CollectionPOJO>()
                 override fun onComplete() {
-                    db.collections = collections
-                    db.commitCollectionsToStorage()
+                    val collectionObjects = collections.map { Collection(it, group.id) }
+                    db.collections = collectionObjects
+                    db.commitCollectionsToDatabase()
                     if (db.items != null) {
                         finishLoadingGroups(group)
                     }
@@ -709,16 +853,20 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                 override fun onSubscribe(d: Disposable) {
                 }
 
-                override fun onNext(collections: List<Collection>) {
+                override fun onNext(collections: List<CollectionPOJO>) {
                     this.collections.addAll(collections)
                 }
 
                 override fun onError(e: Throwable) {
                     if (e is UpToDateException) {
-                        db.loadCollectionsFromStorage()
-                        if (db.items != null) {
-                            finishLoadingGroups(group)
-                        }
+                        db.loadCollectionsFromDatabase().subscribeOn(Schedulers.io())
+                            .observeOn(AndroidSchedulers.mainThread())
+                            .doOnComplete {
+                                if (db.items != null) {
+                                    finishLoadingGroups(group)
+                                }
+                            }.subscribe()
+
                     } else if (e is APIKeyRevokedException) {
                         presenter.createErrorAlert(
                             "Permission Error",
@@ -732,10 +880,13 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                         ) {}
 
                         if (db.hasStorage()) {
-                            db.loadCollectionsFromStorage()
-                            if (db.items != null) {
-                                finishLoadingGroups(group)
-                            }
+                            db.loadCollectionsFromDatabase().subscribeOn(Schedulers.io())
+                                .observeOn(AndroidSchedulers.mainThread())
+                                .doOnComplete {
+                                    if (db.items != null) {
+                                        finishLoadingGroups(group)
+                                    }
+                                }.subscribe()
                         }
                     }
                 }
@@ -778,11 +929,13 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
     init {
         firebaseAnalytics = FirebaseAnalytics.getInstance(context)
         val auth = AuthenticationStorage(context)
+
         if (auth.hasCredentials()) {
             zoteroAPI = ZoteroAPI(
                 auth.getUserKey()!!,
                 auth.getUserID()!!,
-                auth.getUsername()!!
+                auth.getUsername()!!,
+                attachmentStorageManager
             )
         } else {
             presenter.createErrorAlert(
@@ -791,7 +944,44 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                         "Please re-authenticate the application"
             ) { (context as Activity).finish() }
             auth.destroyCredentials()
-            zoteroDBPicker.getZoteroDB().clearItemsVersion()
+            zoteroDB.clearItemsVersion()
+        }
+
+        try {
+            if (attachmentStorageManager.testStorage() == false) {
+                throw Exception()
+            }
+        } catch (e: Exception) {
+            presenter.createErrorAlert(
+                "Permission Error",
+                "There was an error accessing your zotero attachment location. Please reconfigure in settings.",
+                {})
+            preferences.useExternalCache()
+        }
+
+        if (preferences.firstRunForVersion24()) {
+            zoteroDB.setItemsVersion(-1) // forces a full refresh for collections
+        }
+        /*Do to a change in implementation this code will transition webdav configs.*/
+        if (preferences.firstRunForVersion25()) {
+            if (preferences.isWebDAVEnabled()) {
+                val address = preferences.getWebDAVAddress()
+                val newAddress = if (address.endsWith("/zotero")) {
+                    address
+                } else {
+                    if (address.endsWith("/")) { // so we don't get server.com//zotero
+                        address + "zotero"
+                    } else {
+                        address + "/zotero"
+                    }
+                }
+                preferences.setWebDAVAuthentication(
+                    newAddress,
+                    preferences.getWebDAVUsername(),
+                    preferences.getWebDAVPassword()
+                )
+            }
+
         }
     }
 }

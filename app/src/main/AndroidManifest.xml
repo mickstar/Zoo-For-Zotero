@@ -14,7 +14,8 @@
             android:label="@string/app_name"
             android:roundIcon="@mipmap/icon_round"
             android:supportsRtl="true"
-            android:theme="@style/AppTheme">
+            android:theme="@style/AppTheme"
+            android:usesCleartextTraffic="true">
         <activity
                 android:name=".LibraryActivity.WebDAV.WebDAVSetup"
                 android:label="@string/title_activity_web_davsetup"

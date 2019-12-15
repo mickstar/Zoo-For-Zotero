@@ -2,6 +2,7 @@ package com.mickstarify.zooforzotero.ZoteroAPI.Model
 
 import android.os.Parcelable
 import com.google.gson.annotations.SerializedName
+import kotlinx.android.parcel.IgnoredOnParcel
 import kotlinx.android.parcel.Parcelize
 import java.util.*
 
@@ -19,6 +20,12 @@ open class Item(
     val collections: List<String>,
     var mtime: Double = 0.0
 ) : Parcelable {
+    companion object {
+        val ATTACHMENT_TYPE = "attachment"
+    }
+
+    @IgnoredOnParcel
+    var localMd5 : String = ""
 
     fun getValue(key: String): Any? {
         when (key) {

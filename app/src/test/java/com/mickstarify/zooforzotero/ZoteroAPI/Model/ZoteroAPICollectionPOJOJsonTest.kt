@@ -2,13 +2,11 @@ package com.mickstarify.zooforzotero.ZoteroAPI.Model
 
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
-
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
-import org.junit.Assert.*
-
-class ZoteroAPICollectionJsonTest {
+class ZoteroAPICollectionPOJOJsonTest {
     var gson = Gson()
 
     @Before
@@ -17,8 +15,8 @@ class ZoteroAPICollectionJsonTest {
 
     @Test
     fun deserialize() {
-        val listType = object : TypeToken<List<Collection>>() {}.type
-        val collection : List<Collection> = gson.fromJson(collectionJSONSample, listType)
+        val listType = object : TypeToken<List<CollectionPOJO>>() {}.type
+        val collection: List<CollectionPOJO> = gson.fromJson(collectionJSONSample, listType)
         assertTrue(collection.isNotEmpty())
         assertTrue(collection.filter {it.key == "RHDBUR9L"}.get(0).getName() == "Haskell")
         assertTrue(collection.filter {it.key == "RHDBUR9L"}.get(0).hasParent())
