@@ -202,12 +202,23 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
         val listView: ListView = findViewById(R.id.library_listview)
         listView.adapter = ZoteroItemListAdapter(this, entries)
 
+
+        listView.setOnItemLongClickListener{_, _, position, _ ->
+            val entry = listView.adapter.getItem(position) as ListEntry
+            if (entry.isCollection()) {
+                presenter.setCollection(entry.getCollection().name, isSubCollection = true)
+            } else {
+                presenter.selectItem(entry.getItem(), longPress=true)
+            }
+            true
+        }
+
         listView.setOnItemClickListener { _, _, position: Int, _ ->
             val entry = listView.adapter.getItem(position) as ListEntry
             if (entry.isCollection()) {
                 presenter.setCollection(entry.getCollection().name, isSubCollection = true)
             } else {
-                presenter.selectItem(entry.getItem())
+                presenter.selectItem(entry.getItem(), false)
             }
         }
 
@@ -281,7 +292,11 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
         supportActionBar?.setHomeButtonEnabled(false)
         val drawer = findViewById<DrawerLayout>(R.id.drawerlayout_library)
         val toggle = ActionBarDrawerToggle(
-            this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close
+            this,
+            drawer,
+            toolbar,
+            R.string.navigation_drawer_open,
+            R.string.navigation_drawer_close
         )
         drawer.addDrawerListener(toggle)
         toggle.syncState()
@@ -292,7 +307,11 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
         this.supportActionBar?.title = title
     }
 
-    override fun showItemDialog(item: Item, attachments: List<Item>, notes: List<Note>) {
+    override fun showItemDialog(
+        item: Item,
+        attachments: List<Item>,
+        notes: List<Note>
+    ) {
         itemView = ItemViewFragment.newInstance(item, attachments, notes)
         val fm = supportFragmentManager
         itemView?.show(fm, "hello world")
@@ -436,7 +455,8 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
     }
 
     override fun showLibraryContentDisplay(message: String) {
-        val constraintLayout = findViewById<ConstraintLayout>(R.id.constraintLayout_library_content)
+        val constraintLayout =
+            findViewById<ConstraintLayout>(R.id.constraintLayout_library_content)
         constraintLayout.visibility = View.VISIBLE
         val textView = findViewById<TextView>(R.id.textView_Library_label)
         if (message == "") {
@@ -447,7 +467,8 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
     }
 
     override fun hideLibraryContentDisplay() {
-        val constraintLayout = findViewById<ConstraintLayout>(R.id.constraintLayout_library_content)
+        val constraintLayout =
+            findViewById<ConstraintLayout>(R.id.constraintLayout_library_content)
         constraintLayout.visibility = View.GONE
         progressBar?.visibility = View.GONE
         progressBar = null
@@ -489,7 +510,8 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
     }
 
     companion object {
-        const val ACTION_FILTER = "com.mickstarify.zooforzotero.intent.action.LIBRARY_FILTER_INTENT"
+        const val ACTION_FILTER =
+            "com.mickstarify.zooforzotero.intent.action.LIBRARY_FILTER_INTENT"
         const val EXTRA_QUERY = "com.mickstarify.zooforzotero.intent.EXTRA_QUERY_TEXT"
     }
 }

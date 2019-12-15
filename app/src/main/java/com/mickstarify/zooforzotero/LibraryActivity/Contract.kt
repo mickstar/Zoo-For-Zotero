@@ -37,7 +37,7 @@ interface Contract {
         fun testConnection()
         fun receiveCollections(collections: List<Collection>)
         fun setCollection(collectionName: String, isSubCollection: Boolean = false)
-        fun selectItem(item: Item)
+        fun selectItem(item: Item, longPress: Boolean = false)
         fun requestLibraryRefresh()
         fun showLibraryLoadingAnimation()
         fun hideLibraryLoadingAnimation()

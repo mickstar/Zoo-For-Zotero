@@ -41,6 +41,22 @@
                 android:title="Offer to upload attachments" />
 
     </PreferenceCategory>
+
+    <PreferenceCategory app:title="@string/library_header">
+        <SwitchPreference
+            android:defaultValue="false"
+            android:key="should_open_pdf_on_open"
+            android:title="Default to opening Attachments" />
+
+        <ListPreference
+            app:defaultValue="TITLE"
+            app:entries="@array/sort_options_entries"
+            app:entryValues="@array/sort_options_values"
+            app:key="sort_method"
+            app:title="@string/sort_method_title"
+            app:useSimpleSummaryProvider="true" />
+    </PreferenceCategory>
+
     <PreferenceCategory android:title="Web DAV">
 
         <SwitchPreference
@@ -77,14 +93,5 @@
                 android:dependency="use_webdav"
                 android:key="use_webdav_shared_libraries"
                 android:title="Use webdav for Group Libraries" />
-    </PreferenceCategory>
-    <PreferenceCategory app:title="@string/library_header">
-        <ListPreference
-                app:defaultValue="TITLE"
-                app:entries="@array/sort_options_entries"
-                app:entryValues="@array/sort_options_values"
-                app:key="sort_method"
-                app:title="@string/sort_method_title"
-                app:useSimpleSummaryProvider="true" />
     </PreferenceCategory>
 </PreferenceScreen>

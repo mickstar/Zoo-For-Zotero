@@ -16,6 +16,7 @@ import org.jetbrains.anko.doAsync
 import org.jetbrains.anko.onComplete
 import org.jetbrains.anko.sdk27.coroutines.onClick
 import org.jetbrains.anko.toast
+import java.util.*
 
 class WebDAVSetup : AppCompatActivity() {
     lateinit var preferenceManager: PreferenceManager
@@ -66,11 +67,21 @@ class WebDAVSetup : AppCompatActivity() {
         if (mAddress == "") {
             return ""
         }
-        return if (!mAddress.toUpperCase().startsWith("HTTP")) {
+        mAddress = if (!mAddress.toUpperCase(Locale.ROOT).startsWith("HTTP")) {
             "https://" + mAddress
         } else {
             mAddress.trim()
         }
+        mAddress = if (mAddress.endsWith("/zotero")) {
+            mAddress
+        } else {
+            if (mAddress.endsWith("/")) { // so we don't get server.com//zotero
+                mAddress + "zotero"
+            } else {
+                mAddress + "/zotero"
+            }
+        }
+        return mAddress
     }
 
     fun makeConnection(address: String, username: String, password: String) {

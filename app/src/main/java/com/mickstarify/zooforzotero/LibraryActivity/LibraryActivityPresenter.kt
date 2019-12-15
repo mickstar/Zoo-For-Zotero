@@ -203,16 +203,30 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
         model.refreshLibrary()
     }
 
-    override fun selectItem(item: Item) {
+    override fun selectItem(
+        item: Item,
+        longPress: Boolean
+    ) {
         if (item.getItemType() == "attachment") {
             this.openAttachment(item)
         } else if (item.getItemType() == "note") {
             //todo implement note opening
         } else {
+            val itemAttachments = model.getAttachments(item.ItemKey)
+            if (!longPress && model.preferences.shouldOpenPDFOnOpen()) {
+                val pdfAttachment =
+                    itemAttachments.filter { it.data["contentType"] == "application/pdf" }.firstOrNull()
+                if (pdfAttachment != null) {
+                    openAttachment(pdfAttachment)
+                    return
+                }
+                // otherwise there is no PDF and we will continue and just open the itemview.
+            }
+
             model.selectedItem = item
             view.showItemDialog(
                 item,
-                model.getAttachments(item.ItemKey),
+                itemAttachments,
                 model.getNotes(item.ItemKey)
             )
         }

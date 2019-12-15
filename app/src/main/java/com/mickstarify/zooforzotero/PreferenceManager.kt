@@ -198,6 +198,10 @@ class PreferenceManager(context: Context) {
 
     }
 
+    fun shouldOpenPDFOnOpen(): Boolean {
+        return sharedPreferences.getBoolean("should_open_pdf_on_open", false)
+    }
+
     companion object {
         val SORT_METHOD_ASCENDING = "ASCENDING"
         val SORT_METHOD_DESCENDING = "DESCENDING"
