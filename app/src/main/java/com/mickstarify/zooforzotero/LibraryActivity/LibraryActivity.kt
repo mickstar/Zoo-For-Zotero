@@ -4,6 +4,7 @@ import android.app.ProgressDialog
 import android.app.SearchManager
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
 import android.util.Log
@@ -132,6 +133,12 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
             }
             R.id.webdav_setup -> {
                 showWebDAVSetup()
+            }
+            R.id.zotero_save -> {
+                val url = "https://www.zotero.org/save";
+                val intent = Intent(Intent.ACTION_VIEW)
+                intent.setData(Uri.parse(url))
+                startActivity(intent)
             }
         }
         return super.onOptionsItemSelected(item)
