@@ -377,8 +377,8 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                 emitter.onComplete()
             }
         }.subscribeOn(Schedulers.io()).doOnComplete {
-            val intent = attachmentStorageManager.openAttachment(attachment)
             try {
+                val intent = attachmentStorageManager.openAttachment(attachment)
                 context.startActivity(intent)
             } catch (exception: ActivityNotFoundException) {
                 presenter.createErrorAlert("No PDF Viewer installed",
