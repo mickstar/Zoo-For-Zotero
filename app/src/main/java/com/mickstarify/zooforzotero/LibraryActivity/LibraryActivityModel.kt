@@ -42,13 +42,6 @@ import java.util.concurrent.TimeUnit
 class LibraryActivityModel(private val presenter: Contract.Presenter, val context: Context) :
     Contract.Model {
 
-    private var itemsDownloadAttempt = 0
-    private var collectionsDownloadAttempt = 0
-
-    // just a flag to store whether we have shown the user a network error so that we don't
-    // do it twice (from getCatalog & getItems
-    var shownNetworkError: Boolean = false
-
     // stores the current item being viewed by the user. (useful for refreshing the view)
     var selectedItem: Item? = null
     var isDisplayingItems = false
@@ -313,6 +306,12 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                         presenter.createErrorAlert("Error downloading items", "message: ${e}", {})
                         Log.e("zotero", "${e}")
                         Log.e("zotero", "${e.stackTrace}")
+
+                        if (db.hasStorage()) {
+                            Log.d("zotero", "no internet connection. Using cached copy")
+                            db.loadItemsFromStorage()
+                            finishGetItems()
+                        }
                     }
                 }
             })
