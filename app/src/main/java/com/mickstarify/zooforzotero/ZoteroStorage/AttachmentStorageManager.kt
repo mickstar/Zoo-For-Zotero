@@ -181,7 +181,7 @@ class AttachmentStorageManager(val context: Context) {
         } else if (storageMode == StorageMode.CUSTOM) {
             val documentTree = DocumentFile.fromTreeUri(context, getCustomStorageTreeURI())
             val directory = documentTree?.findFile(item.ItemKey.toUpperCase(Locale.ROOT))
-            val file = directory?.findFile(filename) ?: throw IOException("File not found! null")
+            val file = directory?.findFile(filename) ?: throw FileNotFoundException()
             if (file.exists()) {
                 return file.uri
             }
