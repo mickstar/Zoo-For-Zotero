@@ -682,6 +682,12 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                     }
                 }
                 itemsToUpload
+            }.doOnError {
+                Log.e("zotero", "got error $it")
+                val bundle = Bundle().apply {
+                    putString("error_message", it.message)
+                }
+                firebaseAnalytics.logEvent("error_check_attachments", bundle)
             }.subscribe(Consumer { itemsToUpload ->
                 if (itemsToUpload.isNotEmpty()) {
                     presenter.askToUploadAttachments(itemsToUpload)
