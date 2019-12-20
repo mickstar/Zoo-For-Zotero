@@ -373,8 +373,9 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                 // todo add support for webdav and remove this.
                 zoteroDatabase.addRecentlyOpenedAttachments(RecentlyOpenedAttachment(attachment.ItemKey))
                     .blockingAwait()
-                emitter.onComplete()
+
             }
+            emitter.onComplete()
         }.subscribeOn(Schedulers.io()).doOnComplete {
             try {
                 val intent = attachmentStorageManager.openAttachment(attachment)
