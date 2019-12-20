@@ -156,6 +156,7 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
     }
 
     override fun openAttachment(item: Item) {
+        // check to see if the attachment exists but is invalid
         if (model.attachmentStorageManager.checkIfAttachmentExists(
                 item,
                 checkMd5 = false

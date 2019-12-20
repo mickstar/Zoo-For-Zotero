@@ -447,7 +447,6 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                 }
 
                 override fun onComplete() {
-
                     isDownloading = false
                     presenter.finishDownloadingAttachment()
 
@@ -655,7 +654,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
             return
         }
 
-        val disposable = zoteroDatabase.getRecentlyOpenedAttachments()
+        zoteroDatabase.getRecentlyOpenedAttachments()
             .subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread()).map { listOfRecently ->
                 val itemsToUpload: MutableList<Item> = LinkedList()
@@ -678,26 +677,46 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                                 "could not find local attachment with itemKey ${item.ItemKey}"
                             )
                             removeFromRecentlyViewed(item)
+                        } catch (e: Exception) {
+                            Log.e("zotero", "validateMd5 got error $e")
+                            val bundle = Bundle().apply {
+                                putString("error_message", e.message)
+                            }
+                            firebaseAnalytics.logEvent("error_check_attachments", bundle)
                         }
                     }
                 }
                 itemsToUpload
-            }.doOnError {
-                Log.e("zotero", "got error $it")
-                val bundle = Bundle().apply {
-                    putString("error_message", it.message)
+            }.subscribe(object : MaybeObserver<MutableList<Item>> {
+                override fun onComplete() {
+                    // do nothing
                 }
-                firebaseAnalytics.logEvent("error_check_attachments", bundle)
-            }.subscribe(Consumer { itemsToUpload ->
-                if (itemsToUpload.isNotEmpty()) {
-                    presenter.askToUploadAttachments(itemsToUpload)
+
+                override fun onSubscribe(d: Disposable) {
+                    // do nothing
                 }
+
+
+                override fun onError(e: Throwable) {
+                    Log.e("zotero", "validateMd5 observer got error $e")
+                    val bundle = Bundle().apply {
+                        putString("error_message", e.message)
+                    }
+                    firebaseAnalytics.logEvent("error_check_attachments", bundle)
+                }
+
+                override fun onSuccess(itemsToUpload: MutableList<Item>) {
+                    if (itemsToUpload.isNotEmpty()) {
+                        presenter.askToUploadAttachments(itemsToUpload)
+                    }
+                }
+
             })
     }
 
     override fun uploadAttachment(attachment: Item) {
         if (preferences.isWebDAVEnabled()) {
-            val sub = zoteroAPI.uploadAttachmentWithWebdav(attachment, context)
+            zoteroAPI.uploadAttachmentWithWebdav(attachment, context)
                 .subscribeOn(Schedulers.io()).observeOn(AndroidSchedulers.mainThread()).subscribe(
                     object : CompletableObserver {
                         override fun onComplete() {

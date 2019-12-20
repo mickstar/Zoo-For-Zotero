@@ -9,7 +9,6 @@ import android.util.Log
 import androidx.core.content.FileProvider
 import androidx.documentfile.provider.DocumentFile
 import com.mickstarify.zooforzotero.PreferenceManager
-import com.mickstarify.zooforzotero.ZoteroAPI.Model.Attachment
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Item
 import okhttp3.internal.toHexString
 import okio.buffer
@@ -101,7 +100,7 @@ class AttachmentStorageManager(val context: Context) {
             }
         }
 
-        throw Exception()
+        throw Exception("not implemented")
     }
 
     fun calculateMd5(attachment: Item): String {
@@ -329,7 +328,7 @@ class AttachmentStorageManager(val context: Context) {
                 val docFile = DocumentFile.fromSingleUri(context, getAttachmentUri(attachment))
                 docFile?.delete()
             }
-            else -> throw Exception("bad storage mode")
+            else -> throw Exception("not implemented")
         }
     }
 
