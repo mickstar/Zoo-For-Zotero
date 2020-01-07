@@ -11,7 +11,7 @@ import android.widget.EditText
 import android.widget.Spinner
 import androidx.fragment.app.Fragment
 import com.mickstarify.zooforzotero.R
-import com.mickstarify.zooforzotero.ZoteroAPI.Model.Creator
+import com.mickstarify.zooforzotero.ZoteroStorage.Database.Creator
 
 private const val ARG_CREATOR = "creator"
 

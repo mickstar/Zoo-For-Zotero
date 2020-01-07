@@ -6,12 +6,15 @@ import android.util.ArrayMap
 import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
-import com.mickstarify.zooforzotero.ZoteroAPI.Model.Item
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Note
 import com.mickstarify.zooforzotero.ZoteroStorage.Database.Collection
+import com.mickstarify.zooforzotero.ZoteroStorage.Database.Item
 import com.mickstarify.zooforzotero.ZoteroStorage.Database.ZoteroDatabase
 import io.reactivex.Completable
+import io.reactivex.CompletableObserver
 import io.reactivex.CompletableOnSubscribe
+import io.reactivex.disposables.Disposable
+import io.reactivex.functions.Consumer
 import io.reactivex.schedulers.Schedulers
 import java.io.File
 import java.io.InputStreamReader
@@ -66,6 +69,8 @@ class ZoteroDB constructor(
     }
 
     fun commitItemsToStorage() {
+        Log.d("zotero", "committing items to storage")
+        commitItemsToStorage2()
         if (items == null) {
             throw Exception("Error, ZoteroDB not initialized. Cannot Commit to storage.")
         }
@@ -79,6 +84,24 @@ class ZoteroDB constructor(
         } catch (exception: OutOfMemoryError) {
             Log.d("zotero", "could not cache items, user has not enough space.")
         }
+    }
+
+    fun commitItemsToStorage2() {
+        zoteroDatabase.writeItems(groupID, items!!).subscribeOn(Schedulers.io())
+            .subscribe(object : CompletableObserver {
+                override fun onComplete() {
+                    Log.d("zotero", "finished writing items to database.")
+                }
+
+                override fun onSubscribe(d: Disposable) {
+                    Log.d("zotero", "started writing items to database.")
+                }
+
+                override fun onError(e: Throwable) {
+                    Log.e("zotero", "got error ${e}")
+                }
+
+            })
     }
 
     fun writeDatabaseUpdatedTimestamp() {
@@ -181,7 +204,7 @@ class ZoteroDB constructor(
 
         this.notes = ArrayMap()
         items?.forEach { item: Item ->
-            if (item.getItemType() == "note") {
+            if (item.itemType == "note") {
                 try {
                     val note = Note(item)
                     if (notes?.containsKey(note.parent) == false) {
@@ -189,7 +212,7 @@ class ZoteroDB constructor(
                     }
                     notes!![note.parent]!!.add(note)
                 } catch (e: ExceptionInInitializerError) {
-                    Log.e("zotero", "error loading note ${item.ItemKey} error:${e.message}")
+                    Log.e("zotero", "error loading note ${item.itemKey} error:${e.message}")
                 }
             }
         }
@@ -236,7 +259,7 @@ class ZoteroDB constructor(
 
     fun getDisplayableItems(): List<Item> {
         if (items != null) {
-            return items!!.filter { it.getItemType() != "attachment" && it.getItemType() != "note" }
+            return items!!.filter { it.itemType != "attachment" && it.itemType != "note" }
         } else {
             Log.e("zotero", "error. got request for getDisplayableItems() before items has loaded.")
             return LinkedList()
@@ -294,7 +317,7 @@ class ZoteroDB constructor(
     fun deleteItem(key: String) {
         val newItems = LinkedList<Item>()
         items?.forEach {
-            if (it.ItemKey != key) {
+            if (it.itemKey != key) {
                 newItems.add(it)
             }
         }
@@ -313,7 +336,7 @@ class ZoteroDB constructor(
         for (item in this.items!!) {
             var added = false
             for (modifiedItem: Item in toAdd) {
-                if (item.ItemKey == modifiedItem.ItemKey) {
+                if (item.itemKey == modifiedItem.itemKey) {
                     newItems.add(modifiedItem)
                     toAdd.remove(modifiedItem)
                     added = true
@@ -330,6 +353,14 @@ class ZoteroDB constructor(
     }
 
     fun getItemWithKey(itemKey: String): Item? {
-        return items?.filter { it -> it.ItemKey == itemKey }?.firstOrNull()
+        return items?.filter { it -> it.itemKey == itemKey }?.firstOrNull()
+    }
+
+    fun loadItemsFromDatabase(): Completable {
+        return Completable.fromMaybe(zoteroDatabase.getItemsForGroup(groupID).doOnSuccess(
+            Consumer {
+                items = it
+            }
+        ))
     }
 }

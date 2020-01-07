@@ -9,6 +9,7 @@ import com.mickstarify.zooforzotero.PreferenceManager
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.*
 import com.mickstarify.zooforzotero.ZoteroStorage.AttachmentStorageManager
 import com.mickstarify.zooforzotero.ZoteroStorage.Database.GroupInfo
+import com.mickstarify.zooforzotero.ZoteroStorage.Database.Item
 import io.reactivex.*
 import io.reactivex.Observable
 import io.reactivex.Observer
@@ -150,7 +151,7 @@ class ZoteroAPI(
 
                 override fun onError(e: Throwable) {
                     if (e is IOException) {
-                        listener.onFailure("Error, ${item.ItemKey.toUpperCase(Locale.ROOT)}.zip was not found on the webDAV server.")
+                        listener.onFailure("Error, ${item.itemKey.toUpperCase(Locale.ROOT)}.zip was not found on the webDAV server.")
                     } else if (e is IllegalArgumentException) {
                         listener.onFailure("Error, your WebDAV is misconfigured. Please disable WebDAV in your settings, or reconfigure WebDAV from the menu.")
                     } else {
@@ -171,7 +172,7 @@ class ZoteroAPI(
         val outputFileStream = attachmentStorageManager.getItemOutputStream(item)
 
         val observable = Observable.create<DownloadProgress> { emitter ->
-            val downloader = service.getItemFileRx(userID, item.ItemKey)
+            val downloader = service.getItemFileRx(userID, item.itemKey)
             downloader.subscribe(object : Observer<Response<ResponseBody>> {
                 override fun onComplete() {
                     emitter.onComplete()
@@ -228,7 +229,7 @@ class ZoteroAPI(
         groupID: Int = 0,
         listener: ZoteroAPIDownloadAttachmentListener
     ) {
-        if (item.getItemType() != "attachment") {
+        if (item.itemType != "attachment") {
             Log.d("zotero", "got download request for item that isn't attachment")
         }
 
@@ -252,9 +253,9 @@ class ZoteroAPI(
 
         val zoteroAPI = buildZoteroAPI(useCaching = false, libraryVersion = -1)
         val call: Call<ResponseBody> = if (useGroup) {
-            zoteroAPI.getAttachmentFileFromGroup(groupID, item.ItemKey)
+            zoteroAPI.getAttachmentFileFromGroup(groupID, item.itemKey)
         } else {
-            zoteroAPI.getItemFile(userID, item.ItemKey)
+            zoteroAPI.getItemFile(userID, item.itemKey)
         }
         call.enqueue(object : Callback<ResponseBody> {
             override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
@@ -587,7 +588,7 @@ class ZoteroAPI(
 
     fun updateAttachment(attachment: Item): Completable {
         val attachmentUri: Uri = attachmentStorageManager.getAttachmentUri(attachment)
-        var md5Key = attachment.data["md5"] ?: ""
+        var md5Key = attachment.getMd5Key()
         if (md5Key == "") {
             Log.d("zotero", "no md5key provided for Item: ${attachment.getTitle()}")
             md5Key = "*"
@@ -660,13 +661,13 @@ class ZoteroAPI(
                 requestBody
             ).flatMap { amazonResponse ->
                 if (amazonResponse.code() == 421) {
-                    throw PreconditionFailedException("412 Precondition failed when uploading ${attachment.ItemKey}")
+                    throw PreconditionFailedException("412 Precondition failed when uploading ${attachment.itemKey}")
                 }
                 if (amazonResponse.code() == 201) {
                     // SUCCESS
                     service.registerUpload(
                         userID,
-                        attachment.ItemKey,
+                        attachment.itemKey,
                         authorizationPojo.uploadKey,
                         "upload=${authorizationPojo.uploadKey}"
                     )
@@ -715,10 +716,10 @@ class ZoteroAPI(
         mtime: Long,
         service: ZoteroAPIService
     ): Observable<ZoteroUploadAuthorizationPojo> {
-        Log.d("zotero", "upload requested, ${item.ItemKey}")
+        Log.d("zotero", "upload requested, ${item.itemKey}")
         val observable = service.uploadAttachmentAuthorization(
             userID,
-            item.ItemKey,
+            item.itemKey,
             newMd5,
             filename,
             filesize, //in bytes

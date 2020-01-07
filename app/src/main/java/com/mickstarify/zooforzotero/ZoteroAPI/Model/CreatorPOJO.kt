@@ -4,7 +4,7 @@ import android.os.Parcelable
 import kotlinx.android.parcel.Parcelize
 
 @Parcelize
-data class Creator (
+data class CreatorPOJO (
     val creatorType : String,
     val firstName : String,
     val lastName : String

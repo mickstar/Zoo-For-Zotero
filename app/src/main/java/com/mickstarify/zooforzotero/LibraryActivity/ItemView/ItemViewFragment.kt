@@ -12,9 +12,9 @@ import androidx.appcompat.widget.Toolbar
 import androidx.fragment.app.Fragment
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.mickstarify.zooforzotero.R
-import com.mickstarify.zooforzotero.ZoteroAPI.Model.Creator
-import com.mickstarify.zooforzotero.ZoteroAPI.Model.Item
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Note
+import com.mickstarify.zooforzotero.ZoteroStorage.Database.Creator
+import com.mickstarify.zooforzotero.ZoteroStorage.Database.Item
 import java.util.*
 
 /**
@@ -85,7 +85,7 @@ class ItemViewFragment : BottomSheetDialogFragment(), ItemNoteEntry.OnNoteIntera
 
             override fun onSubmit(noteText: String) {
                 Log.d("zotero", "got note $noteText")
-                val note = Note(noteText, item.ItemKey)
+                val note = Note(noteText, item.itemKey)
                 listener?.onNoteCreate(note)
 
             }
@@ -108,7 +108,8 @@ class ItemViewFragment : BottomSheetDialogFragment(), ItemNoteEntry.OnNoteIntera
         if (item.creators.isNotEmpty()) {
             this.addCreators(item.creators)
         } else {
-            this.addCreators(listOf(Creator("Author", "", "")))
+            // empty creator.
+            this.addCreators(listOf(Creator("null", "", "", "")))
         }
         for ((key, value) in item.data) {
             if (value != "" && key != "itemType" && key != "title") {

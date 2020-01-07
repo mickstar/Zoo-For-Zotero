@@ -17,7 +17,11 @@ data class GroupInfo(
     @ColumnInfo(name = "libraryReading") val libraryReading: String,
     @ColumnInfo(name = "fileEditing") val fileEditing: String,
     @ColumnInfo(name = "owner") val owner: Int
-)
+) {
+    companion object {
+        const val NO_GROUP_ID = -1
+    }
+}
 
 @Dao
 interface GroupInfoDao {

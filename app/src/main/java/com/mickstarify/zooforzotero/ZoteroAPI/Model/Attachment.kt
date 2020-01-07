@@ -3,6 +3,7 @@ package com.mickstarify.zooforzotero.ZoteroAPI.Model
 import com.google.gson.JsonArray
 import com.google.gson.JsonNull
 import com.google.gson.JsonObject
+import com.mickstarify.zooforzotero.ZoteroStorage.Database.Item
 import java.lang.Exception
 
 class Attachment {
@@ -20,10 +21,10 @@ class Attachment {
     var md5: String = "null"
 
     constructor(item: Item) {
-        itemKey = item.ItemKey
+        itemKey = item.itemKey
         parentItem = item.data["parentItem"]
             ?: throw Exception("Error no parent key provided for attachment")
-        itemType = item.getItemType()
+        itemType = item.itemType
         linkMode = "imported_file"
         title = item.getTitle()
         accessDate = item.data["accessDate"] ?: ""
