@@ -12,13 +12,10 @@ import com.mickstarify.zooforzotero.PreferenceManager
 import com.mickstarify.zooforzotero.SyncSetup.AuthenticationStorage
 import com.mickstarify.zooforzotero.ZoteroAPI.*
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.CollectionPOJO
-import com.mickstarify.zooforzotero.ZoteroAPI.Model.Item
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Note
 import com.mickstarify.zooforzotero.ZoteroStorage.AttachmentStorageManager
+import com.mickstarify.zooforzotero.ZoteroStorage.Database.*
 import com.mickstarify.zooforzotero.ZoteroStorage.Database.Collection
-import com.mickstarify.zooforzotero.ZoteroStorage.Database.GroupInfo
-import com.mickstarify.zooforzotero.ZoteroStorage.Database.RecentlyOpenedAttachment
-import com.mickstarify.zooforzotero.ZoteroStorage.Database.ZoteroDatabase
 import com.mickstarify.zooforzotero.ZoteroStorage.ZoteroDB.ZoteroDB
 import com.mickstarify.zooforzotero.ZoteroStorage.ZoteroDB.ZoteroDBPicker
 import com.mickstarify.zooforzotero.ZoteroStorage.ZoteroDB.ZoteroGroupDB
@@ -110,11 +107,11 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
         var newItems = items
         if (onlyNotes) {
             newItems =
-                newItems.filter { zoteroDB.getNotes(it.ItemKey).isNotEmpty() }
+                newItems.filter { zoteroDB.getNotes(it.itemKey).isNotEmpty() }
         }
         if (onlyPdfs) {
             newItems = newItems.filter {
-                getAttachments(it.ItemKey).fold(false, { acc, attachment ->
+                getAttachments(it.itemKey).fold(false, { acc, attachment ->
                     var result = acc
                     if (!result) {
                         result = attachment.data["contentType"] == "application/pdf"
@@ -260,21 +257,21 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
             .observeOn(AndroidSchedulers.mainThread())
             .unsubscribeOn(Schedulers.io())
             .subscribe(object : Observer<ZoteroAPIItemsResponse> {
-                val items = LinkedList<Item>()
                 var libraryVersion = -1
+                var downloaded = 0
                 override fun onComplete() {
-                    if (db.getLibraryVersion() == -1) {
-                        // these are all brand new items
-                        db.items = items
-                        db.commitItemsToStorage()
-                    } else {
-                        //otherwise we just have changes and need to apply them.
-                        db.loadItemsFromStorage()
-                        db.applyChangesToItems(items)
-                        presenter.makeToastAlert("Updated ${items.size} items.")
-                    }
+//                    if (db.getLibraryVersion() == -1) {
+//                        // these are all brand new items
+//                    } else {
+//                        //otherwise we just have changes and need to apply them.
+//                        db.loadItemsFromStorage()
+//                        db.applyChangesToItems(items)
+//                        presenter.makeToastAlert("Updated ${items.size} items.")
+//                    } // TODO FIX
                     db.setItemsVersion(libraryVersion)
-                    finishGetItems()
+                    db.loadItemsFromDatabase().subscribeOn(Schedulers.io()).doOnComplete {
+                        finishGetItems()
+                    }.subscribe()
                 }
 
                 override fun onSubscribe(d: Disposable) {
@@ -284,12 +281,15 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                 override fun onNext(response: ZoteroAPIItemsResponse) {
                     if (response.isCached == false) {
                         this.libraryVersion = response.LastModifiedVersion
-                        this.items.addAll(response.items)
+                        this.downloaded += response.items.size
+                        zoteroDatabase.writeItemPOJOs(GroupInfo.NO_GROUP_ID, response.items)
+                            .subscribeOn(Schedulers.io()).subscribe()
+
                         presenter.updateLibraryRefreshProgress(
-                            this.items.size,
+                            downloaded,
                             response.totalResults
                         )
-                        Log.d("zotero", "got ${items.size} of ${response.totalResults} items")
+                        Log.d("zotero", "got ${this.downloaded} of ${response.totalResults} items")
                     } else {
                         Log.d("zotero", "got back cached response for items.")
                     }
@@ -297,7 +297,15 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
 
                 override fun onError(e: Throwable) {
                     if (e is UpToDateException) {
-                        db.loadItemsFromStorage()
+                        try {
+                            db.loadItemsFromStorage()
+                        } catch (e: Exception){
+                            db.clearItemsVersion()
+                            presenter.makeToastAlert(e.message?:"Error loading Items.")
+                            if (db.items == null){
+                                db.items = LinkedList() // empty list
+                            }
+                        }
                         finishGetItems()
                     } else {
                         val bundle = Bundle()
@@ -371,9 +379,8 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
         Completable.create { emitter ->
             if (!preferences.isWebDAVEnabled()) {
                 // todo add support for webdav and remove this.
-                zoteroDatabase.addRecentlyOpenedAttachments(RecentlyOpenedAttachment(attachment.ItemKey))
+                zoteroDatabase.addRecentlyOpenedAttachments(RecentlyOpenedAttachment(attachment.itemKey))
                     .blockingAwait()
-
             }
             emitter.onComplete()
         }.subscribeOn(Schedulers.io()).doOnComplete {
@@ -415,7 +422,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
         val items = zoteroDB.items?.filter {
             it.query(query)
 
-        } ?: LinkedList()
+        } ?: LinkedList<Item>()
 
         return items
     }
@@ -545,10 +552,10 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
     }
 
     override fun deleteAttachment(item: Item) {
-        zoteroAPI.deleteItem(item.ItemKey, item.version, object : DeleteItemListener {
+        zoteroAPI.deleteItem(item.itemKey, item.getVersion(), object : DeleteItemListener {
             override fun success() {
                 presenter.makeToastAlert("Successfully deleted your attachment.")
-                zoteroDB.deleteItem(item.ItemKey)
+                zoteroDB.deleteItem(item.itemKey)
                 presenter.refreshItemView()
             }
 
@@ -669,13 +676,13 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                                 itemsToUpload.add(item)
                                 Log.d(
                                     "zotero",
-                                    "found change in ${item.getTitle()} ${item.ItemKey}"
+                                    "found change in ${item.getTitle()} ${item.itemKey}"
                                 )
                             }
                         } catch (e: FileNotFoundException) {
                             Log.d(
                                 "zotero",
-                                "could not find local attachment with itemKey ${item.ItemKey}"
+                                "could not find local attachment with itemKey ${item.itemKey}"
                             )
                             removeFromRecentlyViewed(item)
                         } catch (e: Exception) {
@@ -770,7 +777,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
     }
 
     override fun removeFromRecentlyViewed(attachment: Item) {
-        zoteroDatabase.deleteRecentlyOpenedAttachment(attachment.ItemKey)
+        zoteroDatabase.deleteRecentlyOpenedAttachment(attachment.itemKey)
             .subscribeOn(Schedulers.io()).subscribe()
     }
 
@@ -841,7 +848,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                     assert(response.isCached == false)
                     this.libraryVersion = response.LastModifiedVersion
                     Log.d("zotero", "lv=${response.LastModifiedVersion}")
-                    this.items.addAll(response.items)
+                    // TODO LATER ADD DATABSE WRITING GROUPS
                     presenter.updateLibraryRefreshProgress(this.items.size, response.totalResults)
                     Log.d("zotero", "got ${items.size} of ${response.totalResults} items")
                 }

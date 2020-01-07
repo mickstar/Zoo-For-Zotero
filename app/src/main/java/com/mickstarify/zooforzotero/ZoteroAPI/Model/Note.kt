@@ -4,6 +4,7 @@ import android.os.Parcel
 import android.os.Parcelable
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import com.mickstarify.zooforzotero.ZoteroStorage.Database.Item
 import java.util.*
 
 class Note() : Parcelable {
@@ -25,8 +26,8 @@ class Note() : Parcelable {
         parent = item.data["parentItem"] ?: throw ExceptionInInitializerError("No Parent Key")
         key = item.data["key"] ?: throw ExceptionInInitializerError("No Key")
         note = item.data["note"] ?: throw ExceptionInInitializerError("No note")
-        version = item.version
-        tags = item.tags
+        version = item.getVersion()
+        tags = item.getTagList()
     }
 
     constructor(note: String, parent: String) : this() {

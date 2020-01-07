@@ -7,7 +7,7 @@ import kotlinx.android.parcel.Parcelize
 import java.util.*
 
 @Parcelize
-open class Item(
+open class ItemPOJO(
     @SerializedName("ItemKey")
     var ItemKey: String,
     @SerializedName("version")
@@ -16,14 +16,10 @@ open class Item(
     var data: Map<String, String>,
     @SerializedName("tags")
     var tags: List<String>,
-    val creators: List<Creator>,
+    val creators: List<CreatorPOJO>,
     val collections: List<String>,
     var mtime: Double = 0.0
 ) : Parcelable {
-    companion object {
-        val ATTACHMENT_TYPE = "attachment"
-    }
-
     @IgnoredOnParcel
     var localMd5 : String = ""
 
@@ -51,15 +47,7 @@ open class Item(
         }
     }
 
-    fun getTitle(): String {
-        val title = when (getItemType()) {
-            "case" -> this.getValue("caseName")
-            "statute" -> this.getValue("nameOfAct")
-            else -> this.getValue("title")
-        }
 
-        return (title ?: "unknown") as String
-    }
 
     fun getItemType(): String {
         return if ("itemType" in data) {
@@ -69,13 +57,7 @@ open class Item(
         }
     }
 
-    fun getAuthor(): String {
-        return when (creators.size) {
-            0 -> ""
-            1 -> creators[0].lastName
-            else -> "${creators[0].lastName} et al."
-        }
-    }
+
 
     /* Matches the query text against the metadata stored in item,
     * checks to see if we can find the text anywhere. Useful for search. */

@@ -8,7 +8,7 @@ import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.mickstarify.zooforzotero.LibraryActivity.ItemView.ItemViewFragment.OnItemFragmentInteractionListener
 import com.mickstarify.zooforzotero.R
-import com.mickstarify.zooforzotero.ZoteroAPI.Model.Item
+import com.mickstarify.zooforzotero.ZoteroStorage.Database.Item
 import kotlinx.android.synthetic.main.fragment_item_text_entry.view.*
 
 

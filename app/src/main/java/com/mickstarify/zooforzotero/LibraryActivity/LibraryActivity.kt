@@ -28,10 +28,10 @@ import com.mickstarify.zooforzotero.LibraryActivity.ItemView.ItemViewFragment
 import com.mickstarify.zooforzotero.LibraryActivity.WebDAV.WebDAVSetup
 import com.mickstarify.zooforzotero.R
 import com.mickstarify.zooforzotero.SettingsActivity
-import com.mickstarify.zooforzotero.ZoteroAPI.Model.Item
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Note
 import com.mickstarify.zooforzotero.ZoteroStorage.Database.Collection
 import com.mickstarify.zooforzotero.ZoteroStorage.Database.GroupInfo
+import com.mickstarify.zooforzotero.ZoteroStorage.Database.Item
 import kotlinx.android.synthetic.main.activity_library.*
 
 
@@ -406,7 +406,7 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
     }
 
     override fun onListFragmentInteraction(item: Item?) {
-        Log.d("zotero", "got onListFragmentInteraction from item ${item?.ItemKey}")
+        Log.d("zotero", "got onListFragmentInteraction from item ${item?.itemKey}")
     }
 
     override fun makeToastAlert(message: String) {

@@ -11,7 +11,7 @@ import android.widget.TextView
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.fragment.app.Fragment
 import com.mickstarify.zooforzotero.R
-import com.mickstarify.zooforzotero.ZoteroAPI.Model.Item
+import com.mickstarify.zooforzotero.ZoteroStorage.Database.Item
 import org.jetbrains.anko.support.v4.toast
 
 private const val ARG_ATTACHMENT = "attachment"
@@ -24,7 +24,7 @@ class ItemAttachmentEntry : Fragment() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         arguments?.let {
-            attachment = it.getParcelable(ARG_ATTACHMENT)
+            attachmentKey = it.getParcelable(ARG_ATTACHMENT)
         }
     }
 
@@ -32,14 +32,14 @@ class ItemAttachmentEntry : Fragment() {
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        val linkMode = attachment?.data?.get("linkMode")
+        val linkMode = attachment?.getItemData("linkMode")
 
         // Inflate the layout for this fragment
         val view = inflater.inflate(R.layout.fragment_item_attachment_entry, container, false)
         val filename = view.findViewById<TextView>(R.id.textView_filename)
         filename.text = attachment?.data?.get("filename") ?: "unknown"
         if (linkMode == "linked_file") { // this variant uses title as a filename.
-            filename.text = "[Linked] ${attachment?.data?.get("title")}"
+            filename.text = "[Linked] ${attachment?.getItemData("title")}"
         }
 
         val filetype = attachment?.data!!["contentType"] ?: ""

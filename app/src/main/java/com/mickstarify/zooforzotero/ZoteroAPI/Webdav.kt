@@ -2,8 +2,8 @@ package com.mickstarify.zooforzotero.ZoteroAPI
 
 import android.content.Context
 import android.util.Log
-import com.mickstarify.zooforzotero.ZoteroAPI.Model.Item
 import com.mickstarify.zooforzotero.ZoteroStorage.AttachmentStorageManager
+import com.mickstarify.zooforzotero.ZoteroStorage.Database.Item
 import com.thegrizzlylabs.sardineandroid.impl.OkHttpSardine
 import io.reactivex.Completable
 import io.reactivex.Observable
@@ -36,7 +36,7 @@ class Webdav(
         context: Context,
         attachmentStorageManager: AttachmentStorageManager
     ): Observable<DownloadProgress> {
-        val webpath = address + "/${attachment.ItemKey.toUpperCase(Locale.ROOT)}.zip"
+        val webpath = address + "/${attachment.itemKey.toUpperCase(Locale.ROOT)}.zip"
         return Observable.create { emitter ->
             var inputStream: InputStream?
             try {
@@ -51,7 +51,7 @@ class Webdav(
 
             val zipFile =
                 attachmentStorageManager.createTempFile(
-                    "${attachment.ItemKey.toUpperCase(Locale.ROOT)}.pdf"
+                    "${attachment.itemKey.toUpperCase(Locale.ROOT)}.pdf"
                 )
             val downloadOutputStream = zipFile.outputStream()
 
@@ -73,7 +73,7 @@ class Webdav(
             inputStream.close()
             if (read > 0) {
                 throw RuntimeException(
-                    "Error did not finish downloading ${attachment.ItemKey.toUpperCase(
+                    "Error did not finish downloading ${attachment.itemKey.toUpperCase(
                         Locale.ROOT
                     )}.zip"
                 )
@@ -115,7 +115,7 @@ class Webdav(
                 fileInputStream.close()
 
                 val zipFile =
-                    attachmentStorageManager.createTempFile("${attachment.ItemKey.toUpperCase(Locale.ROOT)}_NEW.zip")
+                    attachmentStorageManager.createTempFile("${attachment.itemKey.toUpperCase(Locale.ROOT)}_NEW.zip")
 
                 ZipFile(zipFile).addFile(tempFile)
                 emitter.onSuccess(zipFile)

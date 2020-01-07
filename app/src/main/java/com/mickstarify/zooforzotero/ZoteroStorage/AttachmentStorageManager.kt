@@ -9,7 +9,7 @@ import android.util.Log
 import androidx.core.content.FileProvider
 import androidx.documentfile.provider.DocumentFile
 import com.mickstarify.zooforzotero.PreferenceManager
-import com.mickstarify.zooforzotero.ZoteroAPI.Model.Item
+import com.mickstarify.zooforzotero.ZoteroStorage.Database.Item
 import okhttp3.internal.toHexString
 import okio.buffer
 import okio.sink
@@ -56,8 +56,8 @@ class AttachmentStorageManager(val context: Context) {
     }
 
     fun validateMd5ForItem(item: Item): Boolean {
-        if (item.getItemType() != Item.ATTACHMENT_TYPE) {
-            throw(Exception("error invalid item ${item.ItemKey}: ${item.getItemType()} cannot calculate md5."))
+        if (item.itemType != Item.ATTACHMENT_TYPE) {
+            throw(Exception("error invalid item ${item.itemKey}: ${item.itemType} cannot calculate md5."))
         }
         if (item.data["md5"] == null){
             Log.d("zotero", "error cannot check MD5, no MD5 Available")
@@ -70,7 +70,7 @@ class AttachmentStorageManager(val context: Context) {
     fun checkIfAttachmentExists(item: Item, checkMd5: Boolean = true): Boolean {
         val filename = getFilenameForItem(item)
         if (storageMode == StorageMode.EXTERNAL_CACHE) {
-            val outputDir = File(context.externalCacheDir, item.ItemKey.toUpperCase(Locale.ROOT))
+            val outputDir = File(context.externalCacheDir, item.itemKey.toUpperCase(Locale.ROOT))
             if (!outputDir.exists() || outputDir.isDirectory == false) {
                 return false
             }
@@ -84,9 +84,9 @@ class AttachmentStorageManager(val context: Context) {
         } else if (storageMode == StorageMode.CUSTOM) {
             val location = preferenceManager.getCustomAttachmentStorageLocation()
             val rootDocFile = DocumentFile.fromTreeUri(context, Uri.parse(location))
-            var directory = rootDocFile?.findFile(item.ItemKey.toUpperCase(Locale.ROOT))
+            var directory = rootDocFile?.findFile(item.itemKey.toUpperCase(Locale.ROOT))
             if (directory == null || directory.isDirectory == false) {
-                directory = rootDocFile?.createDirectory(item.ItemKey.toUpperCase(Locale.ROOT))
+                directory = rootDocFile?.createDirectory(item.itemKey.toUpperCase(Locale.ROOT))
             }
             val file = directory?.findFile(filename)
             if (file == null) {
@@ -138,9 +138,9 @@ class AttachmentStorageManager(val context: Context) {
             return file.outputStream()
         } else if (storageMode == StorageMode.CUSTOM) {
             val documentTree = DocumentFile.fromTreeUri(context, getCustomStorageTreeURI())
-            var directory = documentTree?.findFile(item.ItemKey.toUpperCase(Locale.ROOT))
+            var directory = documentTree?.findFile(item.itemKey.toUpperCase(Locale.ROOT))
             if (directory == null || directory.isDirectory == false) {
-                directory = documentTree?.createDirectory(item.ItemKey.toUpperCase(Locale.ROOT))
+                directory = documentTree?.createDirectory(item.itemKey.toUpperCase(Locale.ROOT))
             }
             var itemFile = directory!!.findFile(filename)
             if (itemFile == null || !itemFile.exists()) {
@@ -179,7 +179,7 @@ class AttachmentStorageManager(val context: Context) {
 
         } else if (storageMode == StorageMode.CUSTOM) {
             val documentTree = DocumentFile.fromTreeUri(context, getCustomStorageTreeURI())
-            val directory = documentTree?.findFile(item.ItemKey.toUpperCase(Locale.ROOT))
+            val directory = documentTree?.findFile(item.itemKey.toUpperCase(Locale.ROOT))
             val file = directory?.findFile(filename) ?: throw FileNotFoundException()
             if (file.exists()) {
                 return file.uri
@@ -291,7 +291,7 @@ class AttachmentStorageManager(val context: Context) {
 
     private fun getAttachmentFile(attachment: Item): File {
         val filename = getFilenameForItem(attachment)
-        val directory = File(context.externalCacheDir, attachment.ItemKey.toUpperCase(Locale.ROOT))
+        val directory = File(context.externalCacheDir, attachment.itemKey.toUpperCase(Locale.ROOT))
         if (!directory.exists()) {
             directory.mkdirs()
         }

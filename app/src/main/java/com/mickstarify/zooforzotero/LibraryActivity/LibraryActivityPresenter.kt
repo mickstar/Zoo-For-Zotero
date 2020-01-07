@@ -5,10 +5,10 @@ import android.os.Bundle
 import android.util.Log
 import com.google.firebase.analytics.FirebaseAnalytics
 import com.mickstarify.zooforzotero.SortMethod
-import com.mickstarify.zooforzotero.ZoteroAPI.Model.Item
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Note
 import com.mickstarify.zooforzotero.ZoteroStorage.Database.Collection
 import com.mickstarify.zooforzotero.ZoteroStorage.Database.GroupInfo
+import com.mickstarify.zooforzotero.ZoteroStorage.Database.Item
 import java.util.*
 
 class LibraryActivityPresenter(val view: Contract.View, context: Context) : Contract.Presenter {
@@ -208,12 +208,12 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
         item: Item,
         longPress: Boolean
     ) {
-        if (item.getItemType() == "attachment") {
+        if (item.itemType == "attachment") {
             this.openAttachment(item)
-        } else if (item.getItemType() == "note") {
+        } else if (item.itemType == "note") {
             //todo implement note opening
         } else {
-            val itemAttachments = model.getAttachments(item.ItemKey)
+            val itemAttachments = model.getAttachments(item.itemKey)
             if (!longPress && model.preferences.shouldOpenPDFOnOpen()) {
                 val pdfAttachment =
                     itemAttachments.filter { it.data["contentType"] == "application/pdf" }.firstOrNull()
@@ -228,7 +228,7 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
             view.showItemDialog(
                 item,
                 itemAttachments,
-                model.getNotes(item.ItemKey)
+                model.getNotes(item.itemKey)
             )
         }
     }
@@ -239,8 +239,8 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
             view.closeItemView()
             view.showItemDialog(
                 item,
-                model.getAttachments(item.ItemKey),
-                model.getNotes(item.ItemKey)
+                model.getAttachments(item.itemKey),
+                model.getNotes(item.itemKey)
             )
         }
     }

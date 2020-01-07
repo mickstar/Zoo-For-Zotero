@@ -8,7 +8,7 @@ import kotlin.collections.HashMap
 /* I had to write a custom json deserializer because the Zotero api has an inconsistent json output.
 * which is to say that return entries have varied parameters depending on the itemType or what info is available.*/
 class ItemJSONConverter {
-    fun deserialize(jsonString: String): List<Item> {
+    fun deserialize(jsonString: String): List<ItemPOJO> {
         if (jsonString == "[]") {
             return LinkedList()
         }
@@ -16,7 +16,7 @@ class ItemJSONConverter {
         val lmap: List<Map<String, Any>> = LinkedList()
         val listOfItemsObjects = gson.fromJson(jsonString, lmap.javaClass)
 
-        val items: MutableList<Item> = LinkedList()
+        val items: MutableList<ItemPOJO> = LinkedList()
 
         for (itemMap: Map<String, Any> in listOfItemsObjects) {
             try {
@@ -25,7 +25,7 @@ class ItemJSONConverter {
 
 
                 val tags: MutableList<String> = LinkedList()
-                val creators = LinkedList<Creator>()
+                val creators = LinkedList<CreatorPOJO>()
                 val data: MutableMap<String, String> = HashMap()
                 val itemDataMap = ((itemMap["data"] ?: HashMap<String, Any>()) as Map<String, Any>)
                 var collections: List<String> = LinkedList()
@@ -43,7 +43,7 @@ class ItemJSONConverter {
                         "creators" -> {
                             for (creator: Map<String, String> in value as List<Map<String, String>>) {
                                 creators.add(
-                                    Creator(
+                                    CreatorPOJO(
                                         creator["creatorType"] ?: "unknown",
                                         creator["firstName"] ?: "",
                                         creator["lastName"] ?: ""
@@ -84,7 +84,7 @@ class ItemJSONConverter {
                     }
                 }
 
-                items.add(Item(itemKey, version, data, tags, creators, collections, mtime))
+                items.add(ItemPOJO(itemKey, version, data, tags, creators, collections, mtime))
             } catch (e: Exception) {
                 Log.e("Zotero", "Error occurred when adding item. Skipping this item.")
             }

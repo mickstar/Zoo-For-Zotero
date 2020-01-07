@@ -8,8 +8,8 @@ import android.widget.BaseAdapter
 import android.widget.ImageView
 import android.widget.TextView
 import com.mickstarify.zooforzotero.R
-import com.mickstarify.zooforzotero.ZoteroAPI.Model.Item
 import com.mickstarify.zooforzotero.ZoteroStorage.Database.Collection
+import com.mickstarify.zooforzotero.ZoteroStorage.Database.Item
 
 class ZoteroItemListAdapter(val context: Context, var list: List<ListEntry>) : BaseAdapter() {
 
@@ -41,7 +41,7 @@ class ZoteroItemListAdapter(val context: Context, var list: List<ListEntry>) : B
         val author = view.findViewById<TextView>(R.id.txt_author)
         val img: ImageView = view.findViewById(R.id.imageView) as ImageView
         var icon: Int = R.drawable.treeitem_2x
-        when (item.getValue("itemType")) {
+        when (item.itemType) {
             "note" -> {
                 icon = R.drawable.treeitem_note_2x
             }
@@ -152,7 +152,7 @@ class ZoteroItemListAdapter(val context: Context, var list: List<ListEntry>) : B
             }
         }
         img.setImageResource(icon)
-        if (item.getItemType() == "note") {
+        if (item.itemType == "note") {
             val note = item.data["note"]
             if (note == null) {
                 lbl_title.text = "Unknown note"
