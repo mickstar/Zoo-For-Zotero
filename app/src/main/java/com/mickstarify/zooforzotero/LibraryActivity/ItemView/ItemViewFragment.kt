@@ -63,6 +63,7 @@ class ItemViewFragment : BottomSheetDialogFragment(), ItemNoteEntry.OnNoteIntera
         menu.removeItem(R.id.search)
         menu.removeItem(R.id.webdav_setup)
         menu.removeItem(R.id.filter_menu)
+        menu.removeItem(R.id.zotero_save)
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
