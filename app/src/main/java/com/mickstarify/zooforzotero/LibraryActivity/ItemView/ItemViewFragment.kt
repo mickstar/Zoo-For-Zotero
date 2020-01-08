@@ -92,6 +92,7 @@ class ItemViewFragment : BottomSheetDialogFragment(), ItemNoteEntry.OnNoteIntera
 
         })
     }
+    var toolbar: Toolbar? = null
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -99,7 +100,7 @@ class ItemViewFragment : BottomSheetDialogFragment(), ItemNoteEntry.OnNoteIntera
     ): View? {
         val view = inflater.inflate(R.layout.fragment_item_main, container, false)
 
-        val toolbar: Toolbar? = view.findViewById(R.id.item_fragment_toolbar)
+        toolbar = view.findViewById(R.id.item_fragment_toolbar)
         (activity as AppCompatActivity).setSupportActionBar(toolbar)
         (activity as AppCompatActivity).title = item.getTitle()
 
@@ -189,6 +190,7 @@ class ItemViewFragment : BottomSheetDialogFragment(), ItemNoteEntry.OnNoteIntera
     override fun onDetach() {
         super.onDetach()
         listener = null
+        toolbar = null
     }
 
     /**

@@ -210,12 +210,12 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
         listView.adapter = ZoteroItemListAdapter(this, entries)
 
 
-        listView.setOnItemLongClickListener{_, _, position, _ ->
+        listView.setOnItemLongClickListener { _, _, position, _ ->
             val entry = listView.adapter.getItem(position) as ListEntry
             if (entry.isCollection()) {
                 presenter.setCollection(entry.getCollection().name, isSubCollection = true)
             } else {
-                presenter.selectItem(entry.getItem(), longPress=true)
+                presenter.selectItem(entry.getItem(), longPress = true)
             }
             true
         }
@@ -275,7 +275,7 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
     override fun showLoadingAnimation(showScreen: Boolean) {
         if (showScreen) {
             this.showLibraryContentDisplay(message = "Downloading your library.")
-            this.updateLibraryLoadingProgress(0)
+            this.updateLibraryLoadingProgress(0, message = "")
         } else {
             val swipeRefresh = findViewById<SwipeRefreshLayout>(R.id.library_swipe_refresh)
             swipeRefresh.isRefreshing = true
@@ -436,7 +436,11 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
     }
 
     var progressBar: ProgressBar? = null
-    override fun updateLibraryLoadingProgress(progress: Int, total: Int) {
+    override fun updateLibraryLoadingProgress(
+        progress: Int,
+        total: Int,
+        message: String
+    ) {
         if (progressBar == null) {
             progressBar = findViewById(R.id.progressBar_library)
         }
@@ -452,7 +456,11 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
         } else {
             progressBar?.max = total
             progressBar?.isIndeterminate = false
-            textView.text = "Downloading ${progress} of ${total} entries."
+            textView.text = if (message == "") {
+                "Downloading ${progress} of ${total} entries."
+            } else {
+                message
+            }
         }
         progressBar?.isActivated = true
     }

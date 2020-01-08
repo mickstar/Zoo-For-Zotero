@@ -112,8 +112,12 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
         return model.isDisplayingItems
     }
 
-    override fun updateLibraryRefreshProgress(progress: Int, total: Int) {
-        view.updateLibraryLoadingProgress(progress, total)
+    override fun updateLibraryRefreshProgress(
+        progress: Int,
+        total: Int,
+        message: String
+    ) {
+        view.updateLibraryLoadingProgress(progress, total, message)
     }
 
     override fun closeQuery() {
@@ -155,29 +159,19 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
         view.hideAttachmentDownloadProgress()
     }
 
+    override fun createYesNoPrompt(
+        title: String,
+        message: String,
+        yesText: String,
+        noText: String,
+        onYesClick: () -> Unit,
+        onNoClick: () -> Unit
+    ) {
+        view.createYesNoPrompt(title, message, yesText, noText, onYesClick, onNoClick)
+    }
+
     override fun openAttachment(item: Item) {
-        // check to see if the attachment exists but is invalid
-        if (model.attachmentStorageManager.checkIfAttachmentExists(
-                item,
-                checkMd5 = false
-            ) && (!model.preferences.isWebDAVEnabled() && !model.attachmentStorageManager.validateMd5ForItem(
-                item
-            ))
-        ) {
-            view.createYesNoPrompt(
-                "File conflict",
-                "Your local copy is different to the server's. Would you like to redownload the server's copy?",
-                "Yes", "No", {
-                    view.updateAttachmentDownloadProgress(0, -1)
-                    model.downloadAttachment(item)
-                }, {
-                    model.openPDF(item)
-                }
-            )
-            return
-        }
-        view.updateAttachmentDownloadProgress(0, -1)
-        model.downloadAttachment(item)
+        model.openAttachment(item)
     }
 
     override fun updateAttachmentDownloadProgress(progress: Long, total: Long) {
@@ -216,7 +210,8 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
             val itemAttachments = model.getAttachments(item.itemKey)
             if (!longPress && model.preferences.shouldOpenPDFOnOpen()) {
                 val pdfAttachment =
-                    itemAttachments.filter { it.data["contentType"] == "application/pdf" }.firstOrNull()
+                    itemAttachments.filter { it.data["contentType"] == "application/pdf" }
+                        .firstOrNull()
                 if (pdfAttachment != null) {
                     openAttachment(pdfAttachment)
                     return

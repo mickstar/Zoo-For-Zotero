@@ -55,16 +55,19 @@ class AttachmentStorageManager(val context: Context) {
         return item.data.get("filename") ?: "unknown.pdf"
     }
 
-    fun validateMd5ForItem(item: Item): Boolean {
+    fun validateMd5ForItem(
+        item: Item,
+        md5Key: String
+    ): Boolean {
         if (item.itemType != Item.ATTACHMENT_TYPE) {
             throw(Exception("error invalid item ${item.itemKey}: ${item.itemType} cannot calculate md5."))
         }
-        if (item.data["md5"] == null){
+        if (md5Key == ""){
             Log.d("zotero", "error cannot check MD5, no MD5 Available")
             return true
         }
-        val md5Key = calculateMd5(item)
-        return (md5Key == item.data["md5"])
+        val calculatedMd5Key = calculateMd5(item)
+        return (calculatedMd5Key == md5Key)
     }
 
     fun checkIfAttachmentExists(item: Item, checkMd5: Boolean = true): Boolean {

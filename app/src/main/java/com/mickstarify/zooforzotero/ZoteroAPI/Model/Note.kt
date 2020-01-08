@@ -22,6 +22,14 @@ class Note() : Parcelable {
         tags = parcel.createStringArrayList() ?: LinkedList()
     }
 
+    constructor(item: ItemPOJO) : this() {
+        parent = item.data["parentItem"] ?: throw ExceptionInInitializerError("No Parent Key")
+        key = item.data["key"] ?: throw ExceptionInInitializerError("No Key")
+        note = item.data["note"] ?: throw ExceptionInInitializerError("No note")
+        version = item.version
+        tags = item.tags
+    }
+
     constructor(item: Item) : this() {
         parent = item.data["parentItem"] ?: throw ExceptionInInitializerError("No Parent Key")
         key = item.data["key"] ?: throw ExceptionInInitializerError("No Key")

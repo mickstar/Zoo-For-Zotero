@@ -10,7 +10,11 @@ interface Contract {
         fun initUI()
         fun createErrorAlert(title: String, message: String, onClick: () -> Unit)
         fun showLoadingAnimation(showScreen: Boolean)
-        fun updateLibraryLoadingProgress(progress: Int, total: Int = -1)
+        fun updateLibraryLoadingProgress(
+            progress: Int,
+            total: Int = -1,
+            message: String
+        )
         fun addSharedCollection(groupInfo: GroupInfo)
         fun hideLoadingAnimation()
         fun setTitle(title: String)
@@ -48,7 +52,11 @@ interface Contract {
         fun updateAttachmentDownloadProgress(progress: Long, total: Long)
         fun filterEntries(query: String)
         fun closeQuery()
-        fun updateLibraryRefreshProgress(progress: Int, total: Int)
+        fun updateLibraryRefreshProgress(
+            progress: Int,
+            total: Int,
+            message: String
+        )
         fun isShowingContent(): Boolean
         fun cancelAttachmentDownload()
         fun redisplayItems()
@@ -62,6 +70,10 @@ interface Contract {
         fun stopUploadingAttachment()
         fun askToUploadAttachments(changedAttachments: List<Item>)
         fun onResume()
+        fun createYesNoPrompt(
+            title: String, message: String, yesText: String, noText: String, onYesClick: () -> Unit,
+            onNoClick: () -> Unit
+        )
     }
 
     interface Model {
@@ -83,6 +95,7 @@ interface Contract {
         fun modifyNote(note: Note)
         fun deleteNote(note: Note)
         fun openPDF(attachment: Item)
+        fun openAttachment(item: Item)
         fun deleteAttachment(item: Item)
         fun uploadAttachment(attachment: Item)
         fun getUnfiledItems(): List<Item>

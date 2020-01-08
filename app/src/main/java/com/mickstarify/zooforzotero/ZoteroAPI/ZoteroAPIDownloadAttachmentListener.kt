@@ -9,4 +9,5 @@ interface ZoteroAPIDownloadAttachmentListener {
     fun onComplete()
     fun onFailure(message: String = "")
     fun receiveTask(task: Future<Unit>)
+    fun receiveMetadata(mtime: Long, metadataHash: String)
 }
