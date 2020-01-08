@@ -41,4 +41,8 @@
     <string name="title_activity_web_davsetup">WebDAV Setup</string>
     <string name="loading_library_text">Loading your library</string>
     <string name="setting_sync_attachments_location">Attachments Location</string>
+    <string name="title_activity_attachment_manager">AttachmentManager</string>
+    <string name="attachment_manager">Attachment Manager</string>
+    <string name="setup_webdav">Setup WebDAV</string>
+    <string name="zotero_save">Zotero Save</string>
 </resources>

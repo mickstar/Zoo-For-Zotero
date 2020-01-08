@@ -140,6 +140,11 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
                 intent.setData(Uri.parse(url))
                 startActivity(intent)
             }
+            R.id.attachment_manager -> {
+                val intent = Intent(this, AttachmentManager::class.java)
+                startActivity(intent)
+            }
+
         }
         return super.onOptionsItemSelected(item)
     }
