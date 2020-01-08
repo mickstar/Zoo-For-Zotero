@@ -1,4 +1,4 @@
-package com.mickstarify.zooforzotero.LibraryActivity
+package com.mickstarify.zooforzotero.AttachmentManager
 
 import android.os.Bundle
 import com.google.android.material.snackbar.Snackbar
@@ -14,11 +14,9 @@ class AttachmentManager : AppCompatActivity() {
         setContentView(R.layout.activity_attachment_manager)
         setSupportActionBar(toolbar)
 
-        fab.setOnClickListener { view ->
-            Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                .setAction("Action", null).show()
-        }
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
     }
+
+
 
 }
