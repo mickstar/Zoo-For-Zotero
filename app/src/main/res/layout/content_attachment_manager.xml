@@ -5,7 +5,114 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     app:layout_behavior="@string/appbar_scrolling_view_behavior"
-    tools:context=".LibraryActivity.AttachmentManager"
+    tools:context=".AttachmentManager.AttachmentManager"
     tools:showIn="@layout/activity_attachment_manager">
+
+    <TextView
+        android:id="@+id/textView5"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="24dp"
+        android:text="Loading your library"
+        android:textSize="24sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <ProgressBar
+        android:id="@+id/progressBar_library"
+        style="@style/Widget.AppCompat.ProgressBar.Horizontal"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="32dp"
+        android:layout_marginTop="24dp"
+        android:layout_marginEnd="32dp"
+        android:max="10"
+        android:progress="0"
+        android:visibility="invisible"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/textView5" />
+
+    <LinearLayout
+        android:id="@+id/ll_local"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="24dp"
+        android:layout_marginTop="24dp"
+        android:layout_marginEnd="24dp"
+        android:orientation="vertical"
+        android:background="@drawable/bordered_layout"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/progressBar_library">
+
+        <TextView
+            android:id="@+id/txt_local_title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Local"
+            android:textSize="24sp" />
+
+        <TextView
+            android:id="@+id/txt_local_number_attachments"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="32 Attachments"
+            android:textSize="24sp" />
+
+        <TextView
+            android:id="@+id/txt_local_size"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="46.4 MB used"
+            android:textSize="24sp" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/ll_remote"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="24dp"
+        android:layout_marginTop="24dp"
+        android:layout_marginEnd="24dp"
+        android:orientation="vertical"
+        android:background="@drawable/bordered_layout"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/ll_local">
+
+        <TextView
+            android:id="@+id/txt_remote_title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Remote"
+            android:textSize="24sp" />
+
+        <TextView
+            android:id="@+id/txt_remote_number_attachments"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="420 Attachments"
+            android:textSize="24sp" />
+
+        <TextView
+            android:id="@+id/txt_remote_size"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="512 MB total"
+            android:textSize="24sp" />
+    </LinearLayout>
+
+    <Button
+        android:id="@+id/button_download"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="24dp"
+        android:text="Download all Attachments"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

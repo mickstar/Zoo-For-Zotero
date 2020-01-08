@@ -17,7 +17,7 @@
         android:theme="@style/AppTheme"
         android:usesCleartextTraffic="true">
         <activity
-            android:name=".LibraryActivity.AttachmentManager"
+            android:name=".AttachmentManager.AttachmentManager"
             android:label="@string/title_activity_attachment_manager"
             android:parentActivityName=".LibraryActivity.LibraryActivity"
             android:theme="@style/AppTheme.NoActionBar">
