@@ -8,6 +8,7 @@ import com.mickstarify.zooforzotero.ZoteroAPI.Model.ItemPOJO
 import io.reactivex.Completable
 import io.reactivex.Maybe
 import io.reactivex.Single
+import kotlinx.android.parcel.IgnoredOnParcel
 import kotlinx.android.parcel.Parcelize
 import java.util.*
 import kotlin.collections.HashMap
@@ -19,17 +20,19 @@ import kotlin.collections.HashMap
     tableName = "ItemInfo", primaryKeys = ["itemKey", "group"],
     indices = arrayOf(Index(value = ["itemKey"], unique = true))
 )
+@Parcelize
 class ItemInfo(
     @ColumnInfo(name = "itemKey") val itemKey: String,
     @ColumnInfo(name = "group") val groupParent: Int = Collection.NO_GROUP_ID,
     @ColumnInfo(name = "version") val version: Int
-) {
+) : Parcelable {
 
     //@Relation(entity = ItemData::class, parentColumn = "itemKey", entityColumn = "parent")
     //lateinit var itemData: List<ItemData>
 }
 
-class Item {
+@Parcelize
+class Item : Parcelable {
     companion object {
         val ATTACHMENT_TYPE = "attachment"
     }
@@ -47,7 +50,7 @@ class Item {
     lateinit var tags: List<ItemTag>
 
     @Relation(
-        entity = itemCollection::class,
+        entity = ItemCollection::class,
         parentColumn = "itemKey",
         entityColumn = "itemKey",
         projection = arrayOf("collectionKey")
@@ -78,9 +81,11 @@ class Item {
     val itemType: String
         get() = getItemData("itemType") ?: "error"
 
+    @IgnoredOnParcel
     @Ignore
     var mappedData: MutableMap<String, String>? = null
 
+    @IgnoredOnParcel
     @delegate:Ignore
     val data: Map<String, String> by lazy {
         if (mappedData == null) {
@@ -154,12 +159,13 @@ class Item {
         onDelete = ForeignKey.CASCADE
     )]
 )
+@Parcelize
 class ItemData(
     @ColumnInfo(name = "parent") val parent: String, //itemKey of parent
     @ColumnInfo(name = "name") val name: String,
     @ColumnInfo(name = "value") val value: String,
     @ColumnInfo(name = "valueType") val valueType: String
-)
+) : Parcelable
 
 @Entity(
     tableName = "ItemCreator", primaryKeys = ["parent", "firstName", "lastName"],
@@ -170,12 +176,14 @@ class ItemData(
         onDelete = ForeignKey.CASCADE
     )]
 )
+
+@Parcelize
 class Creator(
     @ColumnInfo(name = "parent") val parent: String, //itemKey of parent
     @ColumnInfo(name = "firstName") val firstName: String,
     @ColumnInfo(name = "lastName") val lastName: String,
     @ColumnInfo(name = "creatorType") val creatorType: String
-) {
+) : Parcelable {
     fun makeString(): String {
         return "${firstName} ${lastName}"
     }
@@ -190,10 +198,11 @@ class Creator(
         onDelete = ForeignKey.CASCADE
     )]
 )
+@Parcelize
 data class ItemTag(
     @ColumnInfo(name = "parent") val parent: String, //itemKey of parent
     @ColumnInfo(name = "tag") val tag: String
-)
+) : Parcelable
 
 @Dao
 interface ItemDao {
@@ -210,10 +219,13 @@ interface ItemDao {
     fun insertItemInfo(items: ItemInfo): Completable
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun insertItemData(itemData: ItemData): Completable
+    fun insertItemData(itemData: List<ItemData>): Completable
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insertCreators(creators: List<Creator>): Completable
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    fun insertItemCollections(collections: List<ItemCollection>): Completable
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insertTags(tags: List<ItemTag>): Completable
@@ -224,12 +236,14 @@ interface ItemDao {
         itemInfo: ItemInfo,
         itemDatas: List<ItemData>,
         creators: List<Creator>,
+        collections: List<ItemCollection>,
         tags: List<ItemTag>
     ) {
-        insertItemInfo(itemInfo)
-        itemDatas.forEach { insertItemData(it) }
-        insertCreators(creators)
-        insertTags(tags)
+        insertItemInfo(itemInfo).blockingAwait()
+        insertItemData(itemDatas).blockingAwait()
+        insertCreators(creators).blockingAwait()
+        insertItemCollections(collections).blockingAwait()
+        insertTags(tags).blockingAwait()
     }
 
 //

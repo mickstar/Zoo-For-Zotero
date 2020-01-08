@@ -24,7 +24,7 @@ class ItemAttachmentEntry : Fragment() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         arguments?.let {
-            attachmentKey = it.getParcelable(ARG_ATTACHMENT)
+            attachment = it.getParcelable(ARG_ATTACHMENT)
         }
     }
 

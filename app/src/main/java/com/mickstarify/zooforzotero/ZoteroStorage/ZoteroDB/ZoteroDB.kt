@@ -4,9 +4,12 @@ import android.content.Context
 import android.content.Context.MODE_PRIVATE
 import android.util.ArrayMap
 import android.util.Log
+import androidx.room.Index
 import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
+import com.mickstarify.zooforzotero.ZoteroAPI.DownloadProgress
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Note
+import com.mickstarify.zooforzotero.ZoteroStorage.AttachmentStorageManager
+import com.mickstarify.zooforzotero.ZoteroStorage.Database.AttachmentInfo
 import com.mickstarify.zooforzotero.ZoteroStorage.Database.Collection
 import com.mickstarify.zooforzotero.ZoteroStorage.Database.Item
 import com.mickstarify.zooforzotero.ZoteroStorage.Database.ZoteroDatabase
@@ -17,7 +20,6 @@ import io.reactivex.disposables.Disposable
 import io.reactivex.functions.Consumer
 import io.reactivex.schedulers.Schedulers
 import java.io.File
-import java.io.InputStreamReader
 import java.io.OutputStreamWriter
 import java.util.*
 import kotlin.collections.HashMap
@@ -47,7 +49,13 @@ class ZoteroDB constructor(
             this.createNotesMap()
         }
 
+    // map that stores attachmentItem classes by ItemKey
     var attachments: MutableMap<String, MutableList<Item>>? = null
+    // map that stores attachmentInfo classes by ItemKey.
+    // This is used to store metadata related to items that don't go in the item database class
+    // such a design was picked to seperate the data that is from the zotero api official server and
+    // the metadata i store customly.
+    var attachmentInfo: MutableMap<String, AttachmentInfo>? = null
     private var notes: MutableMap<String, MutableList<Note>>? = null
     private var itemsFromCollections: HashMap<String, MutableList<Item>>? = null
 
@@ -134,19 +142,24 @@ class ZoteroDB constructor(
         })
     }
 
-    fun loadItemsFromStorage() {
-        val gson = Gson()
-        val typeToken = object : TypeToken<List<Item>>() {}.type
-        try {
-            val itemsJsonReader = InputStreamReader(context.openFileInput(ITEMS_FILENAME))
-            this.items = gson.fromJson(itemsJsonReader, typeToken)
-            itemsJsonReader.close()
-
-        } catch (e: Exception) {
-            Log.e("zotero", "error loading items from storage, deleting file.")
-            this.deleteLocalStorage()
-            throw Exception("error loading items")
-        }
+    fun loadItemsFromDatabase(): Completable {
+        /* Load the items from Database as well as all the attachments. */
+        val completable =
+            Completable.fromMaybe(zoteroDatabase.getItemsForGroup(groupID).doOnSuccess(
+                Consumer {
+                    items = it
+                }
+            )).andThen(
+                Completable.fromMaybe(
+                    zoteroDatabase.getAttachmentsForGroup(groupID).doOnSuccess(Consumer {
+                        attachmentInfo = HashMap<String, AttachmentInfo>()
+                        for (attachment in it) {
+                            attachmentInfo!![attachment.itemKey] = attachment
+                        }
+                    })
+                )
+            )
+        return completable
     }
 
 
@@ -356,11 +369,102 @@ class ZoteroDB constructor(
         return items?.filter { it -> it.itemKey == itemKey }?.firstOrNull()
     }
 
-    fun loadItemsFromDatabase(): Completable {
-        return Completable.fromMaybe(zoteroDatabase.getItemsForGroup(groupID).doOnSuccess(
-            Consumer {
-                items = it
+    fun hasMd5Key(item: Item): Boolean {
+        if (attachmentInfo == null) {
+            Log.e("zotero", "error attachment metadata isn't loaded")
+            return false
+        }
+        val attachmentInfo = this.attachmentInfo!![item.itemKey]
+        if (attachmentInfo == null) {
+            Log.d("zotero", "No metadata available for ${item.itemKey}")
+            return false
+        }
+        if (attachmentInfo.md5Key == "") {
+            Log.d("zotero", "No md5 key available for ${item.itemKey}")
+            return false
+        }
+        return true
+    }
+
+    fun getMd5Key(item: Item): String {
+        if (attachmentInfo == null) {
+            Log.e("zotero", "error attachment metadata isn't loaded")
+            return ""
+        }
+        val attachmentInfo = this.attachmentInfo!![item.itemKey]
+        if (attachmentInfo == null) {
+            Log.d("zotero", "No metadata available for ${item.itemKey}")
+            return ""
+        }
+        return attachmentInfo.md5Key
+    }
+
+    fun scanAndIndexAttachments(attachmentStorageManager: AttachmentStorageManager): io.reactivex.Observable<IndexFilesProgress> {
+        /* Checks every attachment in the storage directory and creates metadata for the attachment. */
+
+        var toIndex = LinkedList<Item>()
+
+        for ((itemKey: String, items: List<Item>) in this.attachments!!) {
+            for (item in items) {
+                if (this.attachmentInfo!!.containsKey(item.itemKey)) {
+                    // we already have this metadata. skipping.
+                    continue
+                }
+                if (attachmentStorageManager.checkIfAttachmentExists(item)) {
+                    toIndex.add(item)
+                }
             }
-        ))
+        }
+        val observable = io.reactivex.Observable.create<IndexFilesProgress> { emitter ->
+            var index = 0
+            for (item in toIndex) {
+                index++
+                emitter.onNext(
+                    IndexFilesProgress(
+                        index,
+                        toIndex.size,
+                        item.data["filename"] ?: "unknown file"
+                    )
+                )
+                var md5Key = ""
+                try {
+                    md5Key = attachmentStorageManager.calculateMd5(item)
+                } catch (e: Exception) {
+                    Log.d("zotero", "error calculating md5 for $item")
+                }
+                if (md5Key == "") {
+                    continue
+                }
+                val mtime = (item.data["mtime"]?:"0" as String).toLong()
+
+                this.updateAttachmentMetadata(item.itemKey, md5Key, mtime, AttachmentInfo.LOCALSYNC)
+                    .blockingAwait()
+            }
+            emitter.onComplete()
+        }
+        return observable
+    }
+
+    fun updateAttachmentMetadata(
+        itemKey: String,
+        md5Key: String,
+        mtime: Long,
+        downloadedFrom: String = AttachmentInfo.UNSET
+    ): Completable {
+        val mDownloadedFrom = if (downloadedFrom == AttachmentInfo.UNSET) {
+            // check to see if webdav is on, which implies that i was downloaded from webdav.
+            if (com.mickstarify.zooforzotero.PreferenceManager(context).isWebDAVEnabled()) {
+                AttachmentInfo.WEBDAV
+            } else {
+                AttachmentInfo.ZOTEROAPI
+            }
+        } else {
+            downloadedFrom
+        }
+        val attachmentInfo = AttachmentInfo(itemKey, groupID, md5Key, mtime, mDownloadedFrom)
+        Log.d("zotero", "adding metadata for ${itemKey}, $md5Key - ${mDownloadedFrom}")
+
+        this.attachmentInfo!![itemKey] = attachmentInfo
+        return zoteroDatabase.writeAttachmentInfo(attachmentInfo)
     }
 }

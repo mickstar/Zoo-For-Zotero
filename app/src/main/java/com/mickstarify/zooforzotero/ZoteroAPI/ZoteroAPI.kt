@@ -137,6 +137,7 @@ class ZoteroAPI(
             .subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())
             .subscribe(object : Observer<DownloadProgress> {
+                var receivedMetadata = false
                 override fun onComplete() {
                     listener.onComplete()
                 }
@@ -145,6 +146,11 @@ class ZoteroAPI(
                 }
 
                 override fun onNext(t: DownloadProgress) {
+                    if (!receivedMetadata){
+                        receivedMetadata = true
+                        listener.receiveMetadata(t.mtime, t.metadataHash)
+                    }
+
                     Log.d("zotero", "downloading webdav got ${t.progress} of ${t.total}")
                     listener.onProgressUpdate(t.progress, t.total)
                 }

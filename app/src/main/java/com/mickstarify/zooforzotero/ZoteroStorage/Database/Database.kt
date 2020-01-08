@@ -7,6 +7,8 @@ import androidx.room.RoomDatabase
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.ItemPOJO
 import io.reactivex.Completable
 import io.reactivex.Maybe
+import io.reactivex.Single
+import io.reactivex.internal.operators.single.SingleJust
 import java.util.*
 
 @Database(
@@ -18,8 +20,8 @@ import java.util.*
         ItemData::class,
         Creator::class,
         ItemTag::class,
-        itemCollection::class
-//        Attachment::class
+        ItemCollection::class,
+        AttachmentInfo::class
     ),
     version = 3,
     exportSchema = true
@@ -29,7 +31,7 @@ abstract class ZoteroRoomDatabase : RoomDatabase() {
     abstract fun collectionDao(): CollectionDao
     abstract fun recentlyOpenedAttachmentsDao(): RecentlyOpenedAttachmentDao
     abstract fun itemDao(): ItemDao
-//    abstract fun attachmentDao(): AttachmentDao
+    abstract fun AttachmentInfoDao(): AttachmentInfoDao
 }
 
 class ZoteroDatabase constructor(val context: Context) {
@@ -54,7 +56,7 @@ class ZoteroDatabase constructor(val context: Context) {
         groupID: Int,
         itemsPOJO: List<ItemPOJO>
     ): Completable {
-        var completable = Completable.complete()
+        var completable: Completable = Completable.complete()
         for (item in itemsPOJO) {
             completable = completable.andThen(writeItem(groupID, item))
         }
@@ -74,7 +76,18 @@ class ZoteroDatabase constructor(val context: Context) {
 
     fun writeItem(groupID: Int, item: Item): Completable {
         return Completable.fromAction {
-            db.itemDao().insertItem(item.itemInfo, item.itemData, item.creators, item.tags)
+            db.itemDao().insertItem(
+                item.itemInfo,
+                item.itemData,
+                item.creators,
+                item.collections.map {
+                    ItemCollection(
+                        it,
+                        item.itemKey
+                    )
+                }, // i know, bad code, i know
+                item.tags
+            )
         }
     }
 
@@ -83,7 +96,6 @@ class ZoteroDatabase constructor(val context: Context) {
         itemPOJO: ItemPOJO
     ): Completable {
         val itemInfo = ItemInfo(itemPOJO.ItemKey, groupID, itemPOJO.version)
-        var insertItemCompletable = db.itemDao().insertItemInfo(itemInfo)
         var itemDatas = LinkedList<ItemData>()
         var itemCreators = LinkedList<Creator>()
         for ((key, value) in itemPOJO.data) {
@@ -103,19 +115,16 @@ class ZoteroDatabase constructor(val context: Context) {
             )
         }
         val itemTags = itemPOJO.tags.map { ItemTag(itemPOJO.ItemKey, it) }
+        val collections = itemPOJO.collections.map { ItemCollection(it, itemPOJO.ItemKey) }
         return Completable.fromAction {
-            db.itemDao().insertItem(itemInfo, itemDatas, itemCreators, itemTags)
+            db.itemDao().insertItem(itemInfo, itemDatas, itemCreators, collections, itemTags)
         }
     }
 
 //    fun writeAttachment(item: Item, md5Key: String, downloadedFrom: String): Completable {
 //        val attachment = Attachment(item.itemKey, item.groupParent, md5Key, downloadedFrom)
-//        return db.attachmentDao().insertItem(attachment)
+//        return db.AttachmentInfoDao().insertItem(attachment)
 //    }
-
-    fun getNumber(): Int {
-        return db.groupInfoDao().getNumber()
-    }
 
     fun getCollections(groupID: Int): Maybe<List<Collection>> {
         return db.collectionDao().getCollectionsForGroup(groupID)
@@ -135,5 +144,15 @@ class ZoteroDatabase constructor(val context: Context) {
 
     fun getRecentlyOpenedAttachments(): Maybe<List<RecentlyOpenedAttachment>> {
         return db.recentlyOpenedAttachmentsDao().getAll()
+    }
+
+    fun getAttachmentsForGroup(groupID: Int): Maybe<List<AttachmentInfo>> {
+        return db.AttachmentInfoDao().getAttachmentsForGroup(groupID)
+    }
+
+    fun writeAttachmentInfo(
+        attachmentInfo: AttachmentInfo
+    ): Completable {
+        return db.AttachmentInfoDao().updateAttachment(attachmentInfo)
     }
 }

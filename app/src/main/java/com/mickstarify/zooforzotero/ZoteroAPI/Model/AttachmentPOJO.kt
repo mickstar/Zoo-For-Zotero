@@ -6,7 +6,7 @@ import com.google.gson.JsonObject
 import com.mickstarify.zooforzotero.ZoteroStorage.Database.Item
 import java.lang.Exception
 
-class Attachment {
+class AttachmentPOJO {
     var itemKey: String
     var parentItem: String
     var itemType: String = "attachment"
@@ -82,7 +82,7 @@ class Attachment {
     companion object {
         @JvmStatic
         fun getNewAttachmentTemplate(title: String, filename: String, parent: String): JsonArray {
-            val attachment = Attachment(title, filename, parent)
+            val attachment = AttachmentPOJO(title, filename, parent)
             return attachment.asNewJsonTemplate()
         }
     }

@@ -11,6 +11,7 @@ import io.reactivex.Single
 import io.reactivex.SingleEmitter
 import io.reactivex.functions.Action
 import net.lingala.zip4j.ZipFile
+import okio.Okio
 import okio.buffer
 import okio.sink
 import okio.source
@@ -30,17 +31,28 @@ class Webdav(
         return sardine.exists(address)
     }
 
+    fun downloadPropToString(webpath: String): String {
+        val reader = sardine.get(webpath).source()
+        val bufferedReader = reader.buffer()
+        val s = bufferedReader.readUtf8()
+        bufferedReader.close()
+        return s
+    }
 
     fun downloadFileRx(
         attachment: Item,
         context: Context,
         attachmentStorageManager: AttachmentStorageManager
     ): Observable<DownloadProgress> {
-        val webpath = address + "/${attachment.itemKey.toUpperCase(Locale.ROOT)}.zip"
+        val webpathProp = address + "/${attachment.itemKey.toUpperCase(Locale.ROOT)}.prop"
+        val webpathZip = address + "/${attachment.itemKey.toUpperCase(Locale.ROOT)}.zip"
         return Observable.create { emitter ->
+            val propString = downloadPropToString(webpathProp)
+            val prop = WebdavProp(propString)
+
             var inputStream: InputStream?
             try {
-                inputStream = sardine.get(webpath)
+                inputStream = sardine.get(webpathZip)
             } catch (e: IllegalArgumentException) {
                 Log.e("zotero", "${e}")
                 throw(e)
@@ -61,7 +73,7 @@ class Webdav(
             while (read > 0) {
                 try {
                     total += read
-                    emitter.onNext(DownloadProgress(total, -1))
+                    emitter.onNext(DownloadProgress(total, -1, prop.mtime, prop.hash))
                     downloadOutputStream.write(buffer, 0, read)
                     read = inputStream.read(buffer)
                 } catch (e: Exception) {

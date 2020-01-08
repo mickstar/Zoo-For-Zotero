@@ -7,7 +7,7 @@ import org.junit.Test
 class AttachmentTest {
     @Test
     fun testNewTemplate() {
-        val jsonObject = Attachment.getNewAttachmentTemplate("title","filename", "parentKey")
+        val jsonObject = AttachmentPOJO.getNewAttachmentTemplate("title","filename", "parentKey")
         assertEquals(jsonObject.toString(), json)
     }
 
