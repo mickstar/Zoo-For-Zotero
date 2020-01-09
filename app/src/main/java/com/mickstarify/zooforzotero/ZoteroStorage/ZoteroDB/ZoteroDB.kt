@@ -1,11 +1,14 @@
 package com.mickstarify.zooforzotero.ZoteroStorage.ZoteroDB
 
+import android.app.Activity
+import android.app.Application
 import android.content.Context
 import android.content.Context.MODE_PRIVATE
 import android.util.ArrayMap
 import android.util.Log
 import androidx.room.Index
 import com.google.gson.Gson
+import com.mickstarify.zooforzotero.ZooForZoteroApplication
 import com.mickstarify.zooforzotero.ZoteroAPI.DownloadProgress
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Note
 import com.mickstarify.zooforzotero.ZoteroStorage.AttachmentStorageManager
@@ -22,13 +25,20 @@ import io.reactivex.schedulers.Schedulers
 import java.io.File
 import java.io.OutputStreamWriter
 import java.util.*
+import javax.inject.Inject
 import kotlin.collections.HashMap
 
 class ZoteroDB constructor(
     val context: Context,
-    val zoteroDatabase: ZoteroDatabase,
     val groupID: Int
 ) {
+
+    init {
+        ((context as Activity).application as ZooForZoteroApplication).component.inject(this)
+    }
+
+    @Inject lateinit var zoteroDatabase: ZoteroDatabase
+
     val prefix = if (groupID == Collection.NO_GROUP_ID) {
         ""
     } else {

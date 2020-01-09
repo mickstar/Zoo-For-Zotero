@@ -9,18 +9,18 @@
     tools:showIn="@layout/activity_attachment_manager">
 
     <TextView
-        android:id="@+id/textView5"
+        android:id="@+id/txt_loading_library_text"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="24dp"
-        android:text="Loading your library"
+        android:text="@string/loading_your_library"
         android:textSize="24sp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
     <ProgressBar
-        android:id="@+id/progressBar_library"
+        android:id="@+id/progressBar"
         style="@style/Widget.AppCompat.ProgressBar.Horizontal"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
@@ -33,7 +33,7 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/textView5" />
+        app:layout_constraintTop_toBottomOf="@+id/txt_loading_library_text" />
 
     <LinearLayout
         android:id="@+id/ll_local"
@@ -46,7 +46,7 @@
         android:background="@drawable/bordered_layout"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/progressBar_library">
+        app:layout_constraintTop_toBottomOf="@+id/progressBar">
 
         <TextView
             android:id="@+id/txt_local_title"

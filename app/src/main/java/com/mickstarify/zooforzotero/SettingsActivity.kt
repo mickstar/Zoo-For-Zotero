@@ -10,8 +10,10 @@ import androidx.preference.PreferenceFragmentCompat
 import androidx.preference.SwitchPreference
 import com.mickstarify.zooforzotero.ZoteroStorage.AttachmentStorageManager
 import com.mickstarify.zooforzotero.ZoteroStorage.STORAGE_ACCESS_REQUEST
+import javax.inject.Inject
 
 class SettingsActivity : AppCompatActivity() {
+    @Inject
     lateinit var myStorageManager: AttachmentStorageManager
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -22,10 +24,8 @@ class SettingsActivity : AppCompatActivity() {
             .commit()
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
-        myStorageManager =
-            AttachmentStorageManager(
-                this
-            )
+        // get our storage manager
+        (application as ZooForZoteroApplication).component.inject(this)
     }
 
     fun openStoragePicker() {
