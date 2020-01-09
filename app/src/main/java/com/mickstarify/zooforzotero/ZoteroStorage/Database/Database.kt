@@ -10,6 +10,8 @@ import io.reactivex.Maybe
 import io.reactivex.Single
 import io.reactivex.internal.operators.single.SingleJust
 import java.util.*
+import javax.inject.Inject
+import javax.inject.Singleton
 
 @Database(
     entities = arrayOf(
@@ -34,11 +36,13 @@ abstract class ZoteroRoomDatabase : RoomDatabase() {
     abstract fun AttachmentInfoDao(): AttachmentInfoDao
 }
 
-class ZoteroDatabase constructor(val context: Context) {
+@Singleton
+class ZoteroDatabase @Inject constructor(val context: Context) {
     val db = Room.databaseBuilder(
         context.applicationContext,
         ZoteroRoomDatabase::class.java, "zotero"
-    ).addMigrations(MIGRATION_1_2).build()
+    ).addMigrations(MIGRATION_1_2)
+        .addMigrations(MIGRATION_2_3).build()
 
     fun addGroup(group: GroupInfo): Completable {
         return db.groupInfoDao().insertGroupInfos(group)

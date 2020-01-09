@@ -9,6 +9,7 @@ import android.util.Log
 import androidx.core.content.FileProvider
 import androidx.documentfile.provider.DocumentFile
 import com.mickstarify.zooforzotero.PreferenceManager
+import com.mickstarify.zooforzotero.ZooForZoteroApplication
 import com.mickstarify.zooforzotero.ZoteroStorage.Database.Item
 import okhttp3.internal.toHexString
 import okio.buffer
@@ -17,14 +18,20 @@ import okio.source
 import java.io.*
 import java.security.MessageDigest
 import java.util.*
+import javax.inject.Inject
+import javax.inject.Singleton
 
 
 const val STORAGE_ACCESS_REQUEST = 1  // The request code
 
 /* This classes handles the data storage for all attachments. */
 
-class AttachmentStorageManager(val context: Context) {
-    val preferenceManager = PreferenceManager(context)
+
+@Singleton
+class AttachmentStorageManager @Inject constructor(
+    val context: Context,
+    val preferenceManager: PreferenceManager
+) {
 
     enum class StorageMode {
         CUSTOM,
@@ -41,6 +48,8 @@ class AttachmentStorageManager(val context: Context) {
 
 
     init {
+//        ((context as Activity).application as ZooForZoteroApplication).component.inject(this)
+        Log.e("zotero", "MADE AN INSTANCE OF ATTACHMENT MANAGER")
     }
 
     fun validateAccess() {
@@ -62,7 +71,7 @@ class AttachmentStorageManager(val context: Context) {
         if (item.itemType != Item.ATTACHMENT_TYPE) {
             throw(Exception("error invalid item ${item.itemKey}: ${item.itemType} cannot calculate md5."))
         }
-        if (md5Key == ""){
+        if (md5Key == "") {
             Log.d("zotero", "error cannot check MD5, no MD5 Available")
             return true
         }
@@ -299,6 +308,16 @@ class AttachmentStorageManager(val context: Context) {
             directory.mkdirs()
         }
         return File(directory, filename)
+    }
+
+    fun getFileSize(attachment: Item): Long {
+        if (storageMode == StorageMode.EXTERNAL_CACHE){
+            return getAttachmentFile(attachment).length()
+
+        } else if (storageMode == StorageMode.CUSTOM) {
+            return getFileSize(getAttachmentUri(attachment))
+        }
+        throw Exception("Invalid storage mode")
     }
 
     fun getFileSize(attachmentUri: Uri): Long {

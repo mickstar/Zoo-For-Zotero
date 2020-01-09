@@ -3,6 +3,8 @@ package com.mickstarify.zooforzotero
 import android.content.Context
 import android.util.Log
 import org.jetbrains.anko.defaultSharedPreferences
+import javax.inject.Inject
+import javax.inject.Singleton
 
 enum class SortMethod {
     TITLE,
@@ -11,7 +13,7 @@ enum class SortMethod {
     DATE_ADDED
 }
 
-class PreferenceManager(context: Context) {
+class PreferenceManager @Inject constructor(context: Context) {
     val sharedPreferences = context.defaultSharedPreferences
 
     fun setSortMethod(method: String) {

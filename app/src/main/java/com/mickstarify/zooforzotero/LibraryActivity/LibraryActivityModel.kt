@@ -10,6 +10,7 @@ import android.util.Log
 import com.google.firebase.analytics.FirebaseAnalytics
 import com.mickstarify.zooforzotero.PreferenceManager
 import com.mickstarify.zooforzotero.SyncSetup.AuthenticationStorage
+import com.mickstarify.zooforzotero.ZooForZoteroApplication
 import com.mickstarify.zooforzotero.ZoteroAPI.*
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.CollectionPOJO
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Note
@@ -31,6 +32,7 @@ import java.io.FileNotFoundException
 import java.util.*
 import java.util.concurrent.Future
 import java.util.concurrent.TimeUnit
+import javax.inject.Inject
 
 
 class LibraryActivityModel(private val presenter: Contract.Presenter, val context: Context) :
@@ -46,27 +48,22 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
     private var firebaseAnalytics: FirebaseAnalytics
 
     private lateinit var zoteroAPI: ZoteroAPI
-    private val zoteroDatabase = ZoteroDatabase(context)
-    val attachmentStorageManager =
-        AttachmentStorageManager(
-            context.applicationContext
-        )
+    @Inject lateinit var zoteroDatabase: ZoteroDatabase
+    @Inject lateinit var attachmentStorageManager: AttachmentStorageManager
     private val zoteroGroupDB =
         ZoteroGroupDB(
-            context,
-            zoteroDatabase
-        ) //todo DAGGER2
+            context
+        )
     private var zoteroDBPicker =
         ZoteroDBPicker(
             ZoteroDB(
                 context,
-                zoteroDatabase,
                 groupID = -1
             ), zoteroGroupDB
         )
     private var groups: List<GroupInfo>? = null
 
-    val preferences = PreferenceManager(context)
+    @Inject lateinit var preferences: PreferenceManager
 
     val state = LibraryModelState()
 
@@ -1067,6 +1064,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
     }
 
     init {
+        ((context as Activity).application as ZooForZoteroApplication).component.inject(this)
         firebaseAnalytics = FirebaseAnalytics.getInstance(context)
         val auth = AuthenticationStorage(context)
 
@@ -1092,6 +1090,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                 throw Exception()
             }
         } catch (e: Exception) {
+            Log.e("zotero", "error testing storage. ${e}")
             presenter.createErrorAlert(
                 "Permission Error",
                 "There was an error accessing your zotero attachment location. Please reconfigure in settings.",

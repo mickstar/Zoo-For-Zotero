@@ -10,8 +10,8 @@ class AuthenticationStorage (context : Context){
         return (sharedPreferences.contains("userkey") && sharedPreferences.getString("userkey", "") != "")
     }
 
-    fun getUsername() : String? {
-        return sharedPreferences.getString("username", "error")
+    fun getUsername() : String {
+        return sharedPreferences.getString("username", "error")!!
     }
     fun setCredentials (username: String, userID : String, userkey: String) {
         val editor = sharedPreferences.edit()
@@ -21,12 +21,12 @@ class AuthenticationStorage (context : Context){
         editor.apply()
     }
 
-    fun getUserKey(): String? {
-        return sharedPreferences.getString("userkey", "error")
+    fun getUserKey(): String {
+        return sharedPreferences.getString("userkey", "error")!!
     }
 
-    fun getUserID(): String? {
-        return sharedPreferences.getString("userID", "error")
+    fun getUserID(): String {
+        return sharedPreferences.getString("userID", "error")!!
     }
 
     fun destroyCredentials() {
