@@ -109,7 +109,7 @@ class Webdav(
             } catch (e: Exception) {
                 Log.e("zotero", "big exception hit ${e} || ${emitter.isDisposed}")
                 // this your brain on rxjava. this is to avoid a undeliverable crash on dispose().
-                if (!emitter.isDisposed){
+                if (!emitter.isDisposed) {
                     throw e
                 }
             }
@@ -117,6 +117,7 @@ class Webdav(
         return observable
     }
 
+    // TODO FINISH
     fun uploadAttachment(
         attachment: Item,
         attachmentStorageManager: AttachmentStorageManager
@@ -146,7 +147,8 @@ class Webdav(
                 ZipFile(zipFile).addFile(tempFile)
                 emitter.onSuccess(zipFile)
             }).map { zipFile ->
-
+                val uploadAddress =
+            // STEP TWO - UPLOAD
             sardine.put(address, zipFile, "application/zip")
         }
 

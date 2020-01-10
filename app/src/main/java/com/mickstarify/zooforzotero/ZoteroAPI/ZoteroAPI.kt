@@ -10,6 +10,7 @@ import com.mickstarify.zooforzotero.ZoteroAPI.Model.*
 import com.mickstarify.zooforzotero.ZoteroStorage.AttachmentStorageManager
 import com.mickstarify.zooforzotero.ZoteroStorage.Database.GroupInfo
 import com.mickstarify.zooforzotero.ZoteroStorage.Database.Item
+import com.mickstarify.zooforzotero.ZoteroStorage.ZoteroDB.ItemsDownloadProgress
 import io.reactivex.*
 import io.reactivex.Observable
 import io.reactivex.Observer
@@ -40,6 +41,7 @@ import java.util.concurrent.TimeUnit
 const val BASE_URL = "https://api.zotero.org"
 
 class UpToDateException(message: String) : RuntimeException(message)
+class LibraryVersionMisMatchException(message: String) : RuntimeException(message)
 class APIKeyRevokedException(message: String) : RuntimeException(message)
 class AlreadyUploadedException(message: String) : RuntimeException(message)
 class PreconditionFailedException(message: String) : RuntimeException(message)
@@ -460,7 +462,7 @@ class ZoteroAPI(
 
         }
 
-        Log.d("zotero", "got msv=$modificationSinceVersion useCaching=$useCaching")
+        Log.d("zotero", "got since=$modificationSinceVersion useCaching=$useCaching")
 
         return observable.map { response: Response<ResponseBody> ->
             if (response.code() == 304) {
@@ -481,25 +483,32 @@ class ZoteroAPI(
     fun getItems(
         libraryVersion: Int = -1,
         useCaching: Boolean = false,
-        isGroup: Boolean = false,
-        groupID: Int = -1
+        groupID: Int = GroupInfo.NO_GROUP_ID,
+        downloadProgress: ItemsDownloadProgress? = null
     ): Observable<ZoteroAPIItemsResponse> {
 
-        if ((isGroup && groupID == -1) || !isGroup && groupID != -1) {
-            throw Exception("Error, if isGroup=true, you must specify a groupID. Likewise if it is false, groupID cannot be given.")
-        }
+        val isGroup = groupID != GroupInfo.NO_GROUP_ID
+
+        val fromIndex = downloadProgress?.nDownloaded?:0
 
         val observable = Observable.create(object : ObservableOnSubscribe<ZoteroAPIItemsResponse> {
             override fun subscribe(emitter: ObservableEmitter<ZoteroAPIItemsResponse>) {
-                var itemCount = 0
+                var itemCount = fromIndex
                 val s = getItemsFromIndex(
                     libraryVersion,
                     useCaching,
-                    0,
+                    itemCount,
                     isGroup,
                     groupID
                 )
                 val response = s.blockingSingle()
+                if (downloadProgress != null && response.LastModifiedVersion != downloadProgress.libraryVersion){
+                    // Due to possible miss-syncs, we cannot continue the download.
+                    // we will raise an exception which will tell the activity to redownload without the
+                    // progress object.
+                    throw LibraryVersionMisMatchException("Cannot continue, our version ${downloadProgress.libraryVersion} doesn't match Server's ${response.LastModifiedVersion}")
+                }
+
                 val total = response.totalResults
                 itemCount += response.items.size
                 emitter.onNext(response)

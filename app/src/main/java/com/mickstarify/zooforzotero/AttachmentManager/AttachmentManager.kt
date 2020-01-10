@@ -2,6 +2,7 @@ package com.mickstarify.zooforzotero.AttachmentManager
 
 import android.content.Context
 import android.os.Bundle
+import android.os.Handler
 import android.util.Log
 import android.view.View
 import android.view.WindowManager
@@ -26,9 +27,7 @@ class AttachmentManager : AppCompatActivity(), Contract.View {
     }
 
     override fun initUI() {
-        findViewById<LinearLayout>(R.id.ll_local).visibility = View.INVISIBLE
-        findViewById<LinearLayout>(R.id.ll_remote).visibility = View.INVISIBLE
-
+        findViewById<LinearLayout>(R.id.ll_meta_information).visibility = View.INVISIBLE
         findViewById<Button>(R.id.button_download).onClick {
             presenter.pressedDownloadAttachments()
         }
@@ -106,14 +105,22 @@ class AttachmentManager : AppCompatActivity(), Contract.View {
         sizeLocal: String,
         nRemote: Int
     ) {
-        findViewById<TextView>(R.id.txt_local_number_attachments).text = "$nLocal Attachments"
+        findViewById<TextView>(R.id.txt_number_attachments).text = "${nLocal} of ${nRemote} Downloaded"
         findViewById<TextView>(R.id.txt_local_size).text = "${sizeLocal} used"
 
-        findViewById<TextView>(R.id.txt_remote_number_attachments).text = "$nRemote Attachments"
-        findViewById<LinearLayout>(R.id.ll_local).visibility = View.VISIBLE
-        findViewById<LinearLayout>(R.id.ll_remote).visibility = View.VISIBLE
+        findViewById<LinearLayout>(R.id.ll_meta_information).visibility = View.VISIBLE
 
         //todo add free disk space.
+    }
+
+
+    private var doubleBackToExitPressedOnce = false
+    override fun onBackPressed() {
+        if (presenter.isDownloading()){
+            this.makeToastAlert("Do not exit while download is active. Cancel it first.")
+        } else {
+            super.onBackPressed()
+        }
     }
 
 

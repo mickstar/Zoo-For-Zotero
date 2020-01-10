@@ -17,10 +17,7 @@ import com.mickstarify.zooforzotero.ZoteroAPI.Model.Note
 import com.mickstarify.zooforzotero.ZoteroStorage.AttachmentStorageManager
 import com.mickstarify.zooforzotero.ZoteroStorage.Database.*
 import com.mickstarify.zooforzotero.ZoteroStorage.Database.Collection
-import com.mickstarify.zooforzotero.ZoteroStorage.ZoteroDB.IndexFilesProgress
-import com.mickstarify.zooforzotero.ZoteroStorage.ZoteroDB.ZoteroDB
-import com.mickstarify.zooforzotero.ZoteroStorage.ZoteroDB.ZoteroDBPicker
-import com.mickstarify.zooforzotero.ZoteroStorage.ZoteroDB.ZoteroGroupDB
+import com.mickstarify.zooforzotero.ZoteroStorage.ZoteroDB.*
 import io.reactivex.Completable
 import io.reactivex.CompletableObserver
 import io.reactivex.MaybeObserver
@@ -193,7 +190,6 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
     override fun downloadLibrary(refresh: Boolean) {
         /* This function updates the local copies of the items and collections databases.*/
         loadingCollections = true
-        loadingItems = true
 
         val db = zoteroDB
         if (db.isPopulated() && refresh == false) {
@@ -263,14 +259,26 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                 }
             })
 
+        loadItems(db, useCaching)
+    }
+
+    private fun loadItems(db: ZoteroDB, useCaching: Boolean) {
+        loadingItems = true
+        val progress = db.getDownloadProgress()
+
         val itemsObservable =
-            zoteroAPI.getItems(db.getLibraryVersion(), useCaching, isGroup = false)
+            zoteroAPI.getItems(
+                db.getLibraryVersion(),
+                useCaching,
+                db.groupID,
+                downloadProgress = progress
+            )
         itemsObservable.subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())
             .unsubscribeOn(Schedulers.io())
             .subscribe(object : Observer<ZoteroAPIItemsResponse> {
                 var libraryVersion = -1
-                var downloaded = 0
+                var downloaded = progress?.nDownloaded ?: 0
                 override fun onComplete() {
                     if (db.getLibraryVersion() > -1) {
                         if (downloaded == 0) {
@@ -297,7 +305,17 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                         this.downloaded += response.items.size
                         zoteroDatabase.writeItemPOJOs(GroupInfo.NO_GROUP_ID, response.items)
                             .subscribeOn(Schedulers.io())
-                            .doOnComplete({ Log.d("zotero", "completed writing entries") })
+                            .doOnComplete(
+                                {
+                                    Log.d("zotero", "completed writing entries")
+                                    db.setDownloadProgress(
+                                        ItemsDownloadProgress(
+                                            response.LastModifiedVersion,
+                                            this.downloaded,
+                                            response.totalResults
+                                        )
+                                    )
+                                })
                             .subscribe()
 
                         presenter.updateLibraryRefreshProgress(
@@ -314,6 +332,12 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                 override fun onError(e: Throwable) {
                     if (e is UpToDateException) {
                         loadItemsLocally()
+                    } else if (e is LibraryVersionMisMatchException) {
+                        // we need to redownload items but without the progress.
+                        Log.d("zotero", "mismatched, reloading items.")
+                        db.destroyDownloadProgress()
+                        loadItems(db, useCaching)
+                        return
                     } else {
                         val bundle = Bundle()
                         bundle.putString("error_message", e.message)
@@ -570,96 +594,6 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
 
     var isDownloading: Boolean = false
     var currentlyDownloadingAttachment: Item? = null
-    var task: Future<Unit>? = null
-    fun downloadAttachment2(item: Item) {
-        if (isDownloading) {
-            Log.d("zotero", "not downloading ${item.getTitle()} because i am already downloading.")
-            return
-        }
-        isDownloading = true
-
-        zoteroAPI.downloadItem(context,
-            item,
-            groupID = (state.currentGroup?.id ?: GroupInfo.NO_GROUP_ID),
-            listener = object : ZoteroAPIDownloadAttachmentListener {
-                var mtime = 0L
-                var metadataHash = ""
-
-                override fun receiveTask(task: Future<Unit>) {
-                    this@LibraryActivityModel.task = task
-                    // we have to check if the user has stopped the download before this task has come back.
-                    if (isDownloading == false) {
-                        cancelAttachmentDownload()
-                    }
-                }
-
-                override fun receiveMetadata(mtime: Long, metadataHash: String) {
-                    if (metadataHash == "") {
-                        Log.e("zotero", "error downloading hash from webdav server.")
-                        return
-                    }
-
-                    this.mtime = mtime
-                    this.metadataHash = metadataHash
-                    zoteroDB.updateAttachmentMetadata(
-                        item.itemKey,
-                        this.metadataHash,
-                        mtime,
-                        AttachmentInfo.WEBDAV // this only gets called on webdav.
-                    ).subscribeOn(Schedulers.io()).subscribe()
-                }
-
-                override fun onNetworkFailure() {
-                    presenter.attachmentDownloadError()
-                    isDownloading = false
-                }
-
-                override fun onComplete() {
-                    isDownloading = false
-                    presenter.finishDownloadingAttachment()
-
-                    if (zoteroDB.hasMd5Key(item) && !attachmentStorageManager.validateMd5ForItem(
-                            item, zoteroDB.getMd5Key(item)
-                        )
-                    ) {
-                        Log.d("zotero", "md5 error on attachment ${zoteroDB.getMd5Key(item)}")
-                        presenter.createErrorAlert(
-                            "Error downloading",
-                            "The download process did not complete properly. Please retry",
-                            {})
-                        firebaseAnalytics.logEvent("error_downloading_file_corrupted", Bundle())
-                        attachmentStorageManager.deleteAttachment(item)
-                        return
-                    } else {
-                        openPDF(item)
-                    }
-
-                    if (!preferences.isWebDAVEnabled()) {
-                        val mtime = (item.data["mtime"] ?: "0L").toLong()
-                        zoteroDB.updateAttachmentMetadata(
-                            item.itemKey,
-                            item.getMd5Key(),
-                            mtime,
-                            AttachmentInfo.ZOTEROAPI
-                        )
-                            .subscribeOn(Schedulers.io()).subscribe()
-                    }
-
-                }
-
-                override fun onFailure(message: String) {
-                    presenter.attachmentDownloadError(message)
-                    isDownloading = false
-                }
-
-                override fun onProgressUpdate(progress: Long, total: Long) {
-                    if (task?.isCancelled != true) {
-                        Log.d("zotero", "Downloading attachment. got $progress of $total")
-                        presenter.updateAttachmentDownloadProgress(progress, total)
-                    }
-                }
-            })
-    }
 
     override fun getUnfiledItems(): List<Item> {
         if (!zoteroDB.isPopulated()) {
@@ -672,7 +606,6 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
     override fun cancelAttachmentDownload() {
         this.isDownloading = false
         downloadDisposable?.dispose()
-        task?.cancel(true)
         currentlyDownloadingAttachment?.let { attachmentStorageManager.deleteAttachment(it) }
         currentlyDownloadingAttachment = null
     }
@@ -990,8 +923,9 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
         }
         val useCaching = modifiedSince != -1 // largely useless. a relic from before.
 
+        // todo add progress later.
         val groupItemObservable =
-            zoteroAPI.getItems(modifiedSince, useCaching, isGroup = true, groupID = group.id)
+            zoteroAPI.getItems(modifiedSince, useCaching, groupID = group.id, downloadProgress = null)
         groupItemObservable.subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())
             .unsubscribeOn(Schedulers.io())
