@@ -338,7 +338,10 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                         Log.d("zotero", "mismatched, reloading items.")
                         db.destroyDownloadProgress()
                         presenter.makeToastAlert("Could not continue, library has changed since last sync.")
-                        firebaseAnalytics.logEvent("required_library_resync_from_mismatch", Bundle())
+                        firebaseAnalytics.logEvent(
+                            "required_library_resync_from_mismatch",
+                            Bundle()
+                        )
                         loadItems(db, useCaching)
                         return
                     } else {
@@ -437,13 +440,9 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
     override fun openPDF(attachment: Item) {
         /* This method creates an intent to open a PDF for Android. */
 
-        Completable.create { emitter ->
-            if (!preferences.isWebDAVEnabled()) {
-                // todo add support for webdav and remove this.
-                zoteroDatabase.addRecentlyOpenedAttachments(RecentlyOpenedAttachment(attachment.itemKey))
-                    .blockingAwait()
-            }
-            emitter.onComplete()
+        Completable.fromAction {
+            zoteroDatabase.addRecentlyOpenedAttachments(RecentlyOpenedAttachment(attachment.itemKey))
+                .blockingAwait()
         }.subscribeOn(Schedulers.io()).doOnComplete {
             try {
                 val intent = attachmentStorageManager.openAttachment(attachment)
@@ -487,26 +486,34 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
         if (attachmentStorageManager.checkIfAttachmentExists(
                 item,
                 checkMd5 = false
-            ) && (!preferences.isWebDAVEnabled() && !attachmentStorageManager.validateMd5ForItem(
-                item,
-                zoteroDB.getMd5Key(item)
-            ))
-        ) {
-            presenter.createYesNoPrompt(
-                "File conflict",
-                "Your local copy is different to the server's. Would you like to redownload the server's copy?",
-                "Yes", "No", {
-                    presenter.updateAttachmentDownloadProgress(0, -1)
-                    attachmentStorageManager.deleteAttachment(item)
-                    downloadAttachment(item)
-                }, {
-                    openPDF(item)
-                }
             )
-            return
+        ) {
+            if (zoteroDB.hasMd5Key(item) && !attachmentStorageManager.validateMd5ForItem(
+                    item,
+                    zoteroDB.getMd5Key(item)
+                )
+            ) {
+                presenter.createYesNoPrompt(
+                    "File conflict",
+                    "Your local copy is different to the server's. Would you like to redownload the server's copy?",
+                    "Yes", "No", {
+                        presenter.updateAttachmentDownloadProgress(0, -1)
+                        attachmentStorageManager.deleteAttachment(item)
+                        downloadAttachment(item)
+                    }, {
+                        openPDF(item)
+                    }
+                )
+                return
+            } else {
+                openPDF(item)
+            }
+
+        } else {
+            presenter.updateAttachmentDownloadProgress(0, -1)
+            downloadAttachment(item)
         }
-        presenter.updateAttachmentDownloadProgress(0, -1)
-        downloadAttachment(item)
+
     }
 
     override fun filterItems(query: String): List<Item> {
@@ -754,13 +761,6 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
     }
 
     fun checkAllAttachmentsForModification() {
-        if (preferences.isWebDAVEnabled()) {
-            Log.d(
-                "zotero",
-                "not checking attachments because we do not support re-uploading for webdav."
-            )
-            return
-        }
         if (isUsingGroups()) {
             Log.d(
                 "zotero",
@@ -770,7 +770,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
         }
 
         if (!preferences.isAttachmentUploadingEnabled()) {
-            Log.d("zotero", "disabled by preferences")
+            Log.d("zotero", "Not checking attachments, disabled by preferences")
             return
         }
 
@@ -846,7 +846,12 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                         override fun onComplete() {
                             presenter.stopUploadingAttachment()
                             removeFromRecentlyViewed(attachment)
-                            refreshLibrary()
+                            zoteroDB.updateAttachmentMetadata(
+                                attachment.itemKey,
+                                attachmentStorageManager.calculateMd5(attachment),
+                                attachmentStorageManager.getMtime(attachment),
+                                AttachmentInfo.WEBDAV
+                            ).subscribeOn(Schedulers.io()).subscribe()
                             firebaseAnalytics.logEvent("upload_attachment_successful", Bundle())
                         }
 
@@ -861,7 +866,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                                 {})
                             Log.e("zotero", "got exception: $e")
                             val bundle = Bundle().apply { putString("error_message", e.toString()) }
-                            firebaseAnalytics.logEvent("error_uploading_attachments", bundle)
+                            firebaseAnalytics.logEvent("error_uploading_attachments_webdav", bundle)
                             presenter.stopUploadingAttachment()
                         }
 
@@ -874,7 +879,12 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                 override fun onComplete() {
                     presenter.stopUploadingAttachment()
                     removeFromRecentlyViewed(attachment)
-                    refreshLibrary()
+                    zoteroDB.updateAttachmentMetadata(
+                        attachment.itemKey,
+                        attachmentStorageManager.calculateMd5(attachment),
+                        attachmentStorageManager.getMtime(attachment),
+                        AttachmentInfo.ZOTEROAPI
+                    ).subscribeOn(Schedulers.io()).subscribe()
                 }
 
                 override fun onSubscribe(d: Disposable) {
@@ -928,7 +938,12 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
 
         // todo add progress later.
         val groupItemObservable =
-            zoteroAPI.getItems(modifiedSince, useCaching, groupID = group.id, downloadProgress = null)
+            zoteroAPI.getItems(
+                modifiedSince,
+                useCaching,
+                groupID = group.id,
+                downloadProgress = null
+            )
         groupItemObservable.subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())
             .unsubscribeOn(Schedulers.io())
