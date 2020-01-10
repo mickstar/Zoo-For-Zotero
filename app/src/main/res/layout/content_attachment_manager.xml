@@ -12,7 +12,9 @@
         android:id="@+id/txt_loading_library_text"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
         android:layout_marginTop="24dp"
+        android:layout_marginEnd="8dp"
         android:text="@string/loading_your_library"
         android:textSize="24sp"
         app:layout_constraintEnd_toEndOf="parent"
@@ -36,7 +38,7 @@
         app:layout_constraintTop_toBottomOf="@+id/txt_loading_library_text" />
 
     <LinearLayout
-        android:id="@+id/ll_local"
+        android:id="@+id/ll_meta_information"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginStart="24dp"
@@ -52,14 +54,14 @@
             android:id="@+id/txt_local_title"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Local"
+            android:text="Local Library"
             android:textSize="24sp" />
 
         <TextView
-            android:id="@+id/txt_local_number_attachments"
+            android:id="@+id/txt_number_attachments"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="32 Attachments"
+            android:text="32 of 48 Downloaded"
             android:textSize="24sp" />
 
         <TextView
@@ -67,34 +69,6 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="46.4 MB used"
-            android:textSize="24sp" />
-    </LinearLayout>
-
-    <LinearLayout
-        android:id="@+id/ll_remote"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="24dp"
-        android:layout_marginTop="24dp"
-        android:layout_marginEnd="24dp"
-        android:orientation="vertical"
-        android:background="@drawable/bordered_layout"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/ll_local">
-
-        <TextView
-            android:id="@+id/txt_remote_title"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Remote"
-            android:textSize="24sp" />
-
-        <TextView
-            android:id="@+id/txt_remote_number_attachments"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="420 Attachments"
             android:textSize="24sp" />
     </LinearLayout>
 

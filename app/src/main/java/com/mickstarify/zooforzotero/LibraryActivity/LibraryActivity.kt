@@ -333,6 +333,7 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
 
     override fun closeItemView() {
         itemView?.dismiss()
+        itemView = null
     }
 
     @Suppress("DEPRECATION")

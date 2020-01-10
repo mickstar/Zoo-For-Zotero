@@ -305,13 +305,34 @@ class ZoteroDB constructor(
         editor.apply()
     }
 
-    fun setDownloadProgress(downloadedAmount: Int, total: Int) {
+    fun setDownloadProgress(progress: ItemsDownloadProgress) {
         val sharedPreferences = context.getSharedPreferences(namespace, MODE_PRIVATE)
         val editor = sharedPreferences.edit()
-        editor.putInt("downloadedAmount", downloadedAmount)
-        editor.putInt("total", total)
-        editor.putInt("downloadVersion", this.getLibraryVersion())
+        editor.putInt("downloadedAmount", progress.nDownloaded)
+        editor.putInt("total", progress.total)
+        editor.putInt("downloadVersion", progress.libraryVersion)
         editor.apply()
+    }
+
+    fun destroyDownloadProgress() {
+        val sharedPreferences = context.getSharedPreferences(namespace, MODE_PRIVATE)
+        val editor = sharedPreferences.edit()
+        editor.remove("downloadedAmount")
+        editor.remove("total")
+        editor.remove("downloadVersion")
+        editor.commit()
+    }
+
+    fun getDownloadProgress(): ItemsDownloadProgress? {
+        val sharedPreferences = context.getSharedPreferences(namespace, MODE_PRIVATE)
+        val nDownload = sharedPreferences.getInt("downloadedAmount", 0)
+        if (nDownload == 0){
+            return null
+        }
+
+        val total = sharedPreferences.getInt("total", 0)
+        val downloadVersion = sharedPreferences.getInt("downloadVersion", 0)
+        return ItemsDownloadProgress(downloadVersion, nDownload, total)
     }
 
     fun getLibraryVersion(): Int {

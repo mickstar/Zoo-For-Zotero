@@ -55,6 +55,10 @@ class AttachmentManagerPresenter(val view: Contract.View, context: Context) : Co
         view.createErrorAlert(title, message, onClick)
     }
 
+    override fun isDownloading(): Boolean {
+        return model.isDownloading
+    }
+
     override fun displayErrorState() {
     }
 

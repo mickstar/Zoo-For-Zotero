@@ -23,6 +23,7 @@ interface Contract {
         fun displayErrorState()
         fun updateProgress(filename: String, current: Int, total: Int)
         fun createErrorAlert(title: String, message: String, onClick: () -> Unit)
+        fun isDownloading(): Boolean
     }
 
     interface Model {

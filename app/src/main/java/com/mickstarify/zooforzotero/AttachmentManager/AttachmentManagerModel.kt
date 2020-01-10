@@ -24,6 +24,7 @@ import io.reactivex.disposables.Disposable
 import io.reactivex.functions.Action
 import io.reactivex.functions.Consumer
 import io.reactivex.internal.operators.observable.ObservableFromIterable
+import io.reactivex.internal.operators.observable.ObservableJust
 import io.reactivex.schedulers.Schedulers
 import java.util.*
 import java.util.concurrent.Future
@@ -85,18 +86,22 @@ class AttachmentManagerModel(val presenter: Contract.Presenter, val context: Con
         }
         isDownloading = true
         val toDownload = LinkedList<Item>()
-        for (attachment in zoteroDB.items!!.filter { it.itemType == "attachment" && it.data["linkMode"] != "linked_file"}) {
-            if (attachment.data["contentType"] != "application/pdf") {
-                continue
-            }
-            if (!attachmentStorageManager.checkIfAttachmentExists(attachment, checkMd5 = false)) {
-                toDownload.add(attachment)
+
+        Completable.fromAction({
+            for (attachment in zoteroDB.items!!.filter { it.itemType == "attachment" && it.data["linkMode"] != "linked_file" }) {
+                if (attachment.data["contentType"] != "application/pdf") {
+                    continue
+                }
+                if (!attachmentStorageManager.checkIfAttachmentExists(
+                        attachment,
+                        checkMd5 = false
+                    )
+                ) {
+                    toDownload.add(attachment)
+                }
             }
         }
-
-        // todo turn into a observable.
-
-        val observable = ObservableFromIterable(toDownload.withIndex()).map {
+        ).andThen(ObservableFromIterable(toDownload.withIndex()).map {
             val i = it.index
             val attachment = it.value
             var status = true
@@ -137,52 +142,54 @@ class AttachmentManagerModel(val presenter: Contract.Presenter, val context: Con
                 }
                 )
             downloadAllProgress(status, i, attachment)
-        }.subscribeOn(Schedulers.io()).observeOn(AndroidSchedulers.mainThread())
-
-        observable.subscribe(object : Observer<downloadAllProgress> {
-            override fun onComplete() {
-                showMetaInformation()
-                isDownloading = false
-                presenter.finishLoadingAnimation()
-                presenter.createErrorAlert("Finished Downloading", "All your attachments have been downloaded.", {})
-            }
-
-            override fun onSubscribe(d: Disposable) {
-                presenter.updateProgress("Loading", 0, toDownload.size)
-                downloadDisposable = d
-            }
-
-            override fun onNext(progress: downloadAllProgress) {
-                if (progress.status) {
-                    localAttachmentSize += attachmentStorageManager.getFileSize(
-                        progress.attachment
-                    )
-                    nLocalAttachments++
-                    presenter.displayAttachmentInformation(
-                        nLocalAttachments,
-                        localAttachmentSize,
-                        nRemoteAttachments
-                    )
-
-                    presenter.updateProgress(
-                        progress.attachment.data["filename"] ?: "unknown",
-                        progress.currentIndex,
-                        toDownload.size
-                    )
-                } else {
-                    presenter.makeToastAlert("Error downloading ${progress.attachment.getTitle()}")
-                    presenter.updateProgress("", progress.currentIndex, toDownload.size)
+        }.subscribeOn(Schedulers.io()).observeOn(AndroidSchedulers.mainThread()))
+            .subscribe(object : Observer<downloadAllProgress> {
+                override fun onComplete() {
+                    showMetaInformation()
+                    isDownloading = false
+                    presenter.finishLoadingAnimation()
+                    presenter.createErrorAlert(
+                        "Finished Downloading",
+                        "All your attachments have been downloaded.",
+                        {})
                 }
-            }
 
-            override fun onError(e: Throwable) {
-                presenter.createErrorAlert(
-                    "Error downloading attachments",
-                    "The following error occurred: ${e}",
-                    {})
-            }
+                override fun onSubscribe(d: Disposable) {
+                    presenter.updateProgress("Loading", 0, toDownload.size)
+                    downloadDisposable = d
+                }
 
-        })
+                override fun onNext(progress: downloadAllProgress) {
+                    if (progress.status) {
+                        localAttachmentSize += attachmentStorageManager.getFileSize(
+                            progress.attachment
+                        )
+                        nLocalAttachments++
+                        presenter.displayAttachmentInformation(
+                            nLocalAttachments,
+                            localAttachmentSize,
+                            nRemoteAttachments
+                        )
+
+                        presenter.updateProgress(
+                            progress.attachment.data["filename"] ?: "unknown",
+                            progress.currentIndex,
+                            toDownload.size
+                        )
+                    } else {
+                        presenter.makeToastAlert("Error downloading ${progress.attachment.getTitle()}")
+                        presenter.updateProgress("", progress.currentIndex, toDownload.size)
+                    }
+                }
+
+                override fun onError(e: Throwable) {
+                    presenter.createErrorAlert(
+                        "Error downloading attachments",
+                        "The following error occurred: ${e}",
+                        {})
+                }
+
+            })
     }
 
     override fun loadLibrary() {
