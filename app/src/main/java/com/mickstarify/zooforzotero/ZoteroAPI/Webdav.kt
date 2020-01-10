@@ -18,6 +18,7 @@ import okio.source
 import java.io.File
 import java.io.IOException
 import java.io.InputStream
+import java.io.OutputStreamWriter
 import java.util.*
 
 class Webdav(
@@ -129,30 +130,52 @@ class Webdav(
         * 4. send a delete request and  rename request to server so we have
         *  F3FXJF.zip + F3FXJF.prop resulting*/
 
-        val observable = Single.create(
-            { emitter: SingleEmitter<File> ->
-                // STEP 1 CREATE ZIP
-                val fileInputStream =
-                    attachmentStorageManager.getItemInputStream(attachment).source()
-                val filename = attachmentStorageManager.getFilenameForItem(attachment)
-                val tempFile = attachmentStorageManager.createTempFile(filename)
-                val sinkBuffer = tempFile.outputStream().sink().buffer()
-                sinkBuffer.writeAll(fileInputStream)
-                sinkBuffer.close()
-                fileInputStream.close()
+        return Completable.fromAction({
+            // STEP 1 CREATE ZIP
+            val fileInputStream =
+                attachmentStorageManager.getItemInputStream(attachment).source()
+            val filename = attachmentStorageManager.getFilenameForItem(attachment)
+            val tempFile = attachmentStorageManager.createTempFile(filename)
+            val sinkBuffer = tempFile.outputStream().sink().buffer()
+            sinkBuffer.writeAll(fileInputStream)
+            sinkBuffer.close()
+            fileInputStream.close()
 
-                val zipFile =
-                    attachmentStorageManager.createTempFile("${attachment.itemKey.toUpperCase(Locale.ROOT)}_NEW.zip")
+            val zipFile =
+                attachmentStorageManager.createTempFile("${attachment.itemKey.toUpperCase(Locale.ROOT)}_NEW.zip")
 
-                ZipFile(zipFile).addFile(tempFile)
-                emitter.onSuccess(zipFile)
-            }).map { zipFile ->
-                val uploadAddress =
-            // STEP TWO - UPLOAD
-            sardine.put(address, zipFile, "application/zip")
-        }
+            ZipFile(zipFile).addFile(tempFile)
 
-        return Completable.fromSingle(observable)
+            // STEP 2 -- CREATE PROP
+            val propFile =
+                attachmentStorageManager.createTempFile("${attachment.itemKey.toUpperCase(Locale.ROOT)}_NEW.prop")
+            val propContent = WebdavProp(
+                attachmentStorageManager.getMtime(attachment),
+                attachmentStorageManager.calculateMd5(attachment)
+            ).serialize()
+            val outputStream = propFile.outputStream()
+            outputStream.write(propContent.toByteArray(Charsets.UTF_8))
+            outputStream.close()
+
+            // STEP 3 -- UPLOAD ZIP AND PROP
+            val newZipPath = address + "/${attachment.itemKey.toUpperCase(Locale.ROOT)}_NEW.zip"
+            val newPropPath = address + "/${attachment.itemKey.toUpperCase(Locale.ROOT)}_NEW.prop"
+            sardine.put(newPropPath, propFile, "text/plain")
+            sardine.put(newZipPath, zipFile, "application/zip")
+
+            // STEP 4 -- DELETE AND RENAME TO REPLACE OLD CONTENT.
+            val zipPath = address + "/${attachment.itemKey.toUpperCase(Locale.ROOT)}.zip"
+            val propPath = address + "/${attachment.itemKey.toUpperCase(Locale.ROOT)}.prop"
+
+            sardine.delete(propPath)
+            sardine.delete(zipPath)
+
+            sardine.move(newPropPath, propPath)
+            sardine.move(newZipPath, zipPath)
+
+            // DONE.
+        })
+
     }
 
     init {
