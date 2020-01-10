@@ -96,13 +96,6 @@
             android:layout_height="wrap_content"
             android:text="420 Attachments"
             android:textSize="24sp" />
-
-        <TextView
-            android:id="@+id/txt_remote_size"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="512 MB total"
-            android:textSize="24sp" />
     </LinearLayout>
 
     <Button

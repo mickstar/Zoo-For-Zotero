@@ -146,7 +146,7 @@ class ZoteroAPI(
                 }
 
                 override fun onNext(t: DownloadProgress) {
-                    if (!receivedMetadata){
+                    if (!receivedMetadata) {
                         receivedMetadata = true
                         listener.receiveMetadata(t.mtime, t.metadataHash)
                     }
@@ -161,6 +161,7 @@ class ZoteroAPI(
                     } else if (e is IllegalArgumentException) {
                         listener.onFailure("Error, your WebDAV is misconfigured. Please disable WebDAV in your settings, or reconfigure WebDAV from the menu.")
                     } else {
+                        Log.e("zotero", "webdav download got error ${e}")
                         listener.onFailure(e.toString())
                     }
                 }
@@ -170,8 +171,31 @@ class ZoteroAPI(
 
     fun downloadItemRx(
         item: Item,
-        groupID: Int = 0
+        groupID: Int = GroupInfo.NO_GROUP_ID,
+        context: Context
     ): Observable<DownloadProgress> {
+        /*Do not use yet.*/
+
+        val useGroup = groupID != GroupInfo.NO_GROUP_ID
+
+        if (item.itemType != "attachment") {
+            Log.d("zotero", "got download request for item that isn't attachment")
+        }
+
+        val preferenceManager = PreferenceManager(context)
+
+        // we will delegate to a webdav download if the user has webdav enabled.
+        // When the user has webdav enabled on personal account or for groups are the only two conditions.
+        if (!useGroup && preferenceManager.isWebDAVEnabled() || (useGroup && preferenceManager.isWebDAVEnabledForGroups())) {
+            val webdav = Webdav(
+                preferenceManager.getWebDAVAddress(),
+                preferenceManager.getWebDAVUsername(),
+                preferenceManager.getWebDAVPassword()
+            )
+
+            return webdav.downloadFileRx(item, context, attachmentStorageManager)
+            //stops here.
+        }
 
         val service = buildZoteroAPI(useCaching = false, libraryVersion = -1)
 
@@ -192,16 +216,20 @@ class ZoteroAPI(
                     val inputStream = response.body()?.byteStream()
                     val fileSize = response.body()?.contentLength() ?: 0
                     if (response.code() == 200) {
-                        val buffer = ByteArray(32768)
+                        val buffer = ByteArray(64768)
                         var read = inputStream?.read(buffer) ?: 0
                         var progress: Long = 0
+                        val md5Hash = item.data["md5"] ?: ""
+                        val mtime = (item.data["mtime"] ?: "0").toLong()
                         while (read > 0) {
                             try {
                                 progress += read
                                 emitter.onNext(
                                     DownloadProgress(
                                         progress = progress,
-                                        total = fileSize
+                                        total = fileSize,
+                                        metadataHash = md5Hash,
+                                        mtime = mtime
                                     )
                                 )
                                 outputFileStream.write(buffer, 0, read)
@@ -215,14 +243,16 @@ class ZoteroAPI(
                         }
                     } else {
                         Log.e("zotero", "network error. response: ${response.body()}")
-                        throw RuntimeException("Zotero gave back ${response.code()}")
+                        throw RuntimeException("Invalid server response code ${response.code()}")
                     }
                 }
 
                 override fun onError(e: Throwable) {
-                    emitter.onError(e)
+                    Log.e("zotero", "download attachment got error $e")
+                    if (!emitter.isDisposed) {
+                        emitter.onError(e)
+                    }
                 }
-
             })
         }
         return observable
@@ -231,10 +261,11 @@ class ZoteroAPI(
     fun downloadItem(
         context: Context,
         item: Item,
-        useGroup: Boolean,
-        groupID: Int = 0,
+        groupID: Int = GroupInfo.NO_GROUP_ID,
         listener: ZoteroAPIDownloadAttachmentListener
     ) {
+        val useGroup = groupID != GroupInfo.NO_GROUP_ID
+
         if (item.itemType != "attachment") {
             Log.d("zotero", "got download request for item that isn't attachment")
         }
@@ -244,6 +275,7 @@ class ZoteroAPI(
         val checkMd5 =
             !preferenceManager.isWebDAVEnabled() // we're not checking MD5 is the user isn't on zotero api.
 
+        // TODO REPLACE.
         if (attachmentStorageManager.checkIfAttachmentExists(item, checkMd5)) {
             listener.onComplete()
             return
@@ -312,6 +344,7 @@ class ZoteroAPI(
                     }
                     listener.receiveTask(task)
                 } else {
+                    Log.e("zotero", "Error downloading, servers gave code ${response.code()}")
                     listener.onNetworkFailure()
                 }
             }

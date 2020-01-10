@@ -32,7 +32,7 @@ class AttachmentManager : AppCompatActivity(), Contract.View {
         findViewById<Button>(R.id.button_download).onClick {
             presenter.pressedDownloadAttachments()
         }
-        setDownloadButtonState(false)
+        setDownloadButtonState("Loading Library",false)
     }
 
     override fun makeToastAlert(message: String) {
@@ -77,9 +77,11 @@ class AttachmentManager : AppCompatActivity(), Contract.View {
         textView.visibility = View.INVISIBLE
     }
 
-    override fun setDownloadButtonState(enabled: Boolean) {
+    override fun setDownloadButtonState(text: String, enabled: Boolean) {
         val button = findViewById<Button>(R.id.button_download)
         button.isEnabled = enabled
+        button.setText(text)
+        Log.d("zotero", "button state changed. ${button.text} ${button.isEnabled}")
     }
 
     override fun updateLoadingProgress(message: String, current: Int, total: Int) {
@@ -102,15 +104,12 @@ class AttachmentManager : AppCompatActivity(), Contract.View {
     override fun displayAttachmentInformation(
         nLocal: Int,
         sizeLocal: String,
-        nRemote: Int,
-        sizeRemote: Int
+        nRemote: Int
     ) {
         findViewById<TextView>(R.id.txt_local_number_attachments).text = "$nLocal Attachments"
         findViewById<TextView>(R.id.txt_local_size).text = "${sizeLocal} used"
 
         findViewById<TextView>(R.id.txt_remote_number_attachments).text = "$nRemote Attachments"
-        findViewById<TextView>(R.id.txt_remote_size).text = "Unknown Size"
-
         findViewById<LinearLayout>(R.id.ll_local).visibility = View.VISIBLE
         findViewById<LinearLayout>(R.id.ll_remote).visibility = View.VISIBLE
 

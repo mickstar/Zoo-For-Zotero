@@ -7,11 +7,11 @@ interface Contract {
         fun initUI()
         fun showLibraryLoadingAnimation()
         fun hideLibraryLoadingAnimation()
-        fun setDownloadButtonState(enabled: Boolean)
         fun updateLoadingProgress(message: String, current: Int, total: Int)
         fun createErrorAlert(title: String, message: String, onClick: () -> Unit)
         fun makeToastAlert(message: String)
-        fun displayAttachmentInformation(nLocal: Int, sizeLocal: String, nRemote: Int, sizeRemote: Int)
+        fun displayAttachmentInformation(nLocal: Int, sizeLocal: String, nRemote: Int)
+        fun setDownloadButtonState(text: String, enabled: Boolean)
     }
 
     interface Presenter {
@@ -28,5 +28,7 @@ interface Contract {
     interface Model {
         fun downloadAttachments()
         fun loadLibrary()
+        fun cancelDownload()
+        var isDownloading: Boolean
     }
 }

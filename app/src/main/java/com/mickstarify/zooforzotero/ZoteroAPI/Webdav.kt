@@ -46,65 +46,75 @@ class Webdav(
     ): Observable<DownloadProgress> {
         val webpathProp = address + "/${attachment.itemKey.toUpperCase(Locale.ROOT)}.prop"
         val webpathZip = address + "/${attachment.itemKey.toUpperCase(Locale.ROOT)}.zip"
-        return Observable.create { emitter ->
-            val propString = downloadPropToString(webpathProp)
-            val prop = WebdavProp(propString)
 
-            var inputStream: InputStream?
+        val observable: Observable<DownloadProgress> = Observable.create { emitter ->
             try {
-                inputStream = sardine.get(webpathZip)
-            } catch (e: IllegalArgumentException) {
-                Log.e("zotero", "${e}")
-                throw(e)
-            } catch (e: Exception) {
-                Log.e("zotero", "${e}")
-                throw(IOException("File not found."))
-            }
+                val propString = downloadPropToString(webpathProp)
+                val prop = WebdavProp(propString)
 
-            val zipFile =
-                attachmentStorageManager.createTempFile(
-                    "${attachment.itemKey.toUpperCase(Locale.ROOT)}.pdf"
-                )
-            val downloadOutputStream = zipFile.outputStream()
-
-            val buffer = ByteArray(32768)
-            var read = inputStream.read(buffer)
-            var total: Long = 0
-            while (read > 0) {
+                var inputStream: InputStream? = null
                 try {
-                    total += read
-                    emitter.onNext(DownloadProgress(total, -1, prop.mtime, prop.hash))
-                    downloadOutputStream.write(buffer, 0, read)
-                    read = inputStream.read(buffer)
+                    inputStream = sardine.get(webpathZip)
+                } catch (e: IllegalArgumentException) {
+                    Log.e("zotero", "${e}")
+                    throw(e)
                 } catch (e: Exception) {
-                    Log.e("zotero", "exception downloading webdav attachment ${e.message}")
-                    throw RuntimeException("Error downloading webdav attachment ${e.message}")
+                    Log.e("zotero", "${e}")
+                    throw(e)
+                }
+
+                val zipFile =
+                    attachmentStorageManager.createTempFile(
+                        "${attachment.itemKey.toUpperCase(Locale.ROOT)}.pdf"
+                    )
+                val downloadOutputStream = zipFile.outputStream()
+
+                val buffer = ByteArray(32768)
+                var read = inputStream.read(buffer)
+                var total: Long = 0
+                while (read > 0) {
+                    try {
+                        total += read
+                        emitter.onNext(DownloadProgress(total, -1, prop.mtime, prop.hash))
+                        downloadOutputStream.write(buffer, 0, read)
+                        read = inputStream.read(buffer)
+                    } catch (e: Exception) {
+                        Log.e("zotero", "exception downloading webdav attachment ${e.message}")
+                        throw RuntimeException("Error downloading webdav attachment ${e.message}")
+                    }
+                }
+                downloadOutputStream.close()
+                inputStream.close()
+                if (read > 0) {
+                    throw RuntimeException(
+                        "Error did not finish downloading ${attachment.itemKey.toUpperCase(
+                            Locale.ROOT
+                        )}.zip"
+                    )
+                }
+                val zipFile2 = ZipFile(zipFile)
+                val attachmentFilename =
+                    zipFile2.fileHeaders.firstOrNull()?.fileName
+                        ?: throw Exception("Error empty zipfile.")
+                ZipFile(zipFile).extractAll(context.cacheDir.absolutePath)
+                zipFile.delete() // don't need this anymore.
+                attachmentStorageManager.writeAttachmentFromFile(
+                    File(
+                        context.cacheDir,
+                        attachmentFilename
+                    ), attachment
+                )
+                File(context.cacheDir, attachmentFilename).delete()
+                emitter.onComplete()
+            } catch (e: Exception) {
+                Log.e("zotero", "big exception hit ${e} || ${emitter.isDisposed}")
+                // this your brain on rxjava. this is to avoid a undeliverable crash on dispose().
+                if (!emitter.isDisposed){
+                    throw e
                 }
             }
-            downloadOutputStream.close()
-            inputStream.close()
-            if (read > 0) {
-                throw RuntimeException(
-                    "Error did not finish downloading ${attachment.itemKey.toUpperCase(
-                        Locale.ROOT
-                    )}.zip"
-                )
-            }
-            val zipFile2 = ZipFile(zipFile)
-            val attachmentFilename =
-                zipFile2.fileHeaders.firstOrNull()?.fileName
-                    ?: throw Exception("Error empty zipfile.")
-            ZipFile(zipFile).extractAll(context.cacheDir.absolutePath)
-            zipFile.delete() // don't need this anymore.
-            attachmentStorageManager.writeAttachmentFromFile(
-                File(
-                    context.cacheDir,
-                    attachmentFilename
-                ), attachment
-            )
-            File(context.cacheDir, attachmentFilename).delete()
-            emitter.onComplete()
         }
+        return observable
     }
 
     fun uploadAttachment(
