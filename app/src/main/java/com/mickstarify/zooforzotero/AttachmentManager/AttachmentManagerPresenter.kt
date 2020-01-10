@@ -4,7 +4,7 @@ import android.content.Context
 import com.mickstarify.zooforzotero.ZoteroStorage.Database.Item
 import kotlin.math.round
 
-class AttachmentManagerPresenter(val view: Contract.View, context: Context): Contract.Presenter {
+class AttachmentManagerPresenter(val view: Contract.View, context: Context) : Contract.Presenter {
     val model: Contract.Model
 
     init {
@@ -14,19 +14,28 @@ class AttachmentManagerPresenter(val view: Contract.View, context: Context): Con
     }
 
     override fun pressedDownloadAttachments() {
-        model.downloadAttachments()
+        if (model.isDownloading == true) {
+            // this is a cancel request.
+            model.cancelDownload()
+            view.setDownloadButtonState("Download All Attachments", true)
+        } else {
+            // download request.
+            view.setDownloadButtonState("Cancel Download", true)
+            model.downloadAttachments()
+        }
+
     }
 
     override fun displayAttachmentInformation(nLocal: Int, sizeLocal: Long, nRemote: Int) {
-        var sizeLocalString = if (sizeLocal < 1000000L){
-            "${(sizeLocal/1000L).toInt()}KB"
+        var sizeLocalString = if (sizeLocal < 1000000L) {
+            "${(sizeLocal / 1000L).toInt()}KB"
         } else {
             // rounds off to 2 decimal places. e.g 43240000 => 43.24MB
 
-            "${round(sizeLocal.toDouble()/10000.0)/100}MB"
+            "${round(sizeLocal.toDouble() / 10000.0) / 100}MB"
         }
 
-        view.displayAttachmentInformation(nLocal, sizeLocalString, nRemote, -1)
+        view.displayAttachmentInformation(nLocal, sizeLocalString, nRemote)
     }
 
     override fun displayLoadingAnimation() {
@@ -35,7 +44,7 @@ class AttachmentManagerPresenter(val view: Contract.View, context: Context): Con
 
     override fun finishLoadingAnimation() {
         view.hideLibraryLoadingAnimation()
-        view.setDownloadButtonState(true)
+        view.setDownloadButtonState("Download All Attachments", true)
     }
 
     override fun makeToastAlert(message: String) {

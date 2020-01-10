@@ -37,7 +37,8 @@ class ZoteroDB constructor(
         ((context as Activity).application as ZooForZoteroApplication).component.inject(this)
     }
 
-    @Inject lateinit var zoteroDatabase: ZoteroDatabase
+    @Inject
+    lateinit var zoteroDatabase: ZoteroDatabase
 
     val prefix = if (groupID == Collection.NO_GROUP_ID) {
         ""
@@ -304,6 +305,15 @@ class ZoteroDB constructor(
         editor.apply()
     }
 
+    fun setDownloadProgress(downloadedAmount: Int, total: Int) {
+        val sharedPreferences = context.getSharedPreferences(namespace, MODE_PRIVATE)
+        val editor = sharedPreferences.edit()
+        editor.putInt("downloadedAmount", downloadedAmount)
+        editor.putInt("total", total)
+        editor.putInt("downloadVersion", this.getLibraryVersion())
+        editor.apply()
+    }
+
     fun getLibraryVersion(): Int {
         val sharedPreferences = context.getSharedPreferences(namespace, MODE_PRIVATE)
         return sharedPreferences.getInt("ItemsLibraryVersion", -1)
@@ -445,7 +455,7 @@ class ZoteroDB constructor(
                 if (md5Key == "") {
                     continue
                 }
-                val mtime = (item.data["mtime"]?:"0" as String).toLong()
+                val mtime = (item.data["mtime"] ?: "0" as String).toLong()
 
                 this.updateAttachmentMetadata(item.itemKey, md5Key, mtime, AttachmentInfo.LOCALSYNC)
                     .blockingAwait()

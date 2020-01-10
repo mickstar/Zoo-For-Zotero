@@ -219,7 +219,6 @@ class AttachmentStorageManager @Inject constructor(
         var attachmentUri = getAttachmentUri(attachment)
         Log.d("zotero", "opening PDF with Uri $attachmentUri")
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            Log.d("zotero", "${attachmentUri.query}")
             intent = Intent(Intent.ACTION_VIEW)
             intent.data = attachmentUri
             intent.flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
@@ -344,11 +343,19 @@ class AttachmentStorageManager @Inject constructor(
     fun deleteAttachment(attachment: Item) {
         when (storageMode) {
             StorageMode.EXTERNAL_CACHE -> {
-                getAttachmentFile(attachment).delete()
+                try{
+                    getAttachmentFile(attachment).delete()
+                } catch (e: Exception){
+                    Log.d("zotero", "cannot delete file. Not found.")
+                }
             }
             StorageMode.CUSTOM -> {
-                val docFile = DocumentFile.fromSingleUri(context, getAttachmentUri(attachment))
-                docFile?.delete()
+                try {
+                    val docFile = DocumentFile.fromSingleUri(context, getAttachmentUri(attachment))
+                    docFile?.delete()
+                } catch (e: java.io.FileNotFoundException){
+                    Log.d("zotero", "cannot delete file. Not found.")
+                }
             }
             else -> throw Exception("not implemented")
         }

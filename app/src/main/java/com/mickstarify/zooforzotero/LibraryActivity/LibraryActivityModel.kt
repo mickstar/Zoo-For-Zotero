@@ -48,8 +48,10 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
     private var firebaseAnalytics: FirebaseAnalytics
 
     private lateinit var zoteroAPI: ZoteroAPI
-    @Inject lateinit var zoteroDatabase: ZoteroDatabase
-    @Inject lateinit var attachmentStorageManager: AttachmentStorageManager
+    @Inject
+    lateinit var zoteroDatabase: ZoteroDatabase
+    @Inject
+    lateinit var attachmentStorageManager: AttachmentStorageManager
     private val zoteroGroupDB =
         ZoteroGroupDB(
             context
@@ -63,7 +65,8 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
         )
     private var groups: List<GroupInfo>? = null
 
-    @Inject lateinit var preferences: PreferenceManager
+    @Inject
+    lateinit var preferences: PreferenceManager
 
     val state = LibraryModelState()
 
@@ -467,6 +470,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                 "Your local copy is different to the server's. Would you like to redownload the server's copy?",
                 "Yes", "No", {
                     presenter.updateAttachmentDownloadProgress(0, -1)
+                    attachmentStorageManager.deleteAttachment(item)
                     downloadAttachment(item)
                 }, {
                     openPDF(item)
@@ -487,9 +491,87 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
         return items
     }
 
-    var isDownloading: Boolean = false
-    var task: Future<Unit>? = null
+    var downloadDisposable: Disposable? = null
+
     override fun downloadAttachment(item: Item) {
+        if (isDownloading) {
+            Log.d("zotero", "not downloading ${item.getTitle()} because i am already downloading.")
+            return
+        }
+        isDownloading = true
+        currentlyDownloadingAttachment = item
+
+        zoteroAPI.downloadItemRx(item, state.currentGroup?.id ?: GroupInfo.NO_GROUP_ID, context)
+            .subscribeOn(Schedulers.io())
+            .observeOn(AndroidSchedulers.mainThread())
+            .subscribe(object : Observer<DownloadProgress> {
+                var receivedMetadata = false
+
+                override fun onComplete() {
+                    isDownloading = false
+                    presenter.finishDownloadingAttachment()
+
+                    if (zoteroDB.hasMd5Key(item) && !attachmentStorageManager.validateMd5ForItem(
+                            item, zoteroDB.getMd5Key(item)
+                        )
+                    ) {
+                        Log.d("zotero", "md5 error on attachment ${zoteroDB.getMd5Key(item)}")
+                        presenter.createErrorAlert(
+                            "MD5 Verification Error",
+                            "The download process did not complete properly. Please retry",
+                            {})
+                        firebaseAnalytics.logEvent("error_downloading_file_corrupted", Bundle())
+                        attachmentStorageManager.deleteAttachment(item)
+                        return
+                    } else {
+                        openPDF(item)
+                    }
+                }
+
+                override fun onSubscribe(d: Disposable) {
+                    downloadDisposable = d
+
+                }
+
+                override fun onNext(t: DownloadProgress) {
+                    presenter.updateAttachmentDownloadProgress(t.progress, t.total)
+                    if (!receivedMetadata && t.metadataHash != "") {
+                        receivedMetadata = true
+                        zoteroDB.updateAttachmentMetadata(
+                            item.itemKey,
+                            t.metadataHash,
+                            t.mtime,
+                            if (preferences.isWebDAVEnabled()) {
+                                AttachmentInfo.WEBDAV
+                            } else {
+                                AttachmentInfo.ZOTEROAPI
+                            }
+                        ).subscribeOn(Schedulers.io()).subscribe()
+                    }
+                }
+
+                override fun onError(e: Throwable) {
+                    if (downloadDisposable?.isDisposed == true) {
+                        return
+                    }
+
+                    Log.e("zotero", "got error ${e}")
+                    firebaseAnalytics.logEvent(
+                        "error_downloading_attachment",
+                        Bundle().apply { putString("message", "${e.message}") })
+                    presenter.attachmentDownloadError(
+                        "Error Message: ${e.message}"
+                    )
+                    isDownloading = false
+                }
+
+            })
+    }
+
+    var isDownloading: Boolean = false
+    var currentlyDownloadingAttachment: Item? = null
+    var task: Future<Unit>? = null
+    fun downloadAttachment2(item: Item) {
         if (isDownloading) {
             Log.d("zotero", "not downloading ${item.getTitle()} because i am already downloading.")
             return
@@ -498,8 +580,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
 
         zoteroAPI.downloadItem(context,
             item,
-            state.usingGroup,
-            groupID = (state.currentGroup?.id ?: 0),
+            groupID = (state.currentGroup?.id ?: GroupInfo.NO_GROUP_ID),
             listener = object : ZoteroAPIDownloadAttachmentListener {
                 var mtime = 0L
                 var metadataHash = ""
@@ -541,6 +622,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                             item, zoteroDB.getMd5Key(item)
                         )
                     ) {
+                        Log.d("zotero", "md5 error on attachment ${zoteroDB.getMd5Key(item)}")
                         presenter.createErrorAlert(
                             "Error downloading",
                             "The download process did not complete properly. Please retry",
@@ -589,7 +671,10 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
 
     override fun cancelAttachmentDownload() {
         this.isDownloading = false
+        downloadDisposable?.dispose()
         task?.cancel(true)
+        currentlyDownloadingAttachment?.let { attachmentStorageManager.deleteAttachment(it) }
+        currentlyDownloadingAttachment = null
     }
 
     override fun createNote(note: Note) {
@@ -1063,6 +1148,21 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
         return state.currentGroup ?: throw Exception("Error there is no current Group.")
     }
 
+    fun checkAttachmentStorageAccess() {
+        try {
+            if (attachmentStorageManager.testStorage() == false) {
+                throw Exception()
+            }
+        } catch (e: Exception) {
+            Log.e("zotero", "error testing storage. ${e}")
+            presenter.createErrorAlert(
+                "Permission Error",
+                "There was an error accessing your zotero attachment location. Please reconfigure in settings.",
+                {})
+            preferences.useExternalCache()
+        }
+    }
+
     init {
         ((context as Activity).application as ZooForZoteroApplication).component.inject(this)
         firebaseAnalytics = FirebaseAnalytics.getInstance(context)
@@ -1085,18 +1185,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
             zoteroDB.clearItemsVersion()
         }
 
-        try {
-            if (attachmentStorageManager.testStorage() == false) {
-                throw Exception()
-            }
-        } catch (e: Exception) {
-            Log.e("zotero", "error testing storage. ${e}")
-            presenter.createErrorAlert(
-                "Permission Error",
-                "There was an error accessing your zotero attachment location. Please reconfigure in settings.",
-                {})
-            preferences.useExternalCache()
-        }
+        checkAttachmentStorageAccess()
 
         if (preferences.firstRunForVersion24()) {
             zoteroDB.setItemsVersion(-1) // forces a full refresh for collections

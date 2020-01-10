@@ -70,6 +70,7 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
 
     override fun onResume() {
         if (model.isLoaded()) {
+            model.checkAttachmentStorageAccess()
             model.checkAllAttachmentsForModification()
         }
     }

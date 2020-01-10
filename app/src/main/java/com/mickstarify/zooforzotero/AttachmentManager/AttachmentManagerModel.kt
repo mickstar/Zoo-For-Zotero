@@ -2,20 +2,31 @@ package com.mickstarify.zooforzotero.AttachmentManager
 
 import android.app.Activity
 import android.content.Context
+import android.util.Log
+import com.google.common.util.concurrent.Service
+import com.mickstarify.zooforzotero.PreferenceManager
 import com.mickstarify.zooforzotero.SyncSetup.AuthenticationStorage
 import com.mickstarify.zooforzotero.ZooForZoteroApplication
+import com.mickstarify.zooforzotero.ZoteroAPI.DownloadProgress
 import com.mickstarify.zooforzotero.ZoteroAPI.ZoteroAPI
+import com.mickstarify.zooforzotero.ZoteroAPI.ZoteroAPIDownloadAttachmentListener
 import com.mickstarify.zooforzotero.ZoteroStorage.AttachmentStorageManager
+import com.mickstarify.zooforzotero.ZoteroStorage.Database.AttachmentInfo
 import com.mickstarify.zooforzotero.ZoteroStorage.Database.GroupInfo
 import com.mickstarify.zooforzotero.ZoteroStorage.Database.Item
 import com.mickstarify.zooforzotero.ZoteroStorage.Database.ZoteroDatabase
 import com.mickstarify.zooforzotero.ZoteroStorage.ZoteroDB.ZoteroDB
 import io.reactivex.Completable
 import io.reactivex.CompletableObserver
+import io.reactivex.Observer
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposable
+import io.reactivex.functions.Action
+import io.reactivex.functions.Consumer
+import io.reactivex.internal.operators.observable.ObservableFromIterable
 import io.reactivex.schedulers.Schedulers
 import java.util.*
+import java.util.concurrent.Future
 import javax.inject.Inject
 
 class AttachmentManagerModel(val presenter: Contract.Presenter, val context: Context) :
@@ -27,12 +38,21 @@ class AttachmentManagerModel(val presenter: Contract.Presenter, val context: Con
     lateinit var zoteroDatabase: ZoteroDatabase
     @Inject
     lateinit var attachmentStorageManager: AttachmentStorageManager
+    @Inject
+    lateinit var preferenceManager: PreferenceManager
+
+    override var isDownloading = false // useful for button state.
 
     init {
         ((context as Activity).application as ZooForZoteroApplication).component.inject(this)
         val auth = AuthenticationStorage(context)
         if (auth.hasCredentials()) {
-            zoteroAPI = ZoteroAPI(auth.getUserKey(), auth.getUserID(), auth.getUsername())
+            zoteroAPI = ZoteroAPI(
+                auth.getUserKey(),
+                auth.getUserID(),
+                auth.getUsername(),
+                attachmentStorageManager
+            )
         } else {
             presenter.createErrorAlert(
                 "No credentials Available",
@@ -43,9 +63,29 @@ class AttachmentManagerModel(val presenter: Contract.Presenter, val context: Con
 
     }
 
+    data class downloadAllProgress(
+        var status: Boolean,
+        var currentIndex: Int,
+        var attachment: Item
+    )
+
+    override fun cancelDownload() {
+        isDownloading = false
+        downloadDisposable?.dispose()
+        presenter.finishLoadingAnimation()
+        showMetaInformation()
+    }
+
+    var downloadDisposable: Disposable? = null
+
     override fun downloadAttachments() {
+        if (isDownloading) {
+            Log.e("zotero", "Error already downloading")
+            return
+        }
+        isDownloading = true
         val toDownload = LinkedList<Item>()
-        for (attachment in zoteroDB.items!!.filter { it.itemType == "attachment" }) {
+        for (attachment in zoteroDB.items!!.filter { it.itemType == "attachment" && it.data["linkMode"] != "linked_file"}) {
             if (attachment.data["contentType"] != "application/pdf") {
                 continue
             }
@@ -53,12 +93,96 @@ class AttachmentManagerModel(val presenter: Contract.Presenter, val context: Con
                 toDownload.add(attachment)
             }
         }
-        toDownload.forEachIndexed{ i, attachment ->
-            presenter.updateProgress(attachment.data["filename"]?:"unknown", i, toDownload.size)
 
-            zoteroAPI.downloadItem()
-        }
+        // todo turn into a observable.
 
+        val observable = ObservableFromIterable(toDownload.withIndex()).map {
+            val i = it.index
+            val attachment = it.value
+            var status = true
+            zoteroAPI.downloadItemRx(attachment, zoteroDB.groupID, context)
+                .blockingSubscribe(object : Observer<DownloadProgress> {
+                    var setMetadata = false
+                    override fun onComplete() {
+                        // do nothing.
+                    }
+
+                    override fun onSubscribe(d: Disposable) {
+                        // do nothing.
+                    }
+
+                    override fun onNext(it: DownloadProgress) {
+                        if (setMetadata == false && it.metadataHash != "") {
+                            val err = zoteroDatabase.writeAttachmentInfo(
+                                AttachmentInfo(
+                                    attachment.itemKey,
+                                    zoteroDB.groupID,
+                                    it.metadataHash,
+                                    it.mtime,
+                                    if (preferenceManager.isWebDAVEnabled()) {
+                                        AttachmentInfo.WEBDAV
+                                    } else {
+                                        AttachmentInfo.ZOTEROAPI
+                                    }
+                                )
+                            ).blockingGet()
+                            err?.let { throw(err) }
+                        }
+                    }
+
+                    override fun onError(e: Throwable) {
+                        status = false
+                    }
+
+                }
+                )
+            downloadAllProgress(status, i, attachment)
+        }.subscribeOn(Schedulers.io()).observeOn(AndroidSchedulers.mainThread())
+
+        observable.subscribe(object : Observer<downloadAllProgress> {
+            override fun onComplete() {
+                showMetaInformation()
+                isDownloading = false
+                presenter.finishLoadingAnimation()
+                presenter.createErrorAlert("Finished Downloading", "All your attachments have been downloaded.", {})
+            }
+
+            override fun onSubscribe(d: Disposable) {
+                presenter.updateProgress("Loading", 0, toDownload.size)
+                downloadDisposable = d
+            }
+
+            override fun onNext(progress: downloadAllProgress) {
+                if (progress.status) {
+                    localAttachmentSize += attachmentStorageManager.getFileSize(
+                        progress.attachment
+                    )
+                    nLocalAttachments++
+                    presenter.displayAttachmentInformation(
+                        nLocalAttachments,
+                        localAttachmentSize,
+                        nRemoteAttachments
+                    )
+
+                    presenter.updateProgress(
+                        progress.attachment.data["filename"] ?: "unknown",
+                        progress.currentIndex,
+                        toDownload.size
+                    )
+                } else {
+                    presenter.makeToastAlert("Error downloading ${progress.attachment.getTitle()}")
+                    presenter.updateProgress("", progress.currentIndex, toDownload.size)
+                }
+            }
+
+            override fun onError(e: Throwable) {
+                presenter.createErrorAlert(
+                    "Error downloading attachments",
+                    "The following error occurred: ${e}",
+                    {})
+            }
+
+        })
     }
 
     override fun loadLibrary() {
@@ -87,6 +211,10 @@ class AttachmentManagerModel(val presenter: Contract.Presenter, val context: Con
             })
     }
 
+
+    var localAttachmentSize: Long = 0L
+    var nLocalAttachments: Int = -1
+    var nRemoteAttachments = -1
     private fun showMetaInformation() {
 //        /*Calculates the attachment size on disk as well as on remote server.*/
         val attachmentKeys = zoteroDB.attachmentInfo!!.keys
@@ -94,7 +222,7 @@ class AttachmentManagerModel(val presenter: Contract.Presenter, val context: Con
         val localAttachments = LinkedList<Item>()
         val allAttachments = LinkedList<Item>()
         for (attachment in zoteroDB.items!!.filter { it.itemType == "attachment" }) {
-            if (attachment.data["contentType"] != "application/pdf") {
+            if (attachment.data["contentType"] != "application/pdf" || attachment.data["linkMode"] == "linked_file") {
                 continue
             }
             allAttachments.add(attachment)
@@ -103,7 +231,10 @@ class AttachmentManagerModel(val presenter: Contract.Presenter, val context: Con
             }
         }
 
-        val localSize = localAttachments.fold(
+        nLocalAttachments = localAttachments.size
+        nRemoteAttachments = allAttachments.size
+
+        localAttachmentSize = localAttachments.fold(
             0L,
             { acc, item ->
                 acc + 1L + attachmentStorageManager.getFileSize(
@@ -113,7 +244,7 @@ class AttachmentManagerModel(val presenter: Contract.Presenter, val context: Con
 
         presenter.displayAttachmentInformation(
             localAttachments.size,
-            localSize,
+            localAttachmentSize,
             allAttachments.size
         )
     }

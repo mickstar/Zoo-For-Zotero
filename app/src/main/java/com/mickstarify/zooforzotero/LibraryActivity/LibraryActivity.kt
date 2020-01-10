@@ -349,7 +349,17 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
         }
         if (true) { // if (total == 0) {
             progressDialog?.isIndeterminate = true
-            progressDialog?.setMessage("Downloading your Attachment.")
+            val progressString = if (progress == 0) {
+                ""
+            } else {
+                if (total > 0) {
+                    "$progress/${total}KB"
+                } else {
+                    "${progress}KB"
+                }
+            }
+
+            progressDialog?.setMessage("Downloading your Attachment. $progressString")
         }
 //        else {
 //            progressDialog?.isIndeterminate = false
