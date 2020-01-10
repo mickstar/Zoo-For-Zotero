@@ -287,6 +287,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                             presenter.makeToastAlert("Updated ${downloaded} items.")
                         }
                     }
+                    db.destroyDownloadProgress()
                     db.setItemsVersion(libraryVersion)
                     db.loadItemsFromDatabase().subscribeOn(Schedulers.io())
                         .observeOn(AndroidSchedulers.mainThread())
@@ -336,6 +337,8 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                         // we need to redownload items but without the progress.
                         Log.d("zotero", "mismatched, reloading items.")
                         db.destroyDownloadProgress()
+                        presenter.makeToastAlert("Could not continue, library has changed since last sync.")
+                        firebaseAnalytics.logEvent("required_library_resync_from_mismatch", Bundle())
                         loadItems(db, useCaching)
                         return
                     } else {
