@@ -332,6 +332,10 @@ class ZoteroDB constructor(
 
         val total = sharedPreferences.getInt("total", 0)
         val downloadVersion = sharedPreferences.getInt("downloadVersion", 0)
+        if (nDownload == 0 || total == nDownload){
+            // completed job. there is no download progress.
+            return null
+        }
         return ItemsDownloadProgress(downloadVersion, nDownload, total)
     }
 
