@@ -488,7 +488,10 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                 checkMd5 = false
             )
         ) {
-            if (zoteroDB.hasMd5Key(item) && !attachmentStorageManager.validateMd5ForItem(
+            if (zoteroDB.hasMd5Key(
+                    item,
+                    onlyWebdav = preferences.isWebDAVEnabled()
+                ) && !attachmentStorageManager.validateMd5ForItem(
                     item,
                     zoteroDB.getMd5Key(item)
                 )
@@ -783,7 +786,10 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                     val item = zoteroDB.getItemWithKey(recentlyOpenedAttachment.itemKey)
                     if (item != null) {
                         try {
-                            if (attachmentStorageManager.validateMd5ForItem(
+                            if (zoteroDB.hasMd5Key(
+                                    item,
+                                    onlyWebdav = preferences.isWebDAVEnabled()
+                                ) && attachmentStorageManager.validateMd5ForItem(
                                     item,
                                     zoteroDB.getMd5Key(item)
                                 ) == false
@@ -852,7 +858,10 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                                 attachmentStorageManager.getMtime(attachment),
                                 AttachmentInfo.WEBDAV
                             ).subscribeOn(Schedulers.io()).subscribe()
-                            firebaseAnalytics.logEvent("upload_attachment_successful", Bundle())
+                            firebaseAnalytics.logEvent(
+                                "upload_attachment_successful_webdav",
+                                Bundle()
+                            )
                         }
 
                         override fun onSubscribe(d: Disposable) {

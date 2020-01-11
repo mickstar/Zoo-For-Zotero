@@ -91,9 +91,10 @@ dependencies {
 
     debugImplementation 'com.squareup.leakcanary:leakcanary-android:2.0'
 
-    // facebook flipper Dependencies
-    debugImplementation 'com.facebook.flipper:flipper:0.30.1'
-    debugImplementation 'com.facebook.soloader:soloader:0.8.0'
+//    // facebook flipper Dependencies
+//    debugImplementation 'com.facebook.flipper:flipper:0.30.1'
+//    debugImplementation 'com.facebook.soloader:soloader:0.8.0'
+//    releaseImplementation 'com.facebook.flipper:flipper-noop:0.30.1'
 
     // Room Dependencies
     implementation "androidx.room:room-runtime:2.2.3"

@@ -38,7 +38,6 @@ interface Contract {
 
     interface Presenter {
         fun createErrorAlert(title: String, message: String, onClick: () -> Unit)
-        fun testConnection()
         fun receiveCollections(collections: List<Collection>)
         fun setCollection(collectionName: String, isSubCollection: Boolean = false)
         fun selectItem(item: Item, longPress: Boolean = false)

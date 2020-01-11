@@ -291,10 +291,6 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
         }
     }
 
-    override fun testConnection() {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-    }
-
     override fun receiveCollections(collections: List<Collection>) {
         view.clearSidebar()
         for (collection: Collection in collections.filter {
