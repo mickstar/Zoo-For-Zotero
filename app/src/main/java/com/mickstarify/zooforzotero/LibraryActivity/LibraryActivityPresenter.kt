@@ -319,15 +319,19 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
         view.initUI()
         view.showLoadingAnimation(true)
         view.showLibraryContentDisplay("Loading your library content.")
-        if (model.shouldIUpdateLibrary()) {
-            model.loadGroups()
-            model.downloadLibrary()
-        } else {
-            model.loadCollectionsLocally()
-            model.loadItemsLocally()
-            model.loadGroups()
-        }
 
+        if (model.preferences.firstRunForVersion27() && model.hasOldStorage()) {
+            model.migrateFromOldStorage()
+        } else {
+            if (model.shouldIUpdateLibrary()) {
+                model.loadGroups()
+                model.downloadLibrary()
+            } else {
+                model.loadCollectionsLocally()
+                model.loadItemsLocally()
+                model.loadGroups()
+            }
+        }
         if (model.preferences.firstRunForVersion24()) {
             view.createErrorAlert("New Changes!",
                 "Zoo now supports syncing of PDF modifications using Zotero's API! (not webdav)" +

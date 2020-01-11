@@ -21,13 +21,13 @@ import com.mickstarify.zooforzotero.ZoteroStorage.ZoteroDB.*
 import io.reactivex.Completable
 import io.reactivex.CompletableObserver
 import io.reactivex.MaybeObserver
+import io.reactivex.Observable
 import io.reactivex.Observer
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposable
 import io.reactivex.schedulers.Schedulers
 import java.io.FileNotFoundException
 import java.util.*
-import java.util.concurrent.Future
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
@@ -78,7 +78,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
     }
 
     fun shouldIUpdateLibrary(): Boolean {
-        if (!zoteroDB.hasStorage()) {
+        if (!zoteroDB.hasLegacyStorage()) {
             return true
         }
         val currentTimestamp = System.currentTimeMillis()
@@ -247,7 +247,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                             "Message: ${e}"
                         ) {}
 
-                        if (db.hasStorage()) {
+                        if (db.hasLegacyStorage()) {
                             Log.d("zotero", "no internet connection. Using cached copy")
                             db.loadCollectionsFromDatabase().subscribeOn(Schedulers.io())
                                 .observeOn(AndroidSchedulers.mainThread())
@@ -352,7 +352,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                         Log.e("zotero", "${e}")
                         Log.e("zotero", "${e.stackTrace}")
 
-                        if (db.hasStorage()) {
+                        if (db.hasLegacyStorage()) {
                             Log.d("zotero", "no internet connection. Using cached copy")
                             loadItemsLocally()
                         }
@@ -410,6 +410,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                     }
 
                     override fun onError(e: Throwable) {
+                        Log.e("zotero", "got error ${e}")
                     }
 
                 })
@@ -938,7 +939,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
             return
         }
 
-        val modifiedSince = if (db.hasStorage()) {
+        val modifiedSince = if (db.hasLegacyStorage()) {
             db.getLibraryVersion()
         } else {
             -1
@@ -1062,7 +1063,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                             "Message: ${e}"
                         ) {}
 
-                        if (db.hasStorage()) {
+                        if (db.hasLegacyStorage()) {
                             db.loadCollectionsFromDatabase().subscribeOn(Schedulers.io())
                                 .observeOn(AndroidSchedulers.mainThread())
                                 .doOnComplete {
@@ -1124,6 +1125,32 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
         }
     }
 
+    fun hasOldStorage(): Boolean {
+        return zoteroDB.hasLegacyStorage()
+    }
+
+    fun migrateFromOldStorage() {
+        zoteroDB.migrateItemsFromOldStorage().subscribeOn(Schedulers.io())
+            .observeOn(AndroidSchedulers.mainThread()).subscribe(object : CompletableObserver {
+                override fun onComplete() {
+                    downloadLibrary()
+                }
+
+                override fun onSubscribe(d: Disposable) {
+                    Log.d("zotero","Migrating storage from old database")
+                }
+
+                override fun onError(e: Throwable) {
+                    Log.e("zotero", "migration error ${e}")
+                    presenter.createErrorAlert(
+                        "Error migrating data",
+                        "Sorry. There was an error migrating your items. You will need to do a full resync.", {}
+                    )
+                }
+
+            })
+    }
+
     init {
         ((context as Activity).application as ZooForZoteroApplication).component.inject(this)
         firebaseAnalytics = FirebaseAnalytics.getInstance(context)
@@ -1131,9 +1158,9 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
 
         if (auth.hasCredentials()) {
             zoteroAPI = ZoteroAPI(
-                auth.getUserKey()!!,
-                auth.getUserID()!!,
-                auth.getUsername()!!,
+                auth.getUserKey(),
+                auth.getUserID(),
+                auth.getUsername(),
                 attachmentStorageManager
             )
         } else {
@@ -1170,7 +1197,6 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                     preferences.getWebDAVPassword()
                 )
             }
-
         }
     }
 }
