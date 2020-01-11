@@ -23,7 +23,7 @@ class Note() : Parcelable {
     }
 
     constructor(item: ItemPOJO) : this() {
-        parent = item.data["parentItem"] ?: throw ExceptionInInitializerError("No Parent Key")
+        parent = item.data["parentItem"] ?: ""
         key = item.data["key"] ?: throw ExceptionInInitializerError("No Key")
         note = item.data["note"] ?: throw ExceptionInInitializerError("No note")
         version = item.version
@@ -31,7 +31,7 @@ class Note() : Parcelable {
     }
 
     constructor(item: Item) : this() {
-        parent = item.data["parentItem"] ?: throw ExceptionInInitializerError("No Parent Key")
+        parent = item.data["parentItem"] ?: ""
         key = item.data["key"] ?: throw ExceptionInInitializerError("No Key")
         note = item.data["note"] ?: throw ExceptionInInitializerError("No note")
         version = item.getVersion()

@@ -46,7 +46,8 @@ class APIKeyRevokedException(message: String) : RuntimeException(message)
 class AlreadyUploadedException(message: String) : RuntimeException(message)
 class PreconditionFailedException(message: String) : RuntimeException(message)
 class ServerAlreadyExistsException(message: String) : RuntimeException(message)
-
+class ItemLockedException(message: String): RuntimeException(message)
+class ItemChangedSinceException(message: String): RuntimeException(message)
 class ZoteroAPI(
     val API_KEY: String,
     val userID: String,
@@ -383,40 +384,38 @@ class ZoteroAPI(
         })
     }
 
-    fun uploadNote(note: Note) {
-        val zoteroAPI = buildZoteroAPI(useCaching = false, libraryVersion = -1)
-        val call: Call<ResponseBody> = zoteroAPI.writeItem(userID, note.asJsonArray())
-
-        call.enqueue(object : Callback<ResponseBody> {
-            override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
-                if (response.code() == 200) {
-                    Log.d("zotero", "success on note upload")
-                } else {
-                    Log.d("zotero", "got back code ${response.code()} from note upload.")
-                }
-            }
-
-            override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
-            }
-        })
-    }
-
-    fun modifyNote(note: Note, libraryVersion: Int) {
+    fun modifyNote(note: Note, libraryVersion: Int): Completable {
         val zoteroAPI = buildZoteroAPI(true, -1, note.version)
-        val call: Call<ResponseBody> = zoteroAPI.editNote(userID, note.key, note.getJsonNotePatch())
-
-        call.enqueue(object : Callback<ResponseBody> {
-            override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
+        val observable = zoteroAPI.editNote(userID, note.key, note.getJsonNotePatch())
+            .map { response ->
                 if (response.code() == 200 || response.code() == 204) {
                     Log.d("zotero", "success on note modification")
-                } else {
+                } else if (response.code() == 409) {
+                    throw ItemLockedException("Failed to upload note.")
+                } else if (response.code() == 412) {
+                    throw ItemChangedSinceException("item out of date, please sync first.")
+                }else {
                     Log.d("zotero", "got back code ${response.code()} from note upload.")
+                    throw Exception("Server gave back code ${response.code()}")
                 }
+                response
             }
+        return Completable.fromObservable(observable)
+    }
 
-            override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
+    fun uploadNote(note: Note): Completable {
+        val zoteroAPI = buildZoteroAPI(useCaching = false, libraryVersion = -1)
+
+        val observable = zoteroAPI.uploadNote(userID, note.asJsonArray()).map {
+            if (it.code() == 200 || it.code() == 204) {
+                // success
+            } else {
+                throw Exception("Wrong server response code. ${it.code()}")
             }
-        })
+            it
+        }
+
+        return Completable.fromObservable(observable)
     }
 
     fun deleteItem(itemKey: String, version: Int, listener: DeleteItemListener) {
@@ -489,7 +488,7 @@ class ZoteroAPI(
 
         val isGroup = groupID != GroupInfo.NO_GROUP_ID
 
-        val fromIndex = downloadProgress?.nDownloaded?:0
+        val fromIndex = downloadProgress?.nDownloaded ?: 0
 
         val observable = Observable.create(object : ObservableOnSubscribe<ZoteroAPIItemsResponse> {
             override fun subscribe(emitter: ObservableEmitter<ZoteroAPIItemsResponse>) {
@@ -502,7 +501,7 @@ class ZoteroAPI(
                     groupID
                 )
                 val response = s.blockingSingle()
-                if (downloadProgress != null && response.LastModifiedVersion != downloadProgress.libraryVersion){
+                if (downloadProgress != null && response.LastModifiedVersion != downloadProgress.libraryVersion) {
                     // Due to possible miss-syncs, we cannot continue the download.
                     // we will raise an exception which will tell the activity to redownload without the
                     // progress object.

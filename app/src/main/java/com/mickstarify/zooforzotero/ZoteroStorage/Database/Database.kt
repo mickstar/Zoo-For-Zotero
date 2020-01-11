@@ -159,4 +159,8 @@ class ZoteroDatabase @Inject constructor(val context: Context) {
     ): Completable {
         return db.AttachmentInfoDao().updateAttachment(attachmentInfo)
     }
+
+    fun deleteAllItemsForGroup(groupID: Int): Completable {
+        return db.itemDao().deleteAllForGroup(groupID)
+    }
 }

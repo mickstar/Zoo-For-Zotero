@@ -1,6 +1,7 @@
 package com.mickstarify.zooforzotero.ZoteroStorage.Database
 
 import android.os.Parcelable
+import android.text.Html
 import android.util.ArrayMap
 import android.util.Log
 import androidx.room.*
@@ -97,10 +98,22 @@ class Item : Parcelable {
         mappedData!!
     }
 
+    private fun stripHtml(html: String): String {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N) {
+            return Html.fromHtml(html, Html.FROM_HTML_MODE_LEGACY).toString()
+        } else {
+            return Html.fromHtml(html).toString()
+        }
+    }
+
     fun getTitle(): String {
         val title = when (itemType) {
             "case" -> this.getItemData("caseName")
             "statute" -> this.getItemData("nameOfAct")
+            "note" -> {
+                var noteHtml = this.getItemData("note")
+                stripHtml(noteHtml?:"unknown")
+            }
             else -> this.getItemData("title")
         }
 
@@ -147,6 +160,10 @@ class Item : Parcelable {
 
     fun getTagList(): List<String> {
         return tags.map { it.tag }
+    }
+
+    fun hasParent(): Boolean {
+        return this.data.containsKey("parentItem")
     }
 }
 
@@ -252,4 +269,7 @@ interface ItemDao {
 
     @Delete
     fun delete(item: ItemInfo)
+
+    @Query("DELETE FROM iteminfo WHERE `group`=:groupID")
+    fun deleteAllForGroup(groupID: Int): Completable
 }

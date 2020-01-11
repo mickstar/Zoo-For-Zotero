@@ -11,6 +11,8 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.fragment.app.Fragment
+import com.mickstarify.zooforzotero.LibraryActivity.Notes.NoteView
+import com.mickstarify.zooforzotero.LibraryActivity.Notes.NoteInteractionListener
 import com.mickstarify.zooforzotero.R
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Note
 
@@ -18,7 +20,7 @@ val ARG_NOTE = "note"
 
 class ItemNoteEntry : Fragment() {
     private var note: Note? = null
-    private var listener: OnNoteInteractionListener? = null
+    private var listener: NoteInteractionListener? = null
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         arguments?.let {
@@ -44,9 +46,10 @@ class ItemNoteEntry : Fragment() {
         val noteText = view.findViewById<TextView>(R.id.textView_note)
         val htmlText = stripHtml(note?.note ?: "")
         noteText.text = htmlText
+        val noteView = NoteView(context!!, note!!, listener!!)
 
         view.setOnClickListener({
-            showNote()
+            noteView.show()
         })
 
         view.setOnLongClickListener(object : View.OnLongClickListener {
@@ -58,7 +61,7 @@ class ItemNoteEntry : Fragment() {
                         object : DialogInterface.OnClickListener {
                             override fun onClick(dialog: DialogInterface?, item: Int) {
                                 when (item) {
-                                    0 -> showNote()
+                                    0 -> noteView.show()
                                     1 -> editNote()
                                     2 -> deleteNote()
                                 }
@@ -87,15 +90,6 @@ class ItemNoteEntry : Fragment() {
         }
     }
 
-    private fun showNote() {
-        Log.d("zotero", "note clicked")
-        AlertDialog.Builder(this.context)
-            .setTitle("Note")
-            .setMessage(Html.fromHtml(note?.note))
-            .setPositiveButton("Dismiss", { _, _ -> })
-            .show()
-    }
-
     override fun onAttach(context: Context) {
         super.onAttach(context)
     }
@@ -104,16 +98,11 @@ class ItemNoteEntry : Fragment() {
         if (parentFragment == null) {
             return
         }
-        if (parentFragment is OnNoteInteractionListener) {
+        if (parentFragment is NoteInteractionListener) {
             listener = parentFragment
         } else {
             throw RuntimeException(parentFragment.toString() + " must implement OnNoteInteractionListener")
         }
-    }
-
-    interface OnNoteInteractionListener {
-        fun deleteNote(note: Note)
-        fun editNote(note: Note)
     }
 
     companion object {

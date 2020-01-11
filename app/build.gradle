@@ -15,7 +15,7 @@ android {
         applicationId "com.mickstarify.zooforzotero"
         minSdkVersion 21
         targetSdkVersion 29
-        versionCode 27
+        versionCode 28
         versionName "2.2"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "zotero_api_key", apikeyProperties['zotero_api_key'])
@@ -91,10 +91,9 @@ dependencies {
 
     debugImplementation 'com.squareup.leakcanary:leakcanary-android:2.0'
 
-//    // facebook flipper Dependencies
-//    debugImplementation 'com.facebook.flipper:flipper:0.30.1'
-//    debugImplementation 'com.facebook.soloader:soloader:0.8.0'
-//    releaseImplementation 'com.facebook.flipper:flipper-noop:0.30.1'
+    // facebook flipper Dependencies
+    debugImplementation 'com.facebook.flipper:flipper:0.30.1'
+    debugImplementation 'com.facebook.soloader:soloader:0.8.0'
 
     // Room Dependencies
     implementation "androidx.room:room-runtime:2.2.3"

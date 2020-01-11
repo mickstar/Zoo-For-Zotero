@@ -11,6 +11,9 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import androidx.fragment.app.Fragment
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
+import com.mickstarify.zooforzotero.LibraryActivity.Notes.EditNoteDialog
+import com.mickstarify.zooforzotero.LibraryActivity.Notes.NoteInteractionListener
+import com.mickstarify.zooforzotero.LibraryActivity.Notes.onEditNoteChangeListener
 import com.mickstarify.zooforzotero.R
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Note
 import com.mickstarify.zooforzotero.ZoteroStorage.Database.Creator
@@ -22,13 +25,15 @@ import java.util.*
  * Activities containing this fragment MUST implement the
  * [ItemViewFragment.OnListFragmentInteractionListener] interface.
  */
-class ItemViewFragment : BottomSheetDialogFragment(), ItemNoteEntry.OnNoteInteractionListener {
+class ItemViewFragment : BottomSheetDialogFragment(), NoteInteractionListener {
     override fun deleteNote(note: Note) {
         listener?.onNoteDelete(note)
     }
 
     override fun editNote(note: Note) {
-        EditNoteDialog().show(context, note.note, object : onEditNoteChangeListener {
+        EditNoteDialog()
+            .show(context, note.note, object :
+                onEditNoteChangeListener {
             override fun onCancel() {
             }
 
@@ -81,7 +86,9 @@ class ItemViewFragment : BottomSheetDialogFragment(), ItemNoteEntry.OnNoteIntera
     }
 
     private fun showCreateNoteDialog() {
-        EditNoteDialog().show(context, "", object : onEditNoteChangeListener {
+        EditNoteDialog()
+            .show(context, "", object :
+                onEditNoteChangeListener {
             override fun onCancel() {
             }
 

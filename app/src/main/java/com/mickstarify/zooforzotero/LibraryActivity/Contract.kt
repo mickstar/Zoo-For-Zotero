@@ -34,6 +34,10 @@ interface Contract {
             title: String, message: String, yesText: String, noText: String, onYesClick: () -> Unit,
             onNoClick: () -> Unit
         )
+        fun showNote(note: Note)
+
+        fun showBasicSyncAnimation()
+        fun hideBasicSyncAnimation()
     }
 
     interface Presenter {
@@ -73,13 +77,16 @@ interface Contract {
             title: String, message: String, yesText: String, noText: String, onYesClick: () -> Unit,
             onNoClick: () -> Unit
         )
+
+        fun showBasicSyncAnimation()
+        fun hideBasicSyncAnimation()
     }
 
     interface Model {
-        fun downloadLibrary(refresh: Boolean = false)
+        fun downloadLibrary(refresh: Boolean = false, useSmallLoadingAnimation: Boolean = false)
         fun getLibraryItems(): List<Item>
         fun getItemsFromCollection(collectionName: String): List<Item>
-        fun refreshLibrary()
+        fun refreshLibrary(useSmallLoadingAnimation: Boolean = false)
         fun getCollections(): List<Collection>
         fun getAttachments(itemKey: String): List<Item>
         fun downloadAttachment(item: Item)
@@ -88,7 +95,6 @@ interface Contract {
         fun filterCollections(query: String): List<Collection>
         fun filterItems(query: String): List<Item>
         fun isLoaded(): Boolean
-        fun loadCollectionsLocally()
         fun getNotes(itemKey: String): List<Note>
         fun createNote(note: Note)
         fun modifyNote(note: Note)

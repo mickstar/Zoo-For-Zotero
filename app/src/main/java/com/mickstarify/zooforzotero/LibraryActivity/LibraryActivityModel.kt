@@ -20,6 +20,7 @@ import com.mickstarify.zooforzotero.ZoteroStorage.Database.Collection
 import com.mickstarify.zooforzotero.ZoteroStorage.ZoteroDB.*
 import io.reactivex.Completable
 import io.reactivex.CompletableObserver
+import io.reactivex.CompletableSource
 import io.reactivex.MaybeObserver
 import io.reactivex.Observable
 import io.reactivex.Observer
@@ -69,9 +70,9 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
 
     private var zoteroDB: ZoteroDB by zoteroDBPicker
 
-    override fun refreshLibrary() {
+    override fun refreshLibrary(useSmallLoadingAnimation: Boolean) {
         if (!state.usingGroup) {
-            downloadLibrary(refresh = true)
+            downloadLibrary(refresh = true, useSmallLoadingAnimation = useSmallLoadingAnimation)
         } else {
             this.loadGroup(state.currentGroup!!, refresh = true)
         }
@@ -155,8 +156,8 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
     }
 
 
-    fun loadItemsLocally() {
-        zoteroDB.loadItemsFromDatabase().subscribeOn(Schedulers.io())
+    fun loadItemsLocally(db: ZoteroDB = zoteroDB) {
+        db.loadItemsFromDatabase().subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread()).subscribe(object : CompletableObserver {
                 override fun onComplete() {
                     finishGetItems()
@@ -167,27 +168,41 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                 }
 
                 override fun onError(e: Throwable) {
+                    firebaseAnalytics.logEvent(
+                        "failed_loading_items_database",
+                        Bundle().apply { putString("error_message", "${e}") })
                     presenter.createErrorAlert(
                         "Error Loading Items",
-                        "There was an error loading items from storage. ${e.message}",
+                        "There was an error loading items from storage. Error: ${e}",
                         {})
-
-                    zoteroDB.items = LinkedList()
+                    db.destroyItemsDatabase().subscribeOn(Schedulers.io()).subscribe()
+                    db.items = LinkedList()
                     finishGetItems()
                 }
 
             })
     }
 
-    override fun loadCollectionsLocally() {
-        zoteroDB.loadCollectionsFromDatabase().subscribeOn(Schedulers.io())
+    fun loadCollectionsLocally(db: ZoteroDB = zoteroDB) {
+        db.loadCollectionsFromDatabase().subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())
             .doOnComplete(
                 { finishGetCollections() }
-            ).subscribe()
+            ).doOnError { e ->
+                firebaseAnalytics.logEvent(
+                    "failed_loading_collections_database",
+                    Bundle().apply { putString("error_message", "${e}") })
+                presenter.createErrorAlert(
+                    "Error Loading Collections",
+                    "There was an error loading Collections from storage. Error: ${e}",
+                    {})
+                db.destroyItemsDatabase().subscribeOn(Schedulers.io()).subscribe()
+                db.collections = LinkedList()
+                finishGetCollections()
+            }.subscribe()
     }
 
-    override fun downloadLibrary(refresh: Boolean) {
+    override fun downloadLibrary(refresh: Boolean, useSmallLoadingAnimation: Boolean) {
         /* This function updates the local copies of the items and collections databases.*/
         loadingCollections = true
 
@@ -227,11 +242,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
 
                 override fun onError(e: Throwable) {
                     if (e is UpToDateException) {
-                        db.loadCollectionsFromDatabase().subscribeOn(Schedulers.io())
-                            .observeOn(AndroidSchedulers.mainThread())
-                            .doOnComplete(
-                                { finishGetCollections() }
-                            ).subscribe()
+                        loadCollectionsLocally(db)
                     } else if (e is APIKeyRevokedException) {
                         presenter.createErrorAlert(
                             "Invalid API Key",
@@ -249,20 +260,16 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
 
                         if (db.hasLegacyStorage()) {
                             Log.d("zotero", "no internet connection. Using cached copy")
-                            db.loadCollectionsFromDatabase().subscribeOn(Schedulers.io())
-                                .observeOn(AndroidSchedulers.mainThread())
-                                .doOnComplete(
-                                    { finishGetCollections() }
-                                ).subscribe()
+                            loadCollectionsLocally(db)
                         }
                     }
                 }
             })
 
-        loadItems(db, useCaching)
+        loadItems(db, useCaching, useSmallLoadingAnimation)
     }
 
-    private fun loadItems(db: ZoteroDB, useCaching: Boolean) {
+    private fun loadItems(db: ZoteroDB, useCaching: Boolean, useSmallLoadingAnimation: Boolean = false) {
         loadingItems = true
         val progress = db.getDownloadProgress()
 
@@ -273,7 +280,13 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                 db.groupID,
                 downloadProgress = progress
             )
-        itemsObservable.subscribeOn(Schedulers.io())
+        itemsObservable.map { response ->
+            // check to see if there are any items.
+            if (response.isCached == false) {
+                zoteroDatabase.writeItemPOJOs(GroupInfo.NO_GROUP_ID, response.items).blockingAwait()
+            }
+            response // pass it on.
+        }.subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())
             .unsubscribeOn(Schedulers.io())
             .subscribe(object : Observer<ZoteroAPIItemsResponse> {
@@ -289,41 +302,37 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                     }
                     db.destroyDownloadProgress()
                     db.setItemsVersion(libraryVersion)
-                    db.loadItemsFromDatabase().subscribeOn(Schedulers.io())
-                        .observeOn(AndroidSchedulers.mainThread())
-                        .doOnComplete {
-                            finishGetItems()
-                        }.subscribe()
+                    loadItemsLocally(db)
                 }
 
                 override fun onSubscribe(d: Disposable) {
-                    presenter.showLibraryLoadingAnimation()
+                    if (useSmallLoadingAnimation){
+                        presenter.showBasicSyncAnimation()
+                    } else {
+                        presenter.showLibraryLoadingAnimation()
+                    }
                 }
 
                 override fun onNext(response: ZoteroAPIItemsResponse) {
                     if (response.isCached == false) {
                         this.libraryVersion = response.LastModifiedVersion
                         this.downloaded += response.items.size
-                        zoteroDatabase.writeItemPOJOs(GroupInfo.NO_GROUP_ID, response.items)
-                            .subscribeOn(Schedulers.io())
-                            .doOnComplete(
-                                {
-                                    Log.d("zotero", "completed writing entries")
-                                    db.setDownloadProgress(
-                                        ItemsDownloadProgress(
-                                            response.LastModifiedVersion,
-                                            this.downloaded,
-                                            response.totalResults
-                                        )
-                                    )
-                                })
-                            .subscribe()
 
-                        presenter.updateLibraryRefreshProgress(
-                            downloaded,
-                            response.totalResults,
-                            ""
-                        )
+                        if (this.downloaded < response.totalResults)
+                            db.setDownloadProgress(
+                                ItemsDownloadProgress(
+                                    response.LastModifiedVersion,
+                                    this.downloaded,
+                                    response.totalResults
+                                )
+                            )
+                        if (!useSmallLoadingAnimation) {
+                            presenter.updateLibraryRefreshProgress(
+                                downloaded,
+                                response.totalResults,
+                                ""
+                            )
+                        }
                         Log.d("zotero", "got ${this.downloaded} of ${response.totalResults} items")
                     } else {
                         Log.d("zotero", "got back cached response for items.")
@@ -332,7 +341,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
 
                 override fun onError(e: Throwable) {
                     if (e is UpToDateException) {
-                        loadItemsLocally()
+                        loadItemsLocally(db)
                     } else if (e is LibraryVersionMisMatchException) {
                         // we need to redownload items but without the progress.
                         Log.d("zotero", "mismatched, reloading items.")
@@ -351,11 +360,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                         presenter.createErrorAlert("Error downloading items", "message: ${e}", {})
                         Log.e("zotero", "${e}")
                         Log.e("zotero", "${e.stackTrace}")
-
-                        if (db.hasLegacyStorage()) {
-                            Log.d("zotero", "no internet connection. Using cached copy")
-                            loadItemsLocally()
-                        }
+                        loadItemsLocally(db)
                     }
                 }
             })
@@ -389,34 +394,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
             presenter.redisplayItems()
         }
 
-        if (preferences.firstRunForVersion27()) {
-            zoteroDB.scanAndIndexAttachments(attachmentStorageManager)
-                .subscribeOn(Schedulers.io()).observeOn(AndroidSchedulers.mainThread())
-                .subscribe(object : Observer<IndexFilesProgress> {
-                    override fun onComplete() {
-                        presenter.hideLibraryLoadingAnimation()
-                    }
-
-                    override fun onSubscribe(d: Disposable) {
-                        presenter.showLibraryLoadingAnimation()
-                    }
-
-                    override fun onNext(t: IndexFilesProgress) {
-                        presenter.updateLibraryRefreshProgress(
-                            t.currentIndex,
-                            t.totalNumber,
-                            message = "Indexing ${t.currentFilename}\nProgress: ${t.currentIndex} of ${t.totalNumber}"
-                        )
-                    }
-
-                    override fun onError(e: Throwable) {
-                        Log.e("zotero", "got error ${e}")
-                    }
-
-                })
-        } else {
-            this.checkAllAttachmentsForModification()
-        }
+        this.checkAllAttachmentsForModification()
     }
 
     override fun getCollections(): List<Collection> {
@@ -631,6 +609,31 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
             return
         }
         zoteroAPI.uploadNote(note)
+            .subscribeOn(Schedulers.io())
+            .observeOn(AndroidSchedulers.mainThread())
+            .subscribe(object : CompletableObserver {
+                override fun onComplete() {
+                    presenter.hideBasicSyncAnimation()
+                    loadItems(db = zoteroDB, useCaching = true, useSmallLoadingAnimation = true)
+                    presenter.makeToastAlert("Successfully created your note")
+                }
+
+                override fun onSubscribe(d: Disposable) {
+                    presenter.showBasicSyncAnimation()
+                }
+
+                override fun onError(e: Throwable) {
+                    firebaseAnalytics.logEvent(
+                        "create_note_error",
+                        Bundle().apply { putString("error_message", e.toString()) })
+                    presenter.createErrorAlert(
+                        "Error creating note",
+                        "An error occurred while trying to create your note. Message: ${e}",
+                        {})
+                }
+            })
+
+
     }
 
     override fun modifyNote(note: Note) {
@@ -640,6 +643,43 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
             return
         }
         zoteroAPI.modifyNote(note, zoteroDB.getLibraryVersion())
+            .subscribeOn(Schedulers.io())
+            .observeOn(AndroidSchedulers.mainThread())
+            .subscribe(object : CompletableObserver {
+                override fun onComplete() {
+                    presenter.hideBasicSyncAnimation()
+                    loadItems(db = zoteroDB, useCaching = true, useSmallLoadingAnimation = true)
+                    presenter.makeToastAlert("Successfully modified your note")
+                }
+
+                override fun onSubscribe(d: Disposable) {
+                    presenter.showBasicSyncAnimation()
+                }
+
+                override fun onError(e: Throwable) {
+                    firebaseAnalytics.logEvent(
+                        "modify_note_error",
+                        Bundle().apply { putString("error_message", e.toString()) })
+                    if (e is ItemLockedException) {
+                        presenter.createErrorAlert(
+                            "Error modifying note",
+                            "The note you are editing has been locked or you do not have permission to change it.",
+                            {})
+                    } else if (e is ItemChangedSinceException) {
+                        presenter.createErrorAlert(
+                            "Error modifying note",
+                            "The version on Zotero's servers is newer than your local copy. Please refresh your library.",
+                            {})
+
+                    } else {
+                        presenter.createErrorAlert(
+                            "Error modifying note",
+                            "An error occurred while trying to create your note. Message: ${e}",
+                            {})
+                    }
+                    presenter.hideBasicSyncAnimation()
+                }
+            })
     }
 
     override fun deleteNote(note: Note) {
@@ -954,21 +994,28 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                 groupID = group.id,
                 downloadProgress = null
             )
-        groupItemObservable.subscribeOn(Schedulers.io())
+        groupItemObservable.map { response ->
+            // check to see if there are any items.
+            if (response.isCached == false) {
+                zoteroDatabase.writeItemPOJOs(group.id, response.items).blockingAwait()
+            }
+            response // pass it on.
+        }.subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())
             .unsubscribeOn(Schedulers.io())
             .subscribe(object : Observer<ZoteroAPIItemsResponse> {
                 var libraryVersion = -1
                 var downloaded = 0
                 override fun onComplete() {
+                    if (db.getLibraryVersion() > -1) {
+                        if (downloaded == 0) {
+                            presenter.makeToastAlert("Already up to date.")
+                        } else {
+                            presenter.makeToastAlert("Updated ${downloaded} items.")
+                        }
+                    }
                     db.setItemsVersion(libraryVersion)
-                    db.loadItemsFromDatabase().subscribeOn(Schedulers.io())
-                        .observeOn(AndroidSchedulers.mainThread())
-                        .doOnComplete {
-                            if (db.collections != null) {
-                                finishLoadingGroups(group)
-                            }
-                        }.subscribe()
+                    finishLoadingGroups(group)
                 }
 
                 override fun onSubscribe(d: Disposable) {
@@ -976,15 +1023,9 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                 }
 
                 override fun onNext(response: ZoteroAPIItemsResponse) {
-                    assert(response.isCached == false)
-                    this.libraryVersion = response.LastModifiedVersion
                     if (response.isCached == false) {
                         this.libraryVersion = response.LastModifiedVersion
                         this.downloaded += response.items.size
-                        zoteroDatabase.writeItemPOJOs(group.id, response.items)
-                            .subscribeOn(Schedulers.io())
-                            .doOnComplete({ Log.d("zotero", "completed writing entries") })
-                            .subscribe()
 
                         presenter.updateLibraryRefreshProgress(
                             downloaded,
@@ -999,21 +1040,15 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
 
                 override fun onError(e: Throwable) {
                     if (e is UpToDateException) {
-                        db.loadItemsFromDatabase().doOnComplete {
-                            if (db.collections != null) {
-                                finishLoadingGroups(group)
-                            }
-                        }.subscribeOn(Schedulers.io()).observeOn(AndroidSchedulers.mainThread())
-                            .subscribe()
-
-
+                        loadItemsLocally(db)
                     } else {
+                        val bundle = Bundle()
+                        bundle.putString("error_message", e.message)
+                        firebaseAnalytics.logEvent("error_download_group_items", bundle)
+                        presenter.createErrorAlert("Error downloading items", "message: ${e}", {})
                         Log.e("zotero", "${e}")
                         Log.e("zotero", "${e.stackTrace}")
-                        presenter.createErrorAlert(
-                            "Error loading Group Items",
-                            "Error loading the items from the group. ${e.message}",
-                            {})
+                        loadItemsLocally(db)
                     }
                 }
             })
@@ -1063,15 +1098,13 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                             "Message: ${e}"
                         ) {}
 
-                        if (db.hasLegacyStorage()) {
-                            db.loadCollectionsFromDatabase().subscribeOn(Schedulers.io())
-                                .observeOn(AndroidSchedulers.mainThread())
-                                .doOnComplete {
-                                    if (db.items != null) {
-                                        finishLoadingGroups(group)
-                                    }
-                                }.subscribe()
-                        }
+                        db.loadCollectionsFromDatabase().subscribeOn(Schedulers.io())
+                            .observeOn(AndroidSchedulers.mainThread())
+                            .doOnComplete {
+                                if (db.items != null) {
+                                    finishLoadingGroups(group)
+                                }
+                            }.subscribe()
                     }
                 }
             })
@@ -1129,23 +1162,31 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
         return zoteroDB.hasLegacyStorage()
     }
 
+    //TODO i will delete this code next version. (just for version 2.2)
     fun migrateFromOldStorage() {
-        zoteroDB.migrateItemsFromOldStorage().subscribeOn(Schedulers.io())
+        zoteroDB.migrateItemsFromOldStorage().andThen(
+            Completable.fromAction {
+                zoteroDB.scanAndIndexAttachments(attachmentStorageManager)
+                    .blockingSubscribe()
+            }
+        ).subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread()).subscribe(object : CompletableObserver {
                 override fun onComplete() {
                     downloadLibrary()
                 }
 
                 override fun onSubscribe(d: Disposable) {
-                    Log.d("zotero","Migrating storage from old database")
+                    Log.d("zotero", "Migrating storage from old database")
                 }
 
                 override fun onError(e: Throwable) {
                     Log.e("zotero", "migration error ${e}")
                     presenter.createErrorAlert(
                         "Error migrating data",
-                        "Sorry. There was an error migrating your items. You will need to do a full resync.", {}
+                        "Sorry. There was an error migrating your items. You will need to do a full resync.",
+                        {}
                     )
+                    zoteroDB.deleteLegacyStorage()
                 }
 
             })
@@ -1175,9 +1216,6 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
 
         checkAttachmentStorageAccess()
 
-        if (preferences.firstRunForVersion24()) {
-            zoteroDB.setItemsVersion(-1) // forces a full refresh for collections
-        }
         /*Do to a change in implementation this code will transition webdav configs.*/
         if (preferences.firstRunForVersion25()) {
             if (preferences.isWebDAVEnabled()) {
