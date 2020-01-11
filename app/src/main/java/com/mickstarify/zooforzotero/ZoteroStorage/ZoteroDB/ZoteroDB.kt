@@ -326,13 +326,13 @@ class ZoteroDB constructor(
     fun getDownloadProgress(): ItemsDownloadProgress? {
         val sharedPreferences = context.getSharedPreferences(namespace, MODE_PRIVATE)
         val nDownload = sharedPreferences.getInt("downloadedAmount", 0)
-        if (nDownload == 0){
+        if (nDownload == 0) {
             return null
         }
 
         val total = sharedPreferences.getInt("total", 0)
         val downloadVersion = sharedPreferences.getInt("downloadVersion", 0)
-        if (nDownload == 0 || total == nDownload){
+        if (nDownload == 0 || total == nDownload) {
             // completed job. there is no download progress.
             return null
         }
@@ -414,7 +414,7 @@ class ZoteroDB constructor(
         return items?.filter { it -> it.itemKey == itemKey }?.firstOrNull()
     }
 
-    fun hasMd5Key(item: Item): Boolean {
+    fun hasMd5Key(item: Item, onlyWebdav: Boolean = false): Boolean {
         if (attachmentInfo == null) {
             Log.e("zotero", "error attachment metadata isn't loaded")
             return false
@@ -428,10 +428,14 @@ class ZoteroDB constructor(
             Log.d("zotero", "No md5 key available for ${item.itemKey}")
             return false
         }
+        if (onlyWebdav && attachmentInfo.downloadedFrom == AttachmentInfo.ZOTEROAPI) {
+            // we are downloading from webdav, we should not care about the zotero api's md5.
+            return false
+        }
         return true
     }
 
-    fun getMd5Key(item: Item): String {
+    fun getMd5Key(item: Item, onlyWebdav: Boolean = false): String {
         if (attachmentInfo == null) {
             Log.e("zotero", "error attachment metadata isn't loaded")
             return ""
@@ -441,6 +445,11 @@ class ZoteroDB constructor(
             Log.d("zotero", "No metadata available for ${item.itemKey}")
             return ""
         }
+        if (onlyWebdav && attachmentInfo.downloadedFrom == AttachmentInfo.ZOTEROAPI) {
+            // we are downloading from webdav, we should not care about the zotero api's md5.
+            return ""
+        }
+
         return attachmentInfo.md5Key
     }
 
