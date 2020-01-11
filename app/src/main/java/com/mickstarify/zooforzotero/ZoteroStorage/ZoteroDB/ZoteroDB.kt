@@ -8,8 +8,10 @@ import android.util.ArrayMap
 import android.util.Log
 import androidx.room.Index
 import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import com.mickstarify.zooforzotero.ZooForZoteroApplication
 import com.mickstarify.zooforzotero.ZoteroAPI.DownloadProgress
+import com.mickstarify.zooforzotero.ZoteroAPI.Model.ItemPOJO
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Note
 import com.mickstarify.zooforzotero.ZoteroStorage.AttachmentStorageManager
 import com.mickstarify.zooforzotero.ZoteroStorage.Database.AttachmentInfo
@@ -23,6 +25,7 @@ import io.reactivex.disposables.Disposable
 import io.reactivex.functions.Consumer
 import io.reactivex.schedulers.Schedulers
 import java.io.File
+import java.io.InputStreamReader
 import java.io.OutputStreamWriter
 import java.util.*
 import javax.inject.Inject
@@ -183,7 +186,7 @@ class ZoteroDB constructor(
     }
 
 
-    fun hasStorage(): Boolean {
+    fun hasLegacyStorage(): Boolean {
         val itemsFile = context.getFileStreamPath(ITEMS_FILENAME)
         return (itemsFile.exists())
     }
@@ -451,6 +454,33 @@ class ZoteroDB constructor(
         }
 
         return attachmentInfo.md5Key
+    }
+
+    fun migrateItemsFromOldStorage(): Completable{
+        val gson = Gson()
+        val typeToken = object : TypeToken<List<ItemPOJO>>() {}.type
+        val itemPojos: List<ItemPOJO>
+        try {
+            val itemsJsonReader = InputStreamReader(context.openFileInput(ITEMS_FILENAME))
+            itemPojos = gson.fromJson(itemsJsonReader, typeToken)
+            itemsJsonReader.close()
+
+        } catch (e: Exception) {
+            Log.e("zotero", "error loading items from storage, deleting file.")
+            this.deleteLocalStorage()
+            throw Exception("error loading items")
+        }
+        return zoteroDatabase.writeItemPOJOs(groupID, itemPojos).andThen(
+            this.loadItemsFromDatabase()
+        ).andThen(Completable.fromAction {
+            val libraryVersion = this.getLibraryVersion()
+            this.deleteLocalStorage()
+            this.setItemsVersion(libraryVersion)
+        })
+    }
+
+    fun loadItemsFromStorage() {
+
     }
 
     fun scanAndIndexAttachments(attachmentStorageManager: AttachmentStorageManager): io.reactivex.Observable<IndexFilesProgress> {
