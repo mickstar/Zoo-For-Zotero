@@ -26,6 +26,8 @@ import com.google.firebase.analytics.FirebaseAnalytics
 import com.mickstarify.zooforzotero.AttachmentManager.AttachmentManager
 import com.mickstarify.zooforzotero.LibraryActivity.ItemView.ItemAttachmentEntry
 import com.mickstarify.zooforzotero.LibraryActivity.ItemView.ItemViewFragment
+import com.mickstarify.zooforzotero.LibraryActivity.Notes.NoteView
+import com.mickstarify.zooforzotero.LibraryActivity.Notes.NoteInteractionListener
 import com.mickstarify.zooforzotero.LibraryActivity.WebDAV.WebDAVSetup
 import com.mickstarify.zooforzotero.R
 import com.mickstarify.zooforzotero.SettingsActivity
@@ -40,7 +42,9 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
     NavigationView.OnNavigationItemSelectedListener,
     SwipeRefreshLayout.OnRefreshListener,
     ItemViewFragment.OnItemFragmentInteractionListener,
-    ItemAttachmentEntry.OnAttachmentFragmentInteractionListener {
+    ItemAttachmentEntry.OnAttachmentFragmentInteractionListener,
+        NoteInteractionListener
+{
 
     private lateinit var presenter: Contract.Presenter
     private lateinit var firebaseAnalytics: FirebaseAnalytics
@@ -331,9 +335,24 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
 
     }
 
+    override fun showNote(note: Note){
+        val noteView = NoteView(this, note, this)
+        noteView.show()
+    }
+
     override fun closeItemView() {
         itemView?.dismiss()
         itemView = null
+    }
+
+    override fun showBasicSyncAnimation() {
+        val swipeRefresh = findViewById<SwipeRefreshLayout>(R.id.library_swipe_refresh)
+        swipeRefresh.isRefreshing = true
+    }
+
+    override fun hideBasicSyncAnimation() {
+        val swipeRefresh = findViewById<SwipeRefreshLayout>(R.id.library_swipe_refresh)
+        swipeRefresh.isRefreshing = false
     }
 
     @Suppress("DEPRECATION")
@@ -504,6 +523,9 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
         constraintLayout.visibility = View.GONE
         progressBar?.visibility = View.GONE
         progressBar = null
+
+        val swipeRefresh = findViewById<SwipeRefreshLayout>(R.id.library_swipe_refresh)
+        swipeRefresh.isRefreshing = false
     }
 
     override fun onResume() {
@@ -545,5 +567,13 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
         const val ACTION_FILTER =
             "com.mickstarify.zooforzotero.intent.action.LIBRARY_FILTER_INTENT"
         const val EXTRA_QUERY = "com.mickstarify.zooforzotero.intent.EXTRA_QUERY_TEXT"
+    }
+
+    override fun deleteNote(note: Note) {
+        presenter.deleteNote(note)
+    }
+
+    override fun editNote(note: Note) {
+        presenter.modifyNote(note)
     }
 }

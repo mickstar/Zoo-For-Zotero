@@ -1,16 +1,13 @@
 package com.mickstarify.zooforzotero.ZoteroStorage.ZoteroDB
 
 import android.app.Activity
-import android.app.Application
 import android.content.Context
 import android.content.Context.MODE_PRIVATE
 import android.util.ArrayMap
 import android.util.Log
-import androidx.room.Index
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.mickstarify.zooforzotero.ZooForZoteroApplication
-import com.mickstarify.zooforzotero.ZoteroAPI.DownloadProgress
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.ItemPOJO
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Note
 import com.mickstarify.zooforzotero.ZoteroStorage.AttachmentStorageManager
@@ -150,10 +147,11 @@ class ZoteroDB constructor(
     fun loadCollectionsFromDatabase(): Completable {
         val observable = zoteroDatabase.getCollections(groupID)
 
-        return Completable.create(CompletableOnSubscribe { emitter ->
-            collections = observable.blockingGet()
-            emitter.onComplete()
-        })
+        return Completable.fromMaybe(zoteroDatabase.getCollections(groupID).doOnSuccess(
+            Consumer {
+                collections = it
+            }
+        ))
     }
 
     fun loadItemsFromDatabase(): Completable {
@@ -172,19 +170,24 @@ class ZoteroDB constructor(
                         }
                     })
                 )
-            )
+            ).andThen(Completable.fromAction {
+//                throw Exception("breh")
+            })
         return completable
     }
 
+    fun destroyItemsDatabase(): Completable {
+        this.clearItemsVersion()
+        return zoteroDatabase.deleteAllItemsForGroup(groupID)
+    }
 
-    /* Deletes our cached copy of the library. */
-    private fun deleteLocalStorage() {
+    /* We used to store the library as a json file which was a pain in the arse for handling modifications.*/
+    fun deleteLegacyStorage() {
         val itemsFile = File(ITEMS_FILENAME)
         if (itemsFile.exists()) {
             itemsFile.delete()
         }
     }
-
 
     fun hasLegacyStorage(): Boolean {
         val itemsFile = context.getFileStreamPath(ITEMS_FILENAME)
@@ -286,7 +289,7 @@ class ZoteroDB constructor(
 
     fun getDisplayableItems(): List<Item> {
         if (items != null) {
-            return items!!.filter { it.itemType != "attachment" && it.itemType != "note" }
+            return items!!.filter { !it.hasParent() }
         } else {
             Log.e("zotero", "error. got request for getDisplayableItems() before items has loaded.")
             return LinkedList()
@@ -456,7 +459,7 @@ class ZoteroDB constructor(
         return attachmentInfo.md5Key
     }
 
-    fun migrateItemsFromOldStorage(): Completable{
+    fun migrateItemsFromOldStorage(): Completable {
         val gson = Gson()
         val typeToken = object : TypeToken<List<ItemPOJO>>() {}.type
         val itemPojos: List<ItemPOJO>
@@ -467,20 +470,16 @@ class ZoteroDB constructor(
 
         } catch (e: Exception) {
             Log.e("zotero", "error loading items from storage, deleting file.")
-            this.deleteLocalStorage()
+            this.deleteLegacyStorage()
             throw Exception("error loading items")
         }
         return zoteroDatabase.writeItemPOJOs(groupID, itemPojos).andThen(
             this.loadItemsFromDatabase()
         ).andThen(Completable.fromAction {
             val libraryVersion = this.getLibraryVersion()
-            this.deleteLocalStorage()
+            this.deleteLegacyStorage()
             this.setItemsVersion(libraryVersion)
         })
-    }
-
-    fun loadItemsFromStorage() {
-
     }
 
     fun scanAndIndexAttachments(attachmentStorageManager: AttachmentStorageManager): io.reactivex.Observable<IndexFilesProgress> {

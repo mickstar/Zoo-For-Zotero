@@ -1,4 +1,4 @@
-package com.mickstarify.zooforzotero.LibraryActivity.ItemView
+package com.mickstarify.zooforzotero.LibraryActivity.Notes
 
 import android.app.AlertDialog
 import android.content.Context

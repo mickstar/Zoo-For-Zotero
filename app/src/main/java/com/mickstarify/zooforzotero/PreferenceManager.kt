@@ -177,17 +177,6 @@ class PreferenceManager @Inject constructor(context: Context) {
         return sharedPreferences.getBoolean("attachments_uploading_enabled", true)
     }
 
-    fun firstRunForVersion24(): Boolean {
-        /*check to see if this is the first time the user is opening on version 2.1 (21)*/
-        val firstRun = sharedPreferences.getBoolean("firstrun_version24", true)
-        if (firstRun) {
-            val editor = sharedPreferences.edit()
-            editor.putBoolean("firstrun_version24", false)
-            editor.apply()
-        }
-        return firstRun
-    }
-
     fun firstRunForVersion25(): Boolean {
         /*check to see if this is the first time the user is opening on version 2.1c (25)*/
         val firstRun = sharedPreferences.getBoolean("firstrun_version25", true)
@@ -200,12 +189,12 @@ class PreferenceManager @Inject constructor(context: Context) {
 
     }
 
-    fun firstRunForVersion27(): Boolean {
+    fun firstRunForVersion27(check: Int=1): Boolean {
         /*check to see if this is the first time the user is opening on version 2.2 (27)*/
-        val firstRun = sharedPreferences.getBoolean("firstrun_version27", true)
+        val firstRun = sharedPreferences.getBoolean("firstrun_version27_${check}", true)
         if (firstRun) {
             val editor = sharedPreferences.edit()
-            editor.putBoolean("firstrun_version27", false)
+            editor.putBoolean("firstrun_version27_${check}", false)
             editor.apply()
         }
         return firstRun

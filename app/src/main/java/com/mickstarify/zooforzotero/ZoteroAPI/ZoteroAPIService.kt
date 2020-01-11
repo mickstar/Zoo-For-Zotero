@@ -92,12 +92,18 @@ interface ZoteroAPIService {
         @Body json: JsonArray
     ): Call<ResponseBody>
 
+    @POST("users/{user}/items")
+    fun uploadNote(
+        @Path("user") user: String,
+        @Body json: JsonArray
+    ): Observable<Response<ResponseBody>>
+
     @PATCH("users/{user}/items/{itemKey}")
     fun editNote(
         @Path("user") user: String,
         @Path("itemKey") itemKey: String,
         @Body json: JsonObject
-    ): Call<ResponseBody>
+    ): Observable<Response<ResponseBody>>
 
     @DELETE("users/{user}/items/{itemKey}")
     fun deleteItem(

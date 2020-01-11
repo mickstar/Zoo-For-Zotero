@@ -171,6 +171,14 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
         view.createYesNoPrompt(title, message, yesText, noText, onYesClick, onNoClick)
     }
 
+    override fun showBasicSyncAnimation() {
+        view.showBasicSyncAnimation()
+    }
+
+    override fun hideBasicSyncAnimation() {
+        view.hideBasicSyncAnimation()
+    }
+
     override fun openAttachment(item: Item) {
         model.openAttachment(item)
     }
@@ -203,10 +211,12 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
         item: Item,
         longPress: Boolean
     ) {
+        Log.d("zotero", "pressed ${item.itemType}")
         if (item.itemType == "attachment") {
             this.openAttachment(item)
         } else if (item.itemType == "note") {
-            //todo implement note opening
+            val note = Note(item)
+            view.showNote(note)
         } else {
             val itemAttachments = model.getAttachments(item.itemKey)
             if (!longPress && model.preferences.shouldOpenPDFOnOpen()) {
@@ -320,6 +330,7 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
         view.showLoadingAnimation(true)
         view.showLibraryContentDisplay("Loading your library content.")
 
+        //TODO i will delete this code next version. (just for version 2.2)
         if (model.preferences.firstRunForVersion27() && model.hasOldStorage()) {
             model.migrateFromOldStorage()
         } else {
@@ -331,13 +342,6 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
                 model.loadItemsLocally()
                 model.loadGroups()
             }
-        }
-        if (model.preferences.firstRunForVersion24()) {
-            view.createErrorAlert("New Changes!",
-                "Zoo now supports syncing of PDF modifications using Zotero's API! (not webdav)" +
-                        "\nFor this to work you will need to use a PDF editor that saves modifications directly to the file " +
-                        "rather than creating a copy of the file. I recommend using Xodo PDF Viewer. Adobe Acrobat will not work.",
-                {})
         }
     }
 
