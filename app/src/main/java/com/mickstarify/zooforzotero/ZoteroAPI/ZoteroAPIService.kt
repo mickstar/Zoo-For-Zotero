@@ -105,6 +105,13 @@ interface ZoteroAPIService {
         @Body json: JsonObject
     ): Observable<Response<ResponseBody>>
 
+    @PATCH("users/{user}/items/{itemKey}")
+    fun patchItem(
+        @Path("user") user: String,
+        @Path("itemKey") itemKey: String,
+        @Body json: JsonObject
+    ): Observable<Response<ResponseBody>>
+
     @DELETE("users/{user}/items/{itemKey}")
     fun deleteItem(
         @Path("user") user: String,

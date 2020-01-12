@@ -165,6 +165,14 @@ class Item : Parcelable {
     fun hasParent(): Boolean {
         return this.data.containsKey("parentItem")
     }
+
+    fun getMtime(): Long {
+        if (data.containsKey("mtime")){
+            return data["mtime"]!!.toLong()
+        }
+        Log.e("zotero", "no mtime available for ${itemKey}")
+        return 0L
+    }
 }
 
 @Entity(

@@ -4,6 +4,7 @@ import android.content.Context
 import android.net.Uri
 import android.util.Log
 import com.google.gson.Gson
+import com.google.gson.JsonObject
 import com.mickstarify.zooforzotero.BuildConfig
 import com.mickstarify.zooforzotero.PreferenceManager
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.*
@@ -26,6 +27,7 @@ import okhttp3.logging.HttpLoggingInterceptor
 import org.jetbrains.anko.doAsync
 import org.jetbrains.anko.onComplete
 import org.jetbrains.anko.runOnUiThread
+import org.json.JSONObject
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -46,8 +48,8 @@ class APIKeyRevokedException(message: String) : RuntimeException(message)
 class AlreadyUploadedException(message: String) : RuntimeException(message)
 class PreconditionFailedException(message: String) : RuntimeException(message)
 class ServerAlreadyExistsException(message: String) : RuntimeException(message)
-class ItemLockedException(message: String): RuntimeException(message)
-class ItemChangedSinceException(message: String): RuntimeException(message)
+class ItemLockedException(message: String) : RuntimeException(message)
+class ItemChangedSinceException(message: String) : RuntimeException(message)
 class ZoteroAPI(
     val API_KEY: String,
     val userID: String,
@@ -55,9 +57,8 @@ class ZoteroAPI(
     val attachmentStorageManager: AttachmentStorageManager
 ) {
     private fun buildZoteroAPI(
-        useCaching: Boolean,
-        libraryVersion: Int,
         ifModifiedSinceVersion: Int = -1,
+        ifUnmodifiedSinceVersion: Int = -1,
         md5IfMatch: String = "",
         contentType: String = ""
     ): ZoteroAPIService {
@@ -76,14 +77,17 @@ class ZoteroAPI(
                     val request = chain.request().newBuilder()
                         .addHeader("Zotero-API-Version", "3")
                         .addHeader("Zotero-API-Key", API_KEY)
-                    if (useCaching && libraryVersion > 0) {
-                        request.addHeader("If-Modified-Since-Version", "$libraryVersion")
-                    }
-                    if (ifModifiedSinceVersion >= 0) {
-                        request.addHeader("If-Unmodified-Since-Version", "$ifModifiedSinceVersion")
+                    if (ifModifiedSinceVersion != -1) {
+                        request.addHeader("If-Modified-Since-Version", "$ifModifiedSinceVersion")
                     }
                     if (md5IfMatch != "") {
                         request.addHeader("If-Match", md5IfMatch)
+                    }
+                    if (ifUnmodifiedSinceVersion != -1) {
+                        request.addHeader(
+                            "If-Unmodified-Since-Version",
+                            "$ifUnmodifiedSinceVersion"
+                        )
 
                     }
                     if (contentType != "") {
@@ -124,60 +128,11 @@ class ZoteroAPI(
             .build().create(ZoteroAPIService::class.java)
     }
 
-    private fun downloadItemWithWebDAV(
-        context: Context,
-        item: Item,
-        listener: ZoteroAPIDownloadAttachmentListener
-    ) {
-        val preferenceManager = PreferenceManager(context)
-        val webdav = Webdav(
-            preferenceManager.getWebDAVAddress(),
-            preferenceManager.getWebDAVUsername(),
-            preferenceManager.getWebDAVPassword()
-        )
-
-        webdav.downloadFileRx(item, context, attachmentStorageManager)
-            .subscribeOn(Schedulers.io())
-            .observeOn(AndroidSchedulers.mainThread())
-            .subscribe(object : Observer<DownloadProgress> {
-                var receivedMetadata = false
-                override fun onComplete() {
-                    listener.onComplete()
-                }
-
-                override fun onSubscribe(d: Disposable) {
-                }
-
-                override fun onNext(t: DownloadProgress) {
-                    if (!receivedMetadata) {
-                        receivedMetadata = true
-                        listener.receiveMetadata(t.mtime, t.metadataHash)
-                    }
-
-                    Log.d("zotero", "downloading webdav got ${t.progress} of ${t.total}")
-                    listener.onProgressUpdate(t.progress, t.total)
-                }
-
-                override fun onError(e: Throwable) {
-                    if (e is IOException) {
-                        listener.onFailure("Error, ${item.itemKey.toUpperCase(Locale.ROOT)}.zip was not found on the webDAV server.")
-                    } else if (e is IllegalArgumentException) {
-                        listener.onFailure("Error, your WebDAV is misconfigured. Please disable WebDAV in your settings, or reconfigure WebDAV from the menu.")
-                    } else {
-                        Log.e("zotero", "webdav download got error ${e}")
-                        listener.onFailure(e.toString())
-                    }
-                }
-
-            })
-    }
-
     fun downloadItemRx(
         item: Item,
         groupID: Int = GroupInfo.NO_GROUP_ID,
         context: Context
     ): Observable<DownloadProgress> {
-        /*Do not use yet.*/
 
         val useGroup = groupID != GroupInfo.NO_GROUP_ID
 
@@ -200,7 +155,7 @@ class ZoteroAPI(
             //stops here.
         }
 
-        val service = buildZoteroAPI(useCaching = false, libraryVersion = -1)
+        val service = buildZoteroAPI()
 
         val outputFileStream = attachmentStorageManager.getItemOutputStream(item)
 
@@ -244,6 +199,7 @@ class ZoteroAPI(
                             }
                             progress += read
                         }
+                        emitter.onComplete()
                     } else {
                         Log.e("zotero", "network error. response: ${response.body()}")
                         throw RuntimeException("Invalid server response code ${response.code()}")
@@ -251,117 +207,17 @@ class ZoteroAPI(
                 }
 
                 override fun onError(e: Throwable) {
-                    Log.e("zotero", "download attachment got error $e")
-                    if (!emitter.isDisposed) {
-                        emitter.onError(e)
-                    }
+                    Log.e("zotero", "download attachment got error $e  ${emitter.isDisposed}")
+                    emitter.onError(Exception("hello"))
                 }
             })
         }
         return observable
     }
 
-    fun downloadItem(
-        context: Context,
-        item: Item,
-        groupID: Int = GroupInfo.NO_GROUP_ID,
-        listener: ZoteroAPIDownloadAttachmentListener
-    ) {
-        val useGroup = groupID != GroupInfo.NO_GROUP_ID
-
-        if (item.itemType != "attachment") {
-            Log.d("zotero", "got download request for item that isn't attachment")
-        }
-
-        val preferenceManager = PreferenceManager(context)
-
-        val checkMd5 =
-            !preferenceManager.isWebDAVEnabled() // we're not checking MD5 is the user isn't on zotero api.
-
-        // TODO REPLACE.
-        if (attachmentStorageManager.checkIfAttachmentExists(item, checkMd5)) {
-            listener.onComplete()
-            return
-        }
-
-
-        // we will delegate to a webdav download if the user has webdav enabled.
-        // When the user has webdav enabled on personal account or for groups are the only two conditions.
-        if ((!useGroup && preferenceManager.isWebDAVEnabled()) || (useGroup && preferenceManager.isWebDAVEnabledForGroups())) {
-            return downloadItemWithWebDAV(context, item, listener)
-            //stops here.
-        }
-
-        val zoteroAPI = buildZoteroAPI(useCaching = false, libraryVersion = -1)
-        val call: Call<ResponseBody> = if (useGroup) {
-            zoteroAPI.getAttachmentFileFromGroup(groupID, item.itemKey)
-        } else {
-            zoteroAPI.getItemFile(userID, item.itemKey)
-        }
-        call.enqueue(object : Callback<ResponseBody> {
-            override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
-                val inputStream = response.body()?.byteStream()
-                val outputFileStream = attachmentStorageManager.getItemOutputStream(item)
-                val fileSize = response.body()?.contentLength() ?: 0
-                if (inputStream == null) {
-                    listener.onNetworkFailure()
-                    return
-                }
-                if (response.code() == 200) {
-                    val task = doAsync {
-                        var failure = false
-                        val buffer = ByteArray(32768)
-                        var read = inputStream.read(buffer)
-                        var progress: Long = 0
-                        var priorProgress: Long = -1
-                        while (read > 0) {
-                            // I Should just bite the bullet and implement rxJava...
-                            context.runOnUiThread {
-                                if (priorProgress != progress) {
-                                    listener.onProgressUpdate(progress, fileSize)
-                                    priorProgress = progress
-                                }
-                            }
-                            try {
-                                outputFileStream.write(buffer, 0, read)
-                                read = inputStream.read(buffer)
-                            } catch (e: java.io.InterruptedIOException) {
-                                outputFileStream.close()
-                                inputStream.close()
-                                failure = true
-                                break
-                            }
-                            progress += read
-                        }
-                        if (read > 0) {
-                            failure = true
-                        }
-
-                        onComplete {
-                            outputFileStream.close()
-                            inputStream.close()
-                            if (failure == false) {
-                                listener.onComplete()
-                            }
-                        }
-                    }
-                    listener.receiveTask(task)
-                } else {
-                    Log.e("zotero", "Error downloading, servers gave code ${response.code()}")
-                    listener.onNetworkFailure()
-                }
-            }
-
-            override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
-                Log.e("zotero", "Download Items(1) Failure, message: ${t.message}")
-                listener.onNetworkFailure()
-            }
-        })
-    }
-
     fun testConnection(callback: (success: Boolean, message: String) -> (Unit)) {
         println("testConnection()")
-        val zoteroAPI = buildZoteroAPI(useCaching = false, libraryVersion = -1)
+        val zoteroAPI = buildZoteroAPI()
         val call: Call<KeyInfo> = zoteroAPI.getKeyInfo(this.API_KEY)
 
         call.enqueue(object : Callback<KeyInfo> {
@@ -385,8 +241,8 @@ class ZoteroAPI(
     }
 
     fun modifyNote(note: Note, libraryVersion: Int): Completable {
-        val zoteroAPI = buildZoteroAPI(true, -1, note.version)
-        val observable = zoteroAPI.editNote(userID, note.key, note.getJsonNotePatch())
+        val zoteroAPI = buildZoteroAPI(ifUnmodifiedSinceVersion = note.version)
+        val observable = zoteroAPI.patchItem(userID, note.key, note.getJsonNotePatch())
             .map { response ->
                 if (response.code() == 200 || response.code() == 204) {
                     Log.d("zotero", "success on note modification")
@@ -394,7 +250,7 @@ class ZoteroAPI(
                     throw ItemLockedException("Failed to upload note.")
                 } else if (response.code() == 412) {
                     throw ItemChangedSinceException("item out of date, please sync first.")
-                }else {
+                } else {
                     Log.d("zotero", "got back code ${response.code()} from note upload.")
                     throw Exception("Server gave back code ${response.code()}")
                 }
@@ -404,7 +260,7 @@ class ZoteroAPI(
     }
 
     fun uploadNote(note: Note): Completable {
-        val zoteroAPI = buildZoteroAPI(useCaching = false, libraryVersion = -1)
+        val zoteroAPI = buildZoteroAPI()
 
         val observable = zoteroAPI.uploadNote(userID, note.asJsonArray()).map {
             if (it.code() == 200 || it.code() == 204) {
@@ -419,7 +275,7 @@ class ZoteroAPI(
     }
 
     fun deleteItem(itemKey: String, version: Int, listener: DeleteItemListener) {
-        val zoteroAPI = buildZoteroAPI(true, -1, version)
+        val zoteroAPI = buildZoteroAPI(ifUnmodifiedSinceVersion = version)
         val call: Call<ResponseBody> = zoteroAPI.deleteItem(userID, itemKey)
 
         call.enqueue(object : Callback<ResponseBody> {
@@ -437,6 +293,24 @@ class ZoteroAPI(
         })
     }
 
+    fun patchItem(item: Item, patch: JsonObject): Completable {
+        val lastModifiedVersion = item.getVersion()
+        val service = buildZoteroAPI(ifUnmodifiedSinceVersion = lastModifiedVersion)
+        val observable = service.patchItem(userID, item.itemKey, patch).map {response->
+            if (response.code() == 200 || response.code() == 204) {
+                Log.d("zotero", "success on patch")
+            } else if (response.code() == 409) {
+                throw ItemLockedException("You do not have write permission.")
+            } else if (response.code() == 412) {
+                throw ItemChangedSinceException("Local item out of date, please sync first.")
+            } else {
+                Log.d("zotero", "Zotero server gave code ${response.code()} for patch.")
+                throw Exception("Zotero server gave back code ${response.code()}")
+            }
+        }
+        return Completable.fromObservable(observable)
+    }
+
     private fun getItemsFromIndex(
         modificationSinceVersion: Int,
         useCaching: Boolean,
@@ -444,7 +318,7 @@ class ZoteroAPI(
         isGroup: Boolean,
         groupID: Int
     ): Observable<ZoteroAPIItemsResponse> {
-        val service = buildZoteroAPI(useCaching, modificationSinceVersion)
+        val service = buildZoteroAPI(ifModifiedSinceVersion = modificationSinceVersion)
 
         val observable = if (modificationSinceVersion > -1) {
             if (isGroup) {
@@ -537,7 +411,7 @@ class ZoteroAPI(
         index: Int = 0
     ): Observable<ZoteroAPICollectionsResponse> {
         /* Obvservable that gets collections from a certain index. */
-        val service = buildZoteroAPI(useCaching, modificationSinceVersion)
+        val service = buildZoteroAPI(ifModifiedSinceVersion = modificationSinceVersion)
 
         val observable = if (useGroup) {
             service.getCollectionsForGroup(groupID, index)
@@ -603,7 +477,7 @@ class ZoteroAPI(
     }
 
     fun getGroupInfo(): Observable<List<GroupInfo>> {
-        val service = buildZoteroAPI(true, -1)
+        val service = buildZoteroAPI()
         val groupInfo = service.getGroupInfo(userID)
         return groupInfo.map {
             it.map { groupPojo ->
@@ -640,7 +514,7 @@ class ZoteroAPI(
             Log.d("zotero", "no md5key provided for Item: ${attachment.getTitle()}")
             md5Key = "*"
         }
-        val service = buildZoteroAPI(false, -1, md5IfMatch = md5Key)
+        val service = buildZoteroAPI(md5IfMatch = md5Key)
 
         val newMd5 = attachmentStorageManager.calculateMd5(attachment)
         if (md5Key == newMd5) {

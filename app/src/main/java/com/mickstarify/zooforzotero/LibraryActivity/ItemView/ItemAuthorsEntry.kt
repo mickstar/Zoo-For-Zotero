@@ -68,7 +68,6 @@ class ItemAuthorsEntry : Fragment() {
 
 
     interface OnFragmentInteractionListener {
-        // TODO: Update argument type and name
         fun onFragmentInteraction(uri: Uri)
     }
 
