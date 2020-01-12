@@ -421,24 +421,7 @@ class ZoteroDB constructor(
     }
 
     fun hasMd5Key(item: Item, onlyWebdav: Boolean = false): Boolean {
-        if (attachmentInfo == null) {
-            Log.e("zotero", "error attachment metadata isn't loaded")
-            return false
-        }
-        val attachmentInfo = this.attachmentInfo!![item.itemKey]
-        if (attachmentInfo == null) {
-            Log.d("zotero", "No metadata available for ${item.itemKey}")
-            return false
-        }
-        if (attachmentInfo.md5Key == "") {
-            Log.d("zotero", "No md5 key available for ${item.itemKey}")
-            return false
-        }
-        if (onlyWebdav && attachmentInfo.downloadedFrom == AttachmentInfo.ZOTEROAPI) {
-            // we are downloading from webdav, we should not care about the zotero api's md5.
-            return false
-        }
-        return true
+        return getMd5Key(item, onlyWebdav) != ""
     }
 
     fun getMd5Key(item: Item, onlyWebdav: Boolean = false): String {
@@ -448,11 +431,11 @@ class ZoteroDB constructor(
         }
         val attachmentInfo = this.attachmentInfo!![item.itemKey]
         if (attachmentInfo == null) {
+            val md5Key = item.data["md5"]
+            if (md5Key != null){
+                return md5Key
+            }
             Log.d("zotero", "No metadata available for ${item.itemKey}")
-            return ""
-        }
-        if (onlyWebdav && attachmentInfo.downloadedFrom == AttachmentInfo.ZOTEROAPI) {
-            // we are downloading from webdav, we should not care about the zotero api's md5.
             return ""
         }
 

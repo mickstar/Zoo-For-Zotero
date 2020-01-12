@@ -8,6 +8,7 @@ import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import com.google.firebase.analytics.FirebaseAnalytics
+import com.google.gson.JsonObject
 import com.mickstarify.zooforzotero.PreferenceManager
 import com.mickstarify.zooforzotero.SyncSetup.AuthenticationStorage
 import com.mickstarify.zooforzotero.ZooForZoteroApplication
@@ -269,7 +270,11 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
         loadItems(db, useCaching, useSmallLoadingAnimation)
     }
 
-    private fun loadItems(db: ZoteroDB, useCaching: Boolean, useSmallLoadingAnimation: Boolean = false) {
+    private fun loadItems(
+        db: ZoteroDB,
+        useCaching: Boolean,
+        useSmallLoadingAnimation: Boolean = false
+    ) {
         loadingItems = true
         val progress = db.getDownloadProgress()
 
@@ -306,7 +311,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                 }
 
                 override fun onSubscribe(d: Disposable) {
-                    if (useSmallLoadingAnimation){
+                    if (useSmallLoadingAnimation) {
                         presenter.showBasicSyncAnimation()
                     } else {
                         presenter.showLibraryLoadingAnimation()
@@ -567,11 +572,11 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                 }
 
                 override fun onError(e: Throwable) {
-                    if (downloadDisposable?.isDisposed == true) {
-                        return
-                    }
-
                     Log.e("zotero", "got error ${e}")
+//                    if (downloadDisposable?.isDisposed == true) {
+//                        return
+//                    }
+
                     firebaseAnalytics.logEvent(
                         "error_downloading_attachment",
                         Bundle().apply { putString("message", "${e.message}") })
@@ -827,12 +832,10 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                     val item = zoteroDB.getItemWithKey(recentlyOpenedAttachment.itemKey)
                     if (item != null) {
                         try {
-                            if (zoteroDB.hasMd5Key(
+                            val md5Key = zoteroDB.getMd5Key(item)
+                            if (md5Key != "" && attachmentStorageManager.validateMd5ForItem(
                                     item,
-                                    onlyWebdav = preferences.isWebDAVEnabled()
-                                ) && attachmentStorageManager.validateMd5ForItem(
-                                    item,
-                                    zoteroDB.getMd5Key(item)
+                                    md5Key
                                 ) == false
                             ) {
                                 // our attachment has been modified, we will offer to upload.
@@ -841,6 +844,9 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                                     "zotero",
                                     "found change in ${item.getTitle()} ${item.itemKey}"
                                 )
+                            } else {
+                                // the item hasnt changed.
+                                removeFromRecentlyViewed(item)
                             }
                         } catch (e: FileNotFoundException) {
                             Log.d(
@@ -851,9 +857,10 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                         } catch (e: Exception) {
                             Log.e("zotero", "validateMd5 got error $e")
                             val bundle = Bundle().apply {
-                                putString("error_message", e.message)
+                                putString("error_message", e.toString())
                             }
                             firebaseAnalytics.logEvent("error_check_attachments", bundle)
+                            removeFromRecentlyViewed(item)
                         }
                     }
                 }
@@ -886,8 +893,24 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
     }
 
     override fun uploadAttachment(attachment: Item) {
+        val md5Key = attachmentStorageManager.calculateMd5(attachment)
+        var mtime = attachmentStorageManager.getMtime(attachment)
+
+        if (mtime < attachment.getMtime()) {
+            Log.e("zotero", "for some reason our mtime is older than the original???")
+            mtime = attachment.getMtime()
+        }
         if (preferences.isWebDAVEnabled()) {
-            zoteroAPI.uploadAttachmentWithWebdav(attachment, context)
+            zoteroAPI.uploadAttachmentWithWebdav(attachment, context).andThen(
+                Completable.fromAction {
+                    Log.d("zotero", "got to zotero api upload") //TODO REMOVE LINE
+                    // TODO extract this complexity to some other class.
+                    val modificationJsonObject = JsonObject()
+                    modificationJsonObject.addProperty("md5", md5Key)
+                    modificationJsonObject.addProperty("mtime", mtime)
+                    zoteroAPI.patchItem(attachment, modificationJsonObject).blockingAwait()
+                }
+            )
                 .subscribeOn(Schedulers.io()).observeOn(AndroidSchedulers.mainThread()).subscribe(
                     object : CompletableObserver {
                         override fun onComplete() {

@@ -118,7 +118,6 @@ class Webdav(
         return observable
     }
 
-    // TODO FINISH
     fun uploadAttachment(
         attachment: Item,
         attachmentStorageManager: AttachmentStorageManager
