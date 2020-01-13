@@ -26,6 +26,6 @@ val MIGRATION_2_3 = object : Migration(2, 3) {
 
         // delete all old rows from the database (neccessary because i am upgrading the table to add a version record)
         database.execSQL("DELETE FROM `RecentlyOpenedAttachment`")
-        database.execSQL("ALTER TABLE `RecentlyOpenedAttachment` ADD `version` INTEGER NOT NULL")
+        database.execSQL("ALTER TABLE `RecentlyOpenedAttachment` ADD `version` INTEGER NOT NULL DEFAULT 0")
     }
 }

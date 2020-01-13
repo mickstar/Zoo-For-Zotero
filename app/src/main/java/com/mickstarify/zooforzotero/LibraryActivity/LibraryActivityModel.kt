@@ -590,8 +590,6 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                     }
                 }
 
-                //TODO more research on testing for zotero API / crash / dispose.
-
                 override fun onError(e: Throwable) {
                     Log.e("zotero", "got error ${e}")
 //                    if (downloadDisposable?.isDisposed == true) {
@@ -1319,6 +1317,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                 }
 
                 override fun onError(e: Throwable) {
+                    throw(e)
                     Log.e("zotero", "migration error ${e}")
                     presenter.createErrorAlert(
                         "Error migrating data",
