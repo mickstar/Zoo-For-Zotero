@@ -71,10 +71,10 @@ class AttachmentManagerModel(val presenter: Contract.Presenter, val context: Con
     )
 
     override fun cancelDownload() {
+        Log.d("zotero", "canceling download")
         isDownloading = false
         downloadDisposable?.dispose()
         presenter.finishLoadingAnimation()
-        showMetaInformation()
     }
 
     var downloadDisposable: Disposable? = null
@@ -136,6 +136,7 @@ class AttachmentManagerModel(val presenter: Contract.Presenter, val context: Con
                     }
 
                     override fun onError(e: Throwable) {
+                        Log.d("zotero", "got error on api download, $e")
                         status = false
                     }
 
@@ -160,6 +161,7 @@ class AttachmentManagerModel(val presenter: Contract.Presenter, val context: Con
                 }
 
                 override fun onNext(progress: downloadAllProgress) {
+                    Log.d("zotero", "got progress, disposeState= ${downloadDisposable?.isDisposed}")
                     if (progress.status) {
                         localAttachmentSize += attachmentStorageManager.getFileSize(
                             progress.attachment

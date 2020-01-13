@@ -6,7 +6,8 @@ import io.reactivex.Maybe
 
 @Entity(tableName = "RecentlyOpenedAttachment")
 data class RecentlyOpenedAttachment(
-    @PrimaryKey val itemKey: String
+    @PrimaryKey val itemKey: String,
+    @ColumnInfo(name = "version") val version: Int
 ) {
 }
 

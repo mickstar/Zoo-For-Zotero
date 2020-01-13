@@ -425,9 +425,17 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
         /* This method creates an intent to open a PDF for Android. */
 
         Completable.fromAction {
-            zoteroDatabase.addRecentlyOpenedAttachments(RecentlyOpenedAttachment(attachment.itemKey))
-                .blockingAwait()
-        }.subscribeOn(Schedulers.io()).doOnComplete {
+            // used to check attachments for filechanges.
+            if (preferences.isAttachmentUploadingEnabled()) {
+                zoteroDatabase.addRecentlyOpenedAttachments(
+                    RecentlyOpenedAttachment(
+                        attachment.itemKey,
+                        attachment.getVersion()
+                    )
+                )
+                    .blockingAwait()
+            }
+        }.subscribeOn(Schedulers.io()).observeOn(AndroidSchedulers.mainThread()).doOnComplete {
             try {
                 val intent = attachmentStorageManager.openAttachment(attachment)
                 context.startActivity(intent)
@@ -458,6 +466,18 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                             " access. Try changing the storage location to a custom path in settings.",
                     {})
                 firebaseAnalytics.logEvent("open_pdf_illegal_argument_exception", Bundle())
+            } catch (e: FileNotFoundException) {
+                presenter.createErrorAlert("File not found",
+                    "There was an error opening your PDF." +
+                            "Please redownload your file.",
+                    {})
+                firebaseAnalytics.logEvent("open_pdf_file_not_found", Bundle())
+            }
+        }.doOnError {
+            if (it is FileNotFoundException) {
+                Log.d("zotero", "file not found")
+            } else {
+                throw it
             }
         }.subscribe()
     }
@@ -520,7 +540,6 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
             return
         }
         isDownloading = true
-        currentlyDownloadingAttachment = item
 
         zoteroAPI.downloadItemRx(item, state.currentGroup?.id ?: GroupInfo.NO_GROUP_ID, context)
             .subscribeOn(Schedulers.io())
@@ -571,22 +590,38 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                     }
                 }
 
+                //TODO more research on testing for zotero API / crash / dispose.
+
                 override fun onError(e: Throwable) {
                     Log.e("zotero", "got error ${e}")
 //                    if (downloadDisposable?.isDisposed == true) {
 //                        return
 //                    }
 
-                    firebaseAnalytics.logEvent(
-                        "error_downloading_attachment",
-                        Bundle().apply { putString("message", "${e.message}") })
-                    presenter.attachmentDownloadError(
-                        "Error Message: ${e.message}"
-                    )
+                    if (e is ZoteroNotFoundException) {
+                        presenter.attachmentDownloadError(
+                            "The file does not exist on the Zotero server."
+                        )
+                    } else {
+
+                        firebaseAnalytics.logEvent(
+                            "error_downloading_attachment",
+                            Bundle().apply { putString("message", "${e.message}") })
+                        presenter.attachmentDownloadError(
+                            "Error Message: ${e.message}"
+                        )
+                    }
                     isDownloading = false
                 }
 
             })
+    }
+
+
+    override fun cancelAttachmentDownload() {
+        Log.d("zotero", "cancelling download")
+        this.isDownloading = false
+        downloadDisposable?.dispose()
     }
 
     var isDownloading: Boolean = false
@@ -598,13 +633,6 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
             return LinkedList()
         }
         return filterItems(zoteroDB.getItemsWithoutCollection())
-    }
-
-    override fun cancelAttachmentDownload() {
-        this.isDownloading = false
-        downloadDisposable?.dispose()
-        currentlyDownloadingAttachment?.let { attachmentStorageManager.deleteAttachment(it) }
-        currentlyDownloadingAttachment = null
     }
 
     override fun createNote(note: Note) {
@@ -826,7 +854,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
         zoteroDatabase.getRecentlyOpenedAttachments()
             .subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread()).map { listOfRecently ->
-                val itemsToUpload: MutableList<Item> = LinkedList()
+                val itemsToUpload: MutableList<Pair<Item, Int>> = LinkedList()
                 for (recentlyOpenedAttachment in listOfRecently) {
                     Log.d("zotero", "RECENTLY OPENED ${recentlyOpenedAttachment.itemKey}")
                     val item = zoteroDB.getItemWithKey(recentlyOpenedAttachment.itemKey)
@@ -839,7 +867,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                                 ) == false
                             ) {
                                 // our attachment has been modified, we will offer to upload.
-                                itemsToUpload.add(item)
+                                itemsToUpload.add(Pair(item, recentlyOpenedAttachment.version))
                                 Log.d(
                                     "zotero",
                                     "found change in ${item.getTitle()} ${item.itemKey}"
@@ -865,7 +893,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                     }
                 }
                 itemsToUpload
-            }.subscribe(object : MaybeObserver<MutableList<Item>> {
+            }.subscribe(object : MaybeObserver<MutableList<Pair<Item, Int>>> {
                 override fun onComplete() {
                     // do nothing
                 }
@@ -883,13 +911,58 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                     firebaseAnalytics.logEvent("error_check_attachments", bundle)
                 }
 
-                override fun onSuccess(itemsToUpload: MutableList<Item>) {
+                override fun onSuccess(itemsToUpload: MutableList<Pair<Item, Int>>) {
                     if (itemsToUpload.isNotEmpty()) {
-                        presenter.askToUploadAttachments(itemsToUpload)
+                        askToUploadAttachments(itemsToUpload)
                     }
                 }
 
             })
+    }
+
+    fun askToUploadAttachments(changedAttachments: List<Pair<Item, Int>>) {
+        // for the sake of sanity I will only ask to upload 1 attachment.
+        // this is because of limitations of only having 1 upload occur concurrently
+        // and my unwillingness to implement a chaining mechanism for uploads for what i expect to
+        // be a niche power user.
+        val attachment = changedAttachments.first().first
+        val version = changedAttachments.first().second
+        val fileSizeBytes = attachmentStorageManager.getFileSize(
+            attachmentStorageManager.getAttachmentUri(attachment)
+        )
+
+        if (fileSizeBytes == 0L) {
+            Log.e("zotero", "avoiding uploading a garbage PDF")
+            FirebaseAnalytics.getInstance(context)
+                .logEvent("AVOIDED_UPLOAD_GARBAGE", Bundle())
+            attachmentStorageManager.deleteAttachment(attachment)
+            removeFromRecentlyViewed(attachment)
+            return
+        }
+
+        val sizeKiloBytes = "${fileSizeBytes / 1000}KB"
+
+        val message =
+            "${attachment.data["filename"]!!} ($sizeKiloBytes) is different to Zotero's version. Would you like to upload this PDF to replace the remote version?"
+
+        presenter.createYesNoPrompt(
+            "Detected changes to attachment",
+            message,
+            "Upload",
+            "No",
+            {
+                if (version < attachment.getVersion()) {
+                    firebaseAnalytics.logEvent("upload_attachment_version_mismatch", Bundle())
+                    presenter.createYesNoPrompt("Outdated Version",
+                        "This local copy is older than the version on Zotero's server, are you sure you upload (this will irreversibly overwrite the server's copy)",
+                        "I am sure",
+                        "Cancel",
+                        { uploadAttachment(attachment) },
+                        { removeFromRecentlyViewed(attachment) })
+                }
+                uploadAttachment(attachment)
+            },
+            { removeFromRecentlyViewed(attachment) })
     }
 
     override fun uploadAttachment(attachment: Item) {
@@ -903,12 +976,13 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
         if (preferences.isWebDAVEnabled()) {
             zoteroAPI.uploadAttachmentWithWebdav(attachment, context).andThen(
                 Completable.fromAction {
-                    Log.d("zotero", "got to zotero api upload") //TODO REMOVE LINE
                     // TODO extract this complexity to some other class.
-                    val modificationJsonObject = JsonObject()
-                    modificationJsonObject.addProperty("md5", md5Key)
-                    modificationJsonObject.addProperty("mtime", mtime)
-                    zoteroAPI.patchItem(attachment, modificationJsonObject).blockingAwait()
+                    if (preferences.isWebDAVEnabled()) {
+                        val modificationJsonObject = JsonObject()
+                        modificationJsonObject.addProperty("md5", md5Key)
+                        modificationJsonObject.addProperty("mtime", mtime)
+                        zoteroAPI.patchItem(attachment, modificationJsonObject).blockingAwait()
+                    }
                 }
             )
                 .subscribeOn(Schedulers.io()).observeOn(AndroidSchedulers.mainThread()).subscribe(
@@ -938,41 +1012,72 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                                 e.toString(),
                                 {})
                             Log.e("zotero", "got exception: $e")
-                            val bundle = Bundle().apply { putString("error_message", e.toString()) }
-                            firebaseAnalytics.logEvent("error_uploading_attachments_webdav", bundle)
+                            val bundle =
+                                Bundle().apply { putString("error_message", e.toString()) }
+                            firebaseAnalytics.logEvent(
+                                "error_uploading_attachments_webdav",
+                                bundle
+                            )
                             presenter.stopUploadingAttachment()
                         }
-
                     })
             return
         }
+        else {
+            zoteroAPI.updateAttachment(attachment).subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread()).subscribe(object :
+                    CompletableObserver {
+                    override fun onComplete() {
+                        presenter.stopUploadingAttachment()
+                        removeFromRecentlyViewed(attachment)
+                        zoteroDB.updateAttachmentMetadata(
+                            attachment.itemKey,
+                            attachmentStorageManager.calculateMd5(attachment),
+                            attachmentStorageManager.getMtime(attachment),
+                            AttachmentInfo.ZOTEROAPI
+                        ).subscribeOn(Schedulers.io()).subscribe()
+                    }
 
-        zoteroAPI.updateAttachment(attachment).subscribeOn(Schedulers.io())
-            .observeOn(AndroidSchedulers.mainThread()).subscribe(object : CompletableObserver {
-                override fun onComplete() {
-                    presenter.stopUploadingAttachment()
-                    removeFromRecentlyViewed(attachment)
-                    zoteroDB.updateAttachmentMetadata(
-                        attachment.itemKey,
-                        attachmentStorageManager.calculateMd5(attachment),
-                        attachmentStorageManager.getMtime(attachment),
-                        AttachmentInfo.ZOTEROAPI
-                    ).subscribeOn(Schedulers.io()).subscribe()
-                }
+                    override fun onSubscribe(d: Disposable) {
+                        presenter.startUploadingAttachment(attachment)
+                    }
 
-                override fun onSubscribe(d: Disposable) {
-                    presenter.startUploadingAttachment(attachment)
-                }
+                    override fun onError(e: Throwable) {
+                        if (e is com.mickstarify.zooforzotero.ZoteroAPI.AlreadyUploadedException) {
+                            removeFromRecentlyViewed(attachment)
+                            zoteroDB.updateAttachmentMetadata(
+                                attachment.itemKey,
+                                attachmentStorageManager.calculateMd5(attachment),
+                                attachmentStorageManager.getMtime(attachment),
+                                AttachmentInfo.WEBDAV
+                            ).subscribeOn(Schedulers.io()).subscribe()
+                        } else if (e is PreconditionFailedException) {
+                            presenter.createErrorAlert(
+                                "Error uploading Attachment",
+                                "The server's copy of this attachment is newer than yours. " +
+                                        "Please sync your library again to get the up to date version. " +
+                                        "You will need to back up your annotated file first if you wish to keep this changes.",
+                                {})
+                        } else if (e is RequestEntityTooLarge) {
+                            presenter.createErrorAlert(
+                                "Error uploading Attachment",
+                                "You do not have enough storage quota to store this atttachment.",
+                                {})
+                        } else {
+                            presenter.createErrorAlert(
+                                "Error uploading Attachment",
+                                e.toString(),
+                                {})
+                            Log.e("zotero", "got exception: $e")
+                            val bundle =
+                                Bundle().apply { putString("error_message", e.toString()) }
+                            firebaseAnalytics.logEvent("error_uploading_attachments", bundle)
+                        }
+                        presenter.stopUploadingAttachment()
+                    }
 
-                override fun onError(e: Throwable) {
-                    presenter.createErrorAlert("Error uploading Attachment", e.toString(), {})
-                    Log.e("zotero", "got exception: $e")
-                    val bundle = Bundle().apply { putString("error_message", e.toString()) }
-                    firebaseAnalytics.logEvent("error_uploading_attachments", bundle)
-                    presenter.stopUploadingAttachment()
-                }
-
-            })
+                })
+        }
     }
 
     override fun removeFromRecentlyViewed(attachment: Item) {
@@ -1055,7 +1160,10 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                             response.totalResults,
                             ""
                         )
-                        Log.d("zotero", "got ${this.downloaded} of ${response.totalResults} items")
+                        Log.d(
+                            "zotero",
+                            "got ${this.downloaded} of ${response.totalResults} items"
+                        )
                     } else {
                         Log.d("zotero", "got back cached response for items.")
                     }
@@ -1068,7 +1176,10 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                         val bundle = Bundle()
                         bundle.putString("error_message", e.message)
                         firebaseAnalytics.logEvent("error_download_group_items", bundle)
-                        presenter.createErrorAlert("Error downloading items", "message: ${e}", {})
+                        presenter.createErrorAlert(
+                            "Error downloading items",
+                            "message: ${e}",
+                            {})
                         Log.e("zotero", "${e}")
                         Log.e("zotero", "${e.stackTrace}")
                         loadItemsLocally(db)
@@ -1077,7 +1188,12 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
             })
 
         val groupCollectionsObservable =
-            zoteroAPI.getCollections(modifiedSince, useCaching, isGroup = true, groupID = group.id)
+            zoteroAPI.getCollections(
+                modifiedSince,
+                useCaching,
+                isGroup = true,
+                groupID = group.id
+            )
         groupCollectionsObservable.subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())
             .unsubscribeOn(Schedulers.io())

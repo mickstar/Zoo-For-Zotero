@@ -37,37 +37,6 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
         view.makeToastAlert("Finished uploading attachment.")
     }
 
-    override fun askToUploadAttachments(changedAttachments: List<Item>) {
-        // for the sake of sanity I will only ask to upload 1 attachment.
-        // this is because of limitations of only having 1 upload occur concurrently
-        // and my unwillingness to implement a chaining mechanism for uploads for what i expect to
-        // be a niche power user.
-        val attachment = changedAttachments.first()
-        val fileSizeBytes = model.attachmentStorageManager.getFileSize(
-            model.attachmentStorageManager.getAttachmentUri(attachment)
-        )
-
-        if (fileSizeBytes == 0L) {
-            Log.e("zotero", "avoiding uploading a garbage PDF")
-            FirebaseAnalytics.getInstance(model.context)
-                .logEvent("AVOIDED_UPLOAD_GARBAGE", Bundle())
-            model.removeFromRecentlyViewed(attachment)
-        }
-
-        val sizeKiloBytes = "${fileSizeBytes / 1000}KB"
-
-        val message =
-            "${attachment.data["filename"]!!} ($sizeKiloBytes) is different to Zotero's version. Would you like to upload this PDF to replace the remote version?"
-
-        view.createYesNoPrompt(
-            "Detected changes to attachment",
-            message,
-            "Upload",
-            "No",
-            { model.uploadAttachment(attachment) },
-            { model.removeFromRecentlyViewed(attachment) })
-    }
-
     override fun onResume() {
         if (model.isLoaded()) {
             model.checkAttachmentStorageAccess()

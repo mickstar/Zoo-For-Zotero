@@ -144,7 +144,7 @@ class Webdav(
                 attachmentStorageManager.createTempFile("${attachment.itemKey.toUpperCase(Locale.ROOT)}_NEW.zip")
 
             ZipFile(zipFile).addFile(tempFile)
-
+            tempFile.delete()
             // STEP 2 -- CREATE PROP
             val propFile =
                 attachmentStorageManager.createTempFile("${attachment.itemKey.toUpperCase(Locale.ROOT)}_NEW.prop")
@@ -161,6 +161,9 @@ class Webdav(
             val newPropPath = address + "/${attachment.itemKey.toUpperCase(Locale.ROOT)}_NEW.prop"
             sardine.put(newPropPath, propFile, "text/plain")
             sardine.put(newZipPath, zipFile, "application/zip")
+
+            zipFile.delete()
+            propFile.delete()
 
             // STEP 4 -- DELETE AND RENAME TO REPLACE OLD CONTENT.
             val zipPath = address + "/${attachment.itemKey.toUpperCase(Locale.ROOT)}.zip"

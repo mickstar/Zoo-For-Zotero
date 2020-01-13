@@ -47,9 +47,11 @@ class LibraryVersionMisMatchException(message: String) : RuntimeException(messag
 class APIKeyRevokedException(message: String) : RuntimeException(message)
 class AlreadyUploadedException(message: String) : RuntimeException(message)
 class PreconditionFailedException(message: String) : RuntimeException(message)
+class RequestEntityTooLarge(message: String) : RuntimeException(message)
 class ServerAlreadyExistsException(message: String) : RuntimeException(message)
 class ItemLockedException(message: String) : RuntimeException(message)
 class ItemChangedSinceException(message: String) : RuntimeException(message)
+class ZoteroNotFoundException(message: String): RuntimeException(message)
 class ZoteroAPI(
     val API_KEY: String,
     val userID: String,
@@ -162,6 +164,7 @@ class ZoteroAPI(
         val observable = Observable.create<DownloadProgress> { emitter ->
             val downloader = service.getItemFileRx(userID, item.itemKey)
             downloader.subscribe(object : Observer<Response<ResponseBody>> {
+                val disposable: Disposable? = null
                 override fun onComplete() {
                     emitter.onComplete()
                 }
@@ -171,6 +174,11 @@ class ZoteroAPI(
                 }
 
                 override fun onNext(response: Response<ResponseBody>) {
+                    if (emitter.isDisposed == true){
+                        Log.d("zotero", "download was cancelled, not writing.")
+                        return
+                    }
+
                     val inputStream = response.body()?.byteStream()
                     val fileSize = response.body()?.contentLength() ?: 0
                     if (response.code() == 200) {
@@ -200,7 +208,9 @@ class ZoteroAPI(
                             progress += read
                         }
                         emitter.onComplete()
-                    } else {
+                    } else if (response.code() == 404){
+                        throw ZoteroNotFoundException("Not found on server.")
+                    }else {
                         Log.e("zotero", "network error. response: ${response.body()}")
                         throw RuntimeException("Invalid server response code ${response.code()}")
                     }
@@ -208,7 +218,10 @@ class ZoteroAPI(
 
                 override fun onError(e: Throwable) {
                     Log.e("zotero", "download attachment got error $e  ${emitter.isDisposed}")
-                    emitter.onError(Exception("hello"))
+                    attachmentStorageManager.deleteAttachment(item)
+                    if (!emitter.isDisposed) {
+                        emitter.onError(e)
+                    }
                 }
             })
         }
@@ -614,6 +627,9 @@ class ZoteroAPI(
                         412 -> {
                             throw PreconditionFailedException("register upload returned")
                         }
+                        413 -> {
+                            throw RequestEntityTooLarge("Your file is too large")
+                        }
                         else -> {
                             throw Exception("Zotero server replied: ${zoteroRegisterResponse.code()}")
                         }
@@ -651,7 +667,7 @@ class ZoteroAPI(
         return observable.map { response ->
             if (response.code() == 200) {
                 val jsonString = response.body()!!.string()
-                if (jsonString == "{ \"exists\": 1 }") {
+                if (jsonString == "{\"exists\":1}") {
                     throw AlreadyUploadedException("File already uploaded")
                 } else {
                     Gson().fromJson(
