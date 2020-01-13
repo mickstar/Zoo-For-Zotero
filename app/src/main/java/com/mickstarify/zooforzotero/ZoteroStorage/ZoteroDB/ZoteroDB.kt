@@ -203,9 +203,6 @@ class ZoteroDB constructor(
     }
 
     fun createAttachmentsMap() {
-        if (!isPopulated()) {
-            return
-        }
         this.attachments = HashMap()
 
         for (item in items!!) {
@@ -457,6 +454,8 @@ class ZoteroDB constructor(
             throw Exception("error loading items")
         }
         return zoteroDatabase.writeItemPOJOs(groupID, itemPojos).andThen(
+            this.loadCollectionsFromDatabase()
+        ).andThen(
             this.loadItemsFromDatabase()
         ).andThen(Completable.fromAction {
             val libraryVersion = this.getLibraryVersion()
@@ -469,7 +468,7 @@ class ZoteroDB constructor(
         /* Checks every attachment in the storage directory and creates metadata for the attachment. */
 
         var toIndex = LinkedList<Item>()
-
+        Log.d("zotero", "items: ${items?.size} attachments: ${attachments?.size}")
         for ((itemKey: String, items: List<Item>) in this.attachments!!) {
             for (item in items) {
                 if (this.attachmentInfo!!.containsKey(item.itemKey)) {
