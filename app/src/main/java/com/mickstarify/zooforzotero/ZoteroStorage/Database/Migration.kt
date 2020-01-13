@@ -23,5 +23,9 @@ val MIGRATION_2_3 = object : Migration(2, 3) {
         database.execSQL("CREATE TABLE IF NOT EXISTS `AttachmentInfo` (`itemKey` TEXT NOT NULL, `group` INTEGER NOT NULL, `md5Key` TEXT NOT NULL, `mtime` INTEGER NOT NULL, `downloadedFrom` TEXT NOT NULL, PRIMARY KEY(`itemKey`, `group`), FOREIGN KEY(`itemKey`) REFERENCES `ItemInfo`(`itemKey`) ON UPDATE NO ACTION ON DELETE CASCADE )")
         database.execSQL("CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)")
         database.execSQL("INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '0edf267c734aa113781c16954559eff8')")
+
+        // delete all old rows from the database (neccessary because i am upgrading the table to add a version record)
+        database.execSQL("DELETE FROM `RecentlyOpenedAttachment`")
+        database.execSQL("ALTER TABLE `RecentlyOpenedAttachment` ADD `version` INTEGER NOT NULL")
     }
 }

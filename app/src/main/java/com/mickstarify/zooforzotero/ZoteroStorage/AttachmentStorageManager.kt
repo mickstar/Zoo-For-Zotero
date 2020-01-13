@@ -87,6 +87,10 @@ class AttachmentStorageManager @Inject constructor(
                 return false
             }
             val file = File(outputDir, filename)
+            if (file.length() == 0L){
+                file.delete()
+                return false
+            }
             if (checkMd5) {
                 return file.exists() && calculateMd5(file.inputStream()) == item.data["md5"]
             } else {
@@ -102,6 +106,10 @@ class AttachmentStorageManager @Inject constructor(
             }
             val file = directory?.findFile(filename)
             if (file == null) {
+                return false
+            }
+            if (file.length() == 0L){
+                file.delete()
                 return false
             }
             val exists = file.exists()

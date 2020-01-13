@@ -71,7 +71,6 @@ interface Contract {
         fun openGroup(groupTitle: String)
         fun startUploadingAttachment(attachment: Item)
         fun stopUploadingAttachment()
-        fun askToUploadAttachments(changedAttachments: List<Item>)
         fun onResume()
         fun createYesNoPrompt(
             title: String, message: String, yesText: String, noText: String, onYesClick: () -> Unit,
