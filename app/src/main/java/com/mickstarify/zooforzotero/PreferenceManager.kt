@@ -191,7 +191,7 @@ class PreferenceManager @Inject constructor(context: Context) {
         val firstRun = sharedPreferences.getBoolean("firstrun", true)
         if (firstRun){
             val editor = sharedPreferences.edit()
-            editor.putBoolean("firstrun_version25", false)
+            editor.putBoolean("firstrun_", false)
             editor.apply()
         }
         return firstRun
