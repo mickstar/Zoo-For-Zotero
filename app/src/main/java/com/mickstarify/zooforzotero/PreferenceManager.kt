@@ -189,12 +189,12 @@ class PreferenceManager @Inject constructor(context: Context) {
 
     }
 
-    fun firstRunForVersion27(check: Int=1): Boolean {
+    fun firstRunForVersion27(): Boolean {
         /*check to see if this is the first time the user is opening on version 2.2 (27)*/
-        val firstRun = sharedPreferences.getBoolean("firstrun_version27_${check}", true)
+        val firstRun = sharedPreferences.getBoolean("firstrun_version27", true)
         if (firstRun) {
             val editor = sharedPreferences.edit()
-            editor.putBoolean("firstrun_version27_${check}", false)
+            editor.putBoolean("firstrun_version27", false)
             editor.apply()
         }
         return firstRun
