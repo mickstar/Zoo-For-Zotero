@@ -27,6 +27,7 @@ import io.reactivex.Observable
 import io.reactivex.Observer
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposable
+import io.reactivex.functions.Consumer
 import io.reactivex.schedulers.Schedulers
 import java.io.FileNotFoundException
 import java.util.*
@@ -1301,15 +1302,19 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
 
     //TODO i will delete this code next version. (just for version 2.2)
     fun migrateFromOldStorage() {
-        zoteroDB.migrateItemsFromOldStorage().andThen(
-            Completable.fromAction {
-                zoteroDB.scanAndIndexAttachments(attachmentStorageManager)
-                    .blockingSubscribe()
-            }
-        ).subscribeOn(Schedulers.io())
+        zoteroDB.migrateItemsFromOldStorage().subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread()).subscribe(object : CompletableObserver {
                 override fun onComplete() {
-                    downloadLibrary()
+                    zoteroDB.scanAndIndexAttachments(attachmentStorageManager)
+                        .doOnError({e ->
+                            Log.e("zotero", "migration error ${e}")
+                            firebaseAnalytics.logEvent("migration_error_file_index", Bundle().apply { putString("error_message", "$e") })
+                            downloadLibrary()
+                        })
+                        .subscribeOn(Schedulers.io())
+                        .observeOn(AndroidSchedulers.mainThread()).subscribe(Consumer {
+                            downloadLibrary()
+                        })
                 }
 
                 override fun onSubscribe(d: Disposable) {
@@ -1317,16 +1322,17 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                 }
 
                 override fun onError(e: Throwable) {
-                    throw(e)
                     Log.e("zotero", "migration error ${e}")
+                    firebaseAnalytics.logEvent("migration_error", Bundle().apply { putString("error_message", "$e") })
                     presenter.createErrorAlert(
                         "Error migrating data",
                         "Sorry. There was an error migrating your items. You will need to do a full resync.",
                         {}
                     )
                     zoteroDB.deleteLegacyStorage()
+                    zoteroDB.setItemsVersion(0)
+                    downloadLibrary()
                 }
-
             })
     }
 
