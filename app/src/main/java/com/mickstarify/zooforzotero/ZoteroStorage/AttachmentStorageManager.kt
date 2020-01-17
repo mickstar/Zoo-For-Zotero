@@ -232,7 +232,7 @@ class AttachmentStorageManager @Inject constructor(
             intent.flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
             intent.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
         } else {
-            intent.setDataAndType(attachmentUri, "application/pdf")
+            intent.setDataAndType(attachmentUri, attachment.data["contentType"])
             intent.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY)
             intent = Intent.createChooser(intent, "Open File")
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)

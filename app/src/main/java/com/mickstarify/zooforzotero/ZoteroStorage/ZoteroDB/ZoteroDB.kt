@@ -205,6 +205,11 @@ class ZoteroDB constructor(
     fun createAttachmentsMap() {
         this.attachments = HashMap()
 
+        if (items == null){
+            Log.e("zotero", "items are null for some reason.")
+            this.items = LinkedList()
+        }
+
         for (item in items!!) {
             if (!item.data.containsKey("itemType") && item.data.containsKey("parentItem")) {
                 continue

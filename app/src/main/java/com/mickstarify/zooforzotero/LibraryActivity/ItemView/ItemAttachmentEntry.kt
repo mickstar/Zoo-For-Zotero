@@ -45,9 +45,12 @@ class ItemAttachmentEntry : Fragment() {
         val filetype = attachment?.data!!["contentType"] ?: ""
         val layout = view.findViewById<ConstraintLayout>(R.id.constraintLayout_attachments_entry)
         val icon = view.findViewById<ImageView>(R.id.imageView_attachment_icon)
-        if (filetype == "application/pdf") {
-            icon.setImageResource(R.drawable.treeitem_attachment_pdf_2x)
-
+        if (attachment?.isDownloadable() == true) {
+            if (filetype == "application/pdf") {
+                icon.setImageResource(R.drawable.treeitem_attachment_pdf_2x)
+            } else if (filetype == "image/vnd.djvu") {
+                icon.setImageResource(R.drawable.djvu_icon)
+            }
             layout.setOnClickListener {
                 if (linkMode == "linked_file") {
                     toast("This attachment is linked and I cannot download it.")
@@ -58,7 +61,6 @@ class ItemAttachmentEntry : Fragment() {
                 }
             }
         }
-
         return view
     }
 
