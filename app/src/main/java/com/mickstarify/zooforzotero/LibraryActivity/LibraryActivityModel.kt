@@ -442,7 +442,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                 context.startActivity(intent)
             } catch (exception: ActivityNotFoundException) {
                 presenter.createErrorAlert("No PDF Viewer installed",
-                    "There is no app that handles pdf documents available on your device. Would you like to install one?",
+                    "There is no app that handles ${attachment.getFileExtension()} documents available on your device. Would you like to install one?",
                     onClick = {
                         try {
                             context.startActivity(
@@ -488,11 +488,17 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
         *  We must decide whether we want to intitiate a download or just open a local copy. */
 
         // check to see if the attachment exists but is invalid
-        if (attachmentStorageManager.checkIfAttachmentExists(
+        val attachmentExists: Boolean
+        try {
+            attachmentExists = attachmentStorageManager.checkIfAttachmentExists(
                 item,
                 checkMd5 = false
             )
-        ) {
+        } catch (e: Exception) {
+            presenter.makeToastAlert("could not open attachment, file not found.")
+            return
+        }
+        if (attachmentExists) {
             if (zoteroDB.hasMd5Key(
                     item,
                     onlyWebdav = preferences.isWebDAVEnabled()
@@ -1021,8 +1027,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                         }
                     })
             return
-        }
-        else {
+        } else {
             zoteroAPI.updateAttachment(attachment).subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread()).subscribe(object :
                     CompletableObserver {
@@ -1306,9 +1311,11 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
             .observeOn(AndroidSchedulers.mainThread()).subscribe(object : CompletableObserver {
                 override fun onComplete() {
                     zoteroDB.scanAndIndexAttachments(attachmentStorageManager)
-                        .doOnError({e ->
+                        .doOnError({ e ->
                             Log.e("zotero", "migration error ${e}")
-                            firebaseAnalytics.logEvent("migration_error_file_index", Bundle().apply { putString("error_message", "$e") })
+                            firebaseAnalytics.logEvent(
+                                "migration_error_file_index",
+                                Bundle().apply { putString("error_message", "$e") })
                             downloadLibrary()
                         })
                         .subscribeOn(Schedulers.io())
@@ -1323,7 +1330,9 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
 
                 override fun onError(e: Throwable) {
                     Log.e("zotero", "migration error ${e}")
-                    firebaseAnalytics.logEvent("migration_error", Bundle().apply { putString("error_message", "$e") })
+                    firebaseAnalytics.logEvent(
+                        "migration_error",
+                        Bundle().apply { putString("error_message", "$e") })
                     presenter.createErrorAlert(
                         "Error migrating data",
                         "Sorry. There was an error migrating your items. You will need to do a full resync.",

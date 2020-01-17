@@ -89,7 +89,8 @@ class AttachmentManagerModel(val presenter: Contract.Presenter, val context: Con
 
         Completable.fromAction({
             for (attachment in zoteroDB.items!!.filter { it.itemType == "attachment" && it.data["linkMode"] != "linked_file" }) {
-                if (attachment.data["contentType"] != "application/pdf") {
+                val contentType = attachment.data["contentType"]
+                if (contentType != "application/pdf" && contentType != "image/vnd.djvu") {
                     continue
                 }
                 if (!attachmentStorageManager.checkIfAttachmentExists(
@@ -231,7 +232,7 @@ class AttachmentManagerModel(val presenter: Contract.Presenter, val context: Con
         val localAttachments = LinkedList<Item>()
         val allAttachments = LinkedList<Item>()
         for (attachment in zoteroDB.items!!.filter { it.itemType == "attachment" }) {
-            if (attachment.data["contentType"] != "application/pdf" || attachment.data["linkMode"] == "linked_file") {
+            if ((attachment.data["contentType"] != "application/pdf" && attachment.data["contentType"] != "image/vnd.djvu") || attachment.data["linkMode"] == "linked_file") {
                 continue
             }
             allAttachments.add(attachment)
