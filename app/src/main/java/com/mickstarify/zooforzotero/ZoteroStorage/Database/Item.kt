@@ -112,7 +112,7 @@ class Item : Parcelable {
             "statute" -> this.getItemData("nameOfAct")
             "note" -> {
                 var noteHtml = this.getItemData("note")
-                stripHtml(noteHtml?:"unknown")
+                stripHtml(noteHtml ?: "unknown")
             }
             else -> this.getItemData("title")
         }
@@ -167,11 +167,32 @@ class Item : Parcelable {
     }
 
     fun getMtime(): Long {
-        if (data.containsKey("mtime")){
+        if (data.containsKey("mtime")) {
             return data["mtime"]!!.toLong()
         }
         Log.e("zotero", "no mtime available for ${itemKey}")
         return 0L
+    }
+
+    fun isDownloadable(): Boolean {
+        /*Returns whether should be able to download this attachment and open it*/
+        if (this.itemType != "attachment"){
+            return false
+        }
+
+        if (this.data.containsKey("contentType")) {
+            val contentType = this.data["contentType"]!!
+            return (contentType == "application/pdf" || contentType == "image/vnd.djvu")
+        }
+        return false
+    }
+
+    fun getFileExtension(): String {
+        return when (this.data["contentType"]){
+            "application/pdf" -> "pdf"
+            "image/vnd.djvu" -> "djvu"
+            else -> "UNKNOWN"
+        }
     }
 }
 
