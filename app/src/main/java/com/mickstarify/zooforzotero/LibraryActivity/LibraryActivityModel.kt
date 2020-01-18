@@ -1089,6 +1089,12 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
             .subscribeOn(Schedulers.io()).subscribe()
     }
 
+    fun loadGroupItemsLocally(group: GroupInfo, db: ZoteroDB){
+        db.loadItemsFromDatabase().subscribeOn(Schedulers.io()).observeOn(AndroidSchedulers.mainThread()).doOnComplete {
+            finishLoadingGroups(group)
+        }.subscribe()
+    }
+
     override fun loadGroup(
         group: GroupInfo,
         refresh: Boolean
@@ -1111,11 +1117,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
             return
         }
 
-        val modifiedSince = if (db.hasLegacyStorage()) {
-            db.getLibraryVersion()
-        } else {
-            -1
-        }
+        val modifiedSince = db.getLibraryVersion()
         val useCaching = modifiedSince != -1 // largely useless. a relic from before.
 
         // todo add progress later.
@@ -1147,6 +1149,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                         }
                     }
                     db.setItemsVersion(libraryVersion)
+                    loadGroupItemsLocally(group, db)
                     finishLoadingGroups(group)
                 }
 
@@ -1175,7 +1178,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
 
                 override fun onError(e: Throwable) {
                     if (e is UpToDateException) {
-                        loadItemsLocally(db)
+                        loadGroupItemsLocally(group, db)
                     } else {
                         val bundle = Bundle()
                         bundle.putString("error_message", e.message)
@@ -1186,7 +1189,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                             {})
                         Log.e("zotero", "${e}")
                         Log.e("zotero", "${e.stackTrace}")
-                        loadItemsLocally(db)
+                        loadGroupItemsLocally(group, db)
                     }
                 }
             })
@@ -1254,6 +1257,12 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
     }
 
     private fun finishLoadingGroups(group: GroupInfo) {
+        val db = zoteroGroupDB.getGroup(group.id)
+        if (db.items == null || db.collections == null){
+            Log.d("zotero", "not finished loading groups yet")
+            return
+        }
+        Log.d("zotero", "Finished loading group with id ${group.id}")
         loadingItems = false
         loadingCollections = false
         presenter.hideLibraryLoadingAnimation()
