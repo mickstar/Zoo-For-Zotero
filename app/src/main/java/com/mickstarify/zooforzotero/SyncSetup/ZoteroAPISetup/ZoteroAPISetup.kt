@@ -1,7 +1,9 @@
 package com.mickstarify.zooforzotero.SyncSetup.ZoteroAPISetup
 
 import android.content.Intent
+import android.content.res.Configuration
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.view.View
@@ -71,6 +73,16 @@ class ZoteroAPISetup : AppCompatActivity(), Contract.View {
 
     private lateinit var presenter: Contract.Presenter
 
+
+    override fun applyOverrideConfiguration(overrideConfiguration: Configuration) {
+        /* This method is meant to fix a bug in webview which causes a crash on old devices
+        * Source: https://stackoverflow.com/questions/41025200/android-view-inflateexception-error-inflating-class-android-webkit-webview*/
+        if (Build.VERSION.SDK_INT >= 21 && Build.VERSION.SDK_INT < 25) {
+            overrideConfiguration.uiMode =
+                overrideConfiguration.uiMode and Configuration.UI_MODE_NIGHT_MASK.inv()
+        }
+        super.applyOverrideConfiguration(overrideConfiguration)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
