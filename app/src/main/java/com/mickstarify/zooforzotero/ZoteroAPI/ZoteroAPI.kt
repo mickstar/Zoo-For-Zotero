@@ -51,12 +51,6 @@ class ZoteroAPI(
     val username: String,
     val attachmentStorageManager: AttachmentStorageManager
 ) {
-    private fun buildZoteroAPI(
-        ifModifiedSinceVersion: Int = -1,
-        ifUnmodifiedSinceVersion: Int = -1,
-        md5IfMatch: String = "",
-        contentType: String = ""
-    ): ZoteroAPIService {
         val httpClient = OkHttpClient().newBuilder().apply {
             if (BuildConfig.DEBUG) {
                 addInterceptor(HttpLoggingInterceptor().apply {
@@ -72,35 +66,17 @@ class ZoteroAPI(
                     val request = chain.request().newBuilder()
                         .addHeader("Zotero-API-Version", "3")
                         .addHeader("Zotero-API-Key", API_KEY)
-                    if (ifModifiedSinceVersion != -1) {
-                        request.addHeader("If-Modified-Since-Version", "$ifModifiedSinceVersion")
-                    }
-                    if (md5IfMatch != "") {
-                        request.addHeader("If-Match", md5IfMatch)
-                    }
-                    if (ifUnmodifiedSinceVersion != -1) {
-                        request.addHeader(
-                            "If-Unmodified-Since-Version",
-                            "$ifUnmodifiedSinceVersion"
-                        )
-
-                    }
-                    if (contentType != "") {
-                        // "application/x-www-form-urlencoded"
-                        request.addHeader("Content-Type", contentType)
-                    }
                     return chain.proceed(request.build())
                 }
             })
         }.build()
 
-        return Retrofit.Builder()
+        val service = Retrofit.Builder()
             .baseUrl(BASE_URL)
             .client(httpClient)
             .addConverterFactory(GsonConverterFactory.create())
             .addCallAdapterFactory(RxJava2CallAdapterFactory.create())
             .build().create(ZoteroAPIService::class.java)
-    }
 
     fun buildAmazonService(): ZoteroAPIService {
         val httpClient = OkHttpClient().newBuilder().apply {
@@ -150,7 +126,6 @@ class ZoteroAPI(
             //stops here.
         }
 
-        val service = buildZoteroAPI()
 
         val outputFileStream = attachmentStorageManager.getItemOutputStream(item)
 
@@ -223,8 +198,7 @@ class ZoteroAPI(
 
     fun testConnection(callback: (success: Boolean, message: String) -> (Unit)) {
         println("testConnection()")
-        val zoteroAPI = buildZoteroAPI()
-        val call: Call<KeyInfo> = zoteroAPI.getKeyInfo(this.API_KEY)
+        val call: Call<KeyInfo> = service.getKeyInfo(this.API_KEY)
 
         call.enqueue(object : Callback<KeyInfo> {
             override fun onResponse(call: Call<KeyInfo>, response: Response<KeyInfo>) {
@@ -247,28 +221,26 @@ class ZoteroAPI(
     }
 
     fun modifyNote(note: Note, libraryVersion: Int): Completable {
-        val zoteroAPI = buildZoteroAPI(ifUnmodifiedSinceVersion = note.version)
-        val observable = zoteroAPI.patchItem(userID, note.key, note.getJsonNotePatch())
-            .map { response ->
-                if (response.code() == 200 || response.code() == 204) {
-                    Log.d("zotero", "success on note modification")
-                } else if (response.code() == 409) {
-                    throw ItemLockedException("Failed to upload note.")
-                } else if (response.code() == 412) {
-                    throw ItemChangedSinceException("item out of date, please sync first.")
-                } else {
-                    Log.d("zotero", "got back code ${response.code()} from note upload.")
-                    throw Exception("Server gave back code ${response.code()}")
+        val observable =
+            service.patchItem(userID, note.key, note.getJsonNotePatch(), note.version)
+                .map { response ->
+                    if (response.code() == 200 || response.code() == 204) {
+                        Log.d("zotero", "success on note modification")
+                    } else if (response.code() == 409) {
+                        throw ItemLockedException("Failed to upload note.")
+                    } else if (response.code() == 412) {
+                        throw ItemChangedSinceException("item out of date, please sync first.")
+                    } else {
+                        Log.d("zotero", "got back code ${response.code()} from note upload.")
+                        throw Exception("Server gave back code ${response.code()}")
+                    }
+                    response
                 }
-                response
-            }
         return Completable.fromObservable(observable)
     }
 
     fun uploadNote(note: Note): Completable {
-        val zoteroAPI = buildZoteroAPI()
-
-        val observable = zoteroAPI.uploadNote(userID, note.asJsonArray()).map {
+        val observable = service.uploadNote(userID, note.asJsonArray()).map {
             if (it.code() == 200 || it.code() == 204) {
                 // success
             } else {
@@ -281,8 +253,7 @@ class ZoteroAPI(
     }
 
     fun deleteItem(itemKey: String, version: Int, listener: DeleteItemListener) {
-        val zoteroAPI = buildZoteroAPI(ifUnmodifiedSinceVersion = version)
-        val call: Call<ResponseBody> = zoteroAPI.deleteItem(userID, itemKey)
+        val call: Call<ResponseBody> = service.deleteItem(userID, itemKey, version)
 
         call.enqueue(object : Callback<ResponseBody> {
             override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
@@ -301,19 +272,19 @@ class ZoteroAPI(
 
     fun patchItem(item: Item, patch: JsonObject): Completable {
         val lastModifiedVersion = item.getVersion()
-        val service = buildZoteroAPI(ifUnmodifiedSinceVersion = lastModifiedVersion)
-        val observable = service.patchItem(userID, item.itemKey, patch).map { response ->
-            if (response.code() == 200 || response.code() == 204) {
-                Log.d("zotero", "success on patch")
-            } else if (response.code() == 409) {
-                throw ItemLockedException("You do not have write permission.")
-            } else if (response.code() == 412) {
-                throw ItemChangedSinceException("Local item out of date, please sync first.")
-            } else {
-                Log.d("zotero", "Zotero server gave code ${response.code()} for patch.")
-                throw Exception("Zotero server gave back code ${response.code()}")
+        val observable =
+            service.patchItem(userID, item.itemKey, patch, lastModifiedVersion).map { response ->
+                if (response.code() == 200 || response.code() == 204) {
+                    Log.d("zotero", "success on patch")
+                } else if (response.code() == 409) {
+                    throw ItemLockedException("You do not have write permission.")
+                } else if (response.code() == 412) {
+                    throw ItemChangedSinceException("Local item out of date, please sync first.")
+                } else {
+                    Log.d("zotero", "Zotero server gave code ${response.code()} for patch.")
+                    throw Exception("Zotero server gave back code ${response.code()}")
+                }
             }
-        }
         return Completable.fromObservable(observable)
     }
 
@@ -324,19 +295,28 @@ class ZoteroAPI(
         isGroup: Boolean,
         groupID: Int
     ): Observable<ZoteroAPIItemsResponse> {
-        val service = buildZoteroAPI(ifModifiedSinceVersion = modificationSinceVersion)
 
         val observable = if (modificationSinceVersion > -1) {
             if (isGroup) {
-                service.getItemsForGroupSince(groupID, modificationSinceVersion, index)
+                service.getItemsForGroupSince(
+                    modificationSinceVersion,
+                    groupID,
+                    modificationSinceVersion,
+                    index
+                )
             } else {
-                service.getItemsSince(userID, modificationSinceVersion, index)
+                service.getItemsSince(
+                    modificationSinceVersion,
+                    userID,
+                    modificationSinceVersion,
+                    index
+                )
             }
         } else {
             if (isGroup) {
-                service.getItemsForGroup(groupID, index)
+                service.getItemsForGroup(0, groupID, index)
             } else {
-                service.getItems(userID, index)
+                service.getItems(0, userID, index)
             }
 
         }
@@ -417,12 +397,11 @@ class ZoteroAPI(
         index: Int = 0
     ): Observable<ZoteroAPICollectionsResponse> {
         /* Obvservable that gets collections from a certain index. */
-        val service = buildZoteroAPI(ifModifiedSinceVersion = modificationSinceVersion)
 
         val observable = if (useGroup) {
-            service.getCollectionsForGroup(groupID, index)
+            service.getCollectionsForGroup(modificationSinceVersion, groupID, index)
         } else {
-            service.getCollections(userID, index)
+            service.getCollections(modificationSinceVersion, userID, index)
         }
 
         return observable.map { response: Response<List<CollectionPOJO>> ->
@@ -483,7 +462,6 @@ class ZoteroAPI(
     }
 
     fun getGroupInfo(): Observable<List<GroupInfo>> {
-        val service = buildZoteroAPI()
         val groupInfo = service.getGroupInfo(userID)
         return groupInfo.map {
             it.map { groupPojo ->
@@ -515,15 +493,14 @@ class ZoteroAPI(
 
     fun updateAttachment(attachment: Item): Completable {
         val attachmentUri: Uri = attachmentStorageManager.getAttachmentUri(attachment)
-        var md5Key = attachment.getMd5Key()
-        if (md5Key == "") {
+        var oldMd5 = attachment.getMd5Key()
+        if (oldMd5 == "") {
             Log.d("zotero", "no md5key provided for Item: ${attachment.getTitle()}")
-            md5Key = "*"
+            oldMd5 = "*"
         }
-        val service = buildZoteroAPI(md5IfMatch = md5Key)
 
         val newMd5 = attachmentStorageManager.calculateMd5(attachment)
-        if (md5Key == newMd5) {
+        if (oldMd5 == newMd5) {
             throw AlreadyUploadedException("Local attachment version is the same as Zotero's.")
         }
         val mtime = attachmentStorageManager.getMtime(attachment)
@@ -531,7 +508,7 @@ class ZoteroAPI(
         val filesize = attachmentStorageManager.getFileSize(attachmentUri)
 
         val authorizationObservable =
-            getUploadAuthorization(attachment, newMd5, filename, filesize, mtime, service)
+            getUploadAuthorization(attachment, oldMd5, newMd5, filename, filesize, mtime, service)
 
 
         val chain = authorizationObservable.map { authorizationPojo ->
@@ -576,7 +553,8 @@ class ZoteroAPI(
                         userID,
                         attachment.itemKey,
                         authorizationPojo.uploadKey,
-                        "upload=${authorizationPojo.uploadKey}"
+                        "upload=${authorizationPojo.uploadKey}",
+                        oldMd5
                     )
                 } else {
                     throw RuntimeException("Amazon Attachment Server Gave server error: ${amazonResponse.code()}")
@@ -620,6 +598,7 @@ class ZoteroAPI(
 
     private fun getUploadAuthorization(
         item: Item,
+        oldMd5: String,
         newMd5: String,
         filename: String,
         filesize: Long,
@@ -635,7 +614,8 @@ class ZoteroAPI(
             filesize, //in bytes
             mtime, //this is in milli
             1,
-            "Content-Type: application/x-www-form-urlencoded"
+            "Content-Type: application/x-www-form-urlencoded",
+            oldMd5
         )
         return observable.map { response ->
             if (response.code() == 200) {

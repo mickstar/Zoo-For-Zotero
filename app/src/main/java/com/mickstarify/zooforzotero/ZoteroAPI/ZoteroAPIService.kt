@@ -15,6 +15,7 @@ import retrofit2.http.*
 interface ZoteroAPIService {
     @GET("users/{user}/items")
     fun getItems(
+        @Header("If-Modified-Since-Version") ifModifiedSinceVersion: Int,
         @Path("user") user: String,
         @Query("start") index: Int
     ): Observable<Response<ResponseBody>>
@@ -22,6 +23,7 @@ interface ZoteroAPIService {
     /* Gets items since last update. */
     @GET("users/{user}/items")
     fun getItemsSince(
+        @Header("If-Modified-Since-Version") ifModifiedSinceVersion: Int,
         @Path("user") user: String,
         @Query("since") modificationSinceVersion: Int,
         @Query("start") index: Int
@@ -36,6 +38,7 @@ interface ZoteroAPIService {
     // get items for the group ID
     @GET("groups/{groupID}/items")
     fun getItemsForGroup(
+        @Header("If-Modified-Since-Version") ifModifiedSinceVersion: Int,
         @Path("groupID") groupID: Int,
         @Query("start") index: Int
     ): Observable<Response<ResponseBody>>
@@ -43,6 +46,7 @@ interface ZoteroAPIService {
     // get items for the group ID
     @GET("groups/{groupID}/items")
     fun getItemsForGroupSince(
+        @Header("If-Modified-Since-Version") ifModifiedSinceVersion: Int,
         @Path("groupID") groupID: Int,
         @Query("since") modificationSinceVersion: Int,
         @Query("start") index: Int
@@ -50,6 +54,7 @@ interface ZoteroAPIService {
 
     @GET("groups/{groupID}/collections")
     fun getCollectionsForGroup(
+        @Header("If-Modified-Since-Version") ifModifiedSinceVersion: Int,
         @Path("groupID") groupID: Int,
         @Query("start") index: Int
     ): Observable<Response<List<CollectionPOJO>>>
@@ -68,6 +73,7 @@ interface ZoteroAPIService {
 
     @GET("users/{user}/collections")
     fun getCollections(
+        @Header("If-Modified-Since-Version") ifModifiedSinceVersion: Int,
         @Path("user") user: String,
         @Query("start") index: Int
     ): Observable<Response<List<CollectionPOJO>>>
@@ -99,23 +105,18 @@ interface ZoteroAPIService {
     ): Observable<Response<ResponseBody>>
 
     @PATCH("users/{user}/items/{itemKey}")
-    fun editNote(
-        @Path("user") user: String,
-        @Path("itemKey") itemKey: String,
-        @Body json: JsonObject
-    ): Observable<Response<ResponseBody>>
-
-    @PATCH("users/{user}/items/{itemKey}")
     fun patchItem(
         @Path("user") user: String,
         @Path("itemKey") itemKey: String,
-        @Body json: JsonObject
+        @Body json: JsonObject,
+        @Header("If-Unmodified-Since-Version") ifUnmodifiedSinceVersion: Int
     ): Observable<Response<ResponseBody>>
 
     @DELETE("users/{user}/items/{itemKey}")
     fun deleteItem(
         @Path("user") user: String,
-        @Path("itemKey") itemKey: String
+        @Path("itemKey") itemKey: String,
+        @Header("If-Unmodified-Since-Version") ifUnmodifiedSinceVersion: Int
     ): Call<ResponseBody>
 
     @POST("users/{user}/items/{itemKey}/file")
@@ -127,7 +128,8 @@ interface ZoteroAPIService {
         @Query("filesize") filesize: Long,
         @Query("mtime") mtime: Long,
         @Query("params") params: Int = 1,
-        @Body bodyText: String
+        @Body bodyText: String,
+        @Header("If-Match") oldMd5Key: String
     ): Observable<Response<ResponseBody>>
 
     @POST("users/{user}/items/{itemKey}/file")
@@ -135,7 +137,8 @@ interface ZoteroAPIService {
         @Path("user") user: String,
         @Path("itemKey") itemKey: String,
         @Query("upload") uploadKey: String,
-        @Body body: String
+        @Body body: String,
+        @Header("If-Match") oldMd5Key: String
     ): Observable<Response<ResponseBody>>
 
     @POST
