@@ -252,12 +252,15 @@ data class ItemTag(
 
 @Dao
 interface ItemDao {
+    @Transaction
     @Query("SELECT * FROM itemInfo")
     fun getAll(): Maybe<List<Item>>
 
+    @Transaction
     @Query("SELECT * FROM itemInfo WHERE `itemKey`=:key LIMIT 1")
     fun getItem(key: String): Single<Item>
 
+    @Transaction
     @Query("SELECT * FROM itemInfo WHERE `group`=:groupID")
     fun getItemsForGroup(groupID: Int): Maybe<List<Item>>
 
