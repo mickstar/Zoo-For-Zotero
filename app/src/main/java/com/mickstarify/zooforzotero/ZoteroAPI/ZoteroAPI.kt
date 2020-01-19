@@ -15,27 +15,19 @@ import com.mickstarify.zooforzotero.ZoteroStorage.ZoteroDB.ItemsDownloadProgress
 import io.reactivex.*
 import io.reactivex.Observable
 import io.reactivex.Observer
-import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposable
-import io.reactivex.schedulers.Schedulers
 import okhttp3.Interceptor
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.RequestBody
 import okhttp3.ResponseBody
 import okhttp3.logging.HttpLoggingInterceptor
-import org.jetbrains.anko.doAsync
-import org.jetbrains.anko.onComplete
-import org.jetbrains.anko.runOnUiThread
-import org.json.JSONObject
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory
 import retrofit2.converter.gson.GsonConverterFactory
-import java.io.File
-import java.io.IOException
 import java.util.*
 import java.util.concurrent.TimeUnit
 

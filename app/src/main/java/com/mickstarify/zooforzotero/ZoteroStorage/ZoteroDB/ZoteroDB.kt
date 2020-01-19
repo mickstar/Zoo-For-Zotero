@@ -87,42 +87,6 @@ class ZoteroDB constructor(
         return !(collections == null || items == null)
     }
 
-    fun commitItemsToStorage() {
-        Log.d("zotero", "committing items to storage")
-        commitItemsToStorage2()
-        if (items == null) {
-            throw Exception("Error, ZoteroDB not initialized. Cannot Commit to storage.")
-        }
-
-        val gson = Gson()
-
-        val itemsOut = OutputStreamWriter(context.openFileOutput(ITEMS_FILENAME, MODE_PRIVATE))
-        try {
-            itemsOut.write(gson.toJson(items))
-            itemsOut.close()
-        } catch (exception: OutOfMemoryError) {
-            Log.d("zotero", "could not cache items, user has not enough space.")
-        }
-    }
-
-    fun commitItemsToStorage2() {
-        zoteroDatabase.writeItems(groupID, items!!).subscribeOn(Schedulers.io())
-            .subscribe(object : CompletableObserver {
-                override fun onComplete() {
-                    Log.d("zotero", "finished writing items to database.")
-                }
-
-                override fun onSubscribe(d: Disposable) {
-                    Log.d("zotero", "started writing items to database.")
-                }
-
-                override fun onError(e: Throwable) {
-                    Log.e("zotero", "got error ${e}")
-                }
-
-            })
-    }
-
     fun writeDatabaseUpdatedTimestamp() {
         val editor = context.getSharedPreferences(namespace, MODE_PRIVATE).edit()
         val timestamp = System.currentTimeMillis() //timestamp in milliseconds.
@@ -170,9 +134,7 @@ class ZoteroDB constructor(
                         }
                     })
                 )
-            ).andThen(Completable.fromAction {
-//                throw Exception("breh")
-            })
+            )
         return completable
     }
 
@@ -388,34 +350,6 @@ class ZoteroDB constructor(
             }
         }
         items = newItems
-        this.commitItemsToStorage()
-    }
-
-    fun applyChangesToItems(modifiedItems: List<Item>) {
-        if (items == null) {
-            Log.e("zotero", "error items cannot be null!")
-            return
-        }
-        val toAdd: MutableList<Item> = LinkedList(modifiedItems)
-        Log.d("zotero", "got a list of modifications of size ${modifiedItems.size}")
-        val newItems = LinkedList<Item>()
-        for (item in this.items!!) {
-            var added = false
-            for (modifiedItem: Item in toAdd) {
-                if (item.itemKey == modifiedItem.itemKey) {
-                    newItems.add(modifiedItem)
-                    toAdd.remove(modifiedItem)
-                    added = true
-                    break
-                }
-            }
-            if (!added) {
-                newItems.add(item)
-            }
-        }
-        newItems.addAll(toAdd)
-        this.items = newItems
-        this.commitItemsToStorage()
     }
 
     fun getItemWithKey(itemKey: String): Item? {

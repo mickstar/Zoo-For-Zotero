@@ -387,6 +387,10 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
             if (!loadingCollections) {
                 finishLoading()
             }
+
+            if (zoteroDB.items?.size == 0){
+                zoteroDB.clearItemsVersion()
+            }
         }
     }
 
