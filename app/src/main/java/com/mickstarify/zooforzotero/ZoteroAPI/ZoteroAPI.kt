@@ -19,7 +19,7 @@ import io.reactivex.disposables.Disposable
 import okhttp3.Interceptor
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
-import okhttp3.RequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.ResponseBody
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Call
@@ -43,7 +43,7 @@ class RequestEntityTooLarge(message: String) : RuntimeException(message)
 class ServerAlreadyExistsException(message: String) : RuntimeException(message)
 class ItemLockedException(message: String) : RuntimeException(message)
 class ItemChangedSinceException(message: String) : RuntimeException(message)
-class ZoteroNotFoundException(message: String): RuntimeException(message)
+class ZoteroNotFoundException(message: String) : RuntimeException(message)
 class ZoteroAPI(
     val API_KEY: String,
     val userID: String,
@@ -166,7 +166,7 @@ class ZoteroAPI(
                 }
 
                 override fun onNext(response: Response<ResponseBody>) {
-                    if (emitter.isDisposed == true){
+                    if (emitter.isDisposed == true) {
                         Log.d("zotero", "download was cancelled, not writing.")
                         return
                     }
@@ -200,9 +200,9 @@ class ZoteroAPI(
                             progress += read
                         }
                         emitter.onComplete()
-                    } else if (response.code() == 404){
+                    } else if (response.code() == 404) {
                         throw ZoteroNotFoundException("Not found on server.")
-                    }else {
+                    } else {
                         Log.e("zotero", "network error. response: ${response.body()}")
                         throw RuntimeException("Invalid server response code ${response.code()}")
                     }
@@ -301,7 +301,7 @@ class ZoteroAPI(
     fun patchItem(item: Item, patch: JsonObject): Completable {
         val lastModifiedVersion = item.getVersion()
         val service = buildZoteroAPI(ifUnmodifiedSinceVersion = lastModifiedVersion)
-        val observable = service.patchItem(userID, item.itemKey, patch).map {response->
+        val observable = service.patchItem(userID, item.itemKey, patch).map { response ->
             if (response.code() == 200 || response.code() == 204) {
                 Log.d("zotero", "success on patch")
             } else if (response.code() == 409) {
@@ -536,54 +536,35 @@ class ZoteroAPI(
         val chain = authorizationObservable.map { authorizationPojo ->
             Log.d("zotero", "t ${authorizationPojo.uploadKey}")
             Log.d("zotero", "about to upload ${authorizationPojo.uploadKey}")
-            val requestBody = RequestBody.create(
-                "multipart/form-data".toMediaType(),
-                attachmentStorageManager.readBytes(
-                    attachment
-                )
+            val requestBody = attachmentStorageManager.readBytes(
+                attachment
             )
+                .toRequestBody(
+                    "multipart/form-data".toMediaType(),
+                    0, content.size
+                )
             buildAmazonService().uploadAttachmentToAmazonMulti(
                 authorizationPojo.url,
-                RequestBody.create(
-                    "multipart/form-data".toMediaType(),
-                    authorizationPojo.params.key
-                ),
-                RequestBody.create(
-                    "multipart/form-data".toMediaType(),
-                    authorizationPojo.params.acl
-                ),
-                RequestBody.create(
-                    "multipart/form-data".toMediaType(),
-                    authorizationPojo.params.content_MD5
-                ),
-                RequestBody.create(
-                    "multipart/form-data".toMediaType(),
-                    authorizationPojo.params.success_action_status
-                ),
-                RequestBody.create(
-                    "multipart/form-data".toMediaType(),
-                    authorizationPojo.params.policy
-                ),
-                RequestBody.create(
-                    "multipart/form-data".toMediaType(),
-                    authorizationPojo.params.x_amz_algorithm
-                ),
-                RequestBody.create(
-                    "multipart/form-data".toMediaType(),
-                    authorizationPojo.params.x_amz_credential
-                ),
-                RequestBody.create(
-                    "multipart/form-data".toMediaType(),
-                    authorizationPojo.params.x_amz_date
-                ),
-                RequestBody.create(
-                    "multipart/form-data".toMediaType(),
-                    authorizationPojo.params.x_amz_signature
-                ),
-                RequestBody.create(
-                    "multipart/form-data".toMediaType(),
-                    authorizationPojo.params.x_amz_security_token
-                ),
+                authorizationPojo.params.key
+                    .toRequestBody("multipart/form-data".toMediaType()),
+                authorizationPojo.params.acl
+                    .toRequestBody("multipart/form-data".toMediaType()),
+                authorizationPojo.params.content_MD5
+                    .toRequestBody("multipart/form-data".toMediaType()),
+                authorizationPojo.params.success_action_status
+                    .toRequestBody("multipart/form-data".toMediaType()),
+                authorizationPojo.params.policy
+                    .toRequestBody("multipart/form-data".toMediaType()),
+                authorizationPojo.params.x_amz_algorithm
+                    .toRequestBody("multipart/form-data".toMediaType()),
+                authorizationPojo.params.x_amz_credential
+                    .toRequestBody("multipart/form-data".toMediaType()),
+                authorizationPojo.params.x_amz_date
+                    .toRequestBody("multipart/form-data".toMediaType()),
+                authorizationPojo.params.x_amz_signature
+                    .toRequestBody("multipart/form-data".toMediaType()),
+                authorizationPojo.params.x_amz_security_token
+                    .toRequestBody("multipart/form-data".toMediaType()),
                 requestBody
             ).flatMap { amazonResponse ->
                 if (amazonResponse.code() == 421) {

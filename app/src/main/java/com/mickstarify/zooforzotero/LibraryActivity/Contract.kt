@@ -15,6 +15,7 @@ interface Contract {
             total: Int = -1,
             message: String
         )
+
         fun addSharedCollection(groupInfo: GroupInfo)
         fun hideLoadingAnimation()
         fun setTitle(title: String)
@@ -34,6 +35,7 @@ interface Contract {
             title: String, message: String, yesText: String, noText: String, onYesClick: () -> Unit,
             onNoClick: () -> Unit
         )
+
         fun showNote(note: Note)
 
         fun showBasicSyncAnimation()
@@ -60,6 +62,7 @@ interface Contract {
             total: Int,
             message: String
         )
+
         fun isShowingContent(): Boolean
         fun cancelAttachmentDownload()
         fun redisplayItems()

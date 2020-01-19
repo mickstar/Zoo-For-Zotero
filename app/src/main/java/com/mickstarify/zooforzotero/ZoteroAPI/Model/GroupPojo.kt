@@ -9,9 +9,7 @@ data class GroupPojo(
     val version: Int,
     @SerializedName("data")
     val groupData: GroupData
-) {
-
-}
+)
 
 data class GroupData(
     @SerializedName("id")
@@ -32,6 +30,4 @@ data class GroupData(
     val libraryReading: String,
     @SerializedName("fileEditing")
     val fileEditing: String
-) {
-
-}
+)

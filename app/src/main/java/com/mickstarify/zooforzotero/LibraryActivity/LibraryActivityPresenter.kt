@@ -1,9 +1,7 @@
 package com.mickstarify.zooforzotero.LibraryActivity
 
 import android.content.Context
-import android.os.Bundle
 import android.util.Log
-import com.google.firebase.analytics.FirebaseAnalytics
 import com.mickstarify.zooforzotero.SortMethod
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Note
 import com.mickstarify.zooforzotero.ZoteroStorage.Database.Collection

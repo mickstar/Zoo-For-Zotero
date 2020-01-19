@@ -5,5 +5,4 @@ data class DownloadProgress(
     val total: Long,
     val mtime: Long = -1,
     val metadataHash: String = ""
-) {
-}
+)

@@ -18,7 +18,7 @@ class ZoteroItemListAdapter(val context: Context, var list: List<ListEntry>) : B
         this.notifyDataSetChanged()
     }
 
-    override fun getView(i : Int, _convertView : View?, parent : ViewGroup?): View {
+    override fun getView(i: Int, _convertView: View?, parent: ViewGroup?): View {
         val entry = getItem(i)
         // Check if an existing view is being reused, otherwise inflate the view
         val convertView: View = if (_convertView == null) {

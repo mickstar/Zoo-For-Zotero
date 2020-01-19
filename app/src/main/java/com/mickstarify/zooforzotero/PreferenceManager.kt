@@ -4,7 +4,6 @@ import android.content.Context
 import android.util.Log
 import org.jetbrains.anko.defaultSharedPreferences
 import javax.inject.Inject
-import javax.inject.Singleton
 
 enum class SortMethod {
     TITLE,

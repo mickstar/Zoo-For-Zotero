@@ -1,6 +1,5 @@
 package com.mickstarify.zooforzotero.LibraryActivity.ItemView
 
-import android.content.Context
 import android.net.Uri
 import android.os.Bundle
 import android.text.method.LinkMovementMethod
@@ -39,22 +38,13 @@ class ItemTextEntry : Fragment() {
         val contentView = view.findViewById<TextView>(R.id.item_content)
         contentView.text = content
 
-        if (label == "url"){
+        if (label == "url") {
             contentView.linksClickable = true
             contentView.movementMethod = LinkMovementMethod.getInstance()
             Linkify.addLinks(contentView, Linkify.WEB_URLS)
         }
 
         return view
-    }
-
-    override fun onAttach(context: Context) {
-        super.onAttach(context)
-//        if (context is OnFragmentInteractionListener) {
-//            listener = context
-//        } else {
-//            throw RuntimeException(context.toString() + " must implement OnFragmentInteractionListener")
-//        }
     }
 
     override fun onDetach() {

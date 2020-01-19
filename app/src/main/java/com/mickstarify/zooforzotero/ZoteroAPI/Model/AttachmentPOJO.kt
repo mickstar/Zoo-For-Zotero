@@ -4,7 +4,6 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonNull
 import com.google.gson.JsonObject
 import com.mickstarify.zooforzotero.ZoteroStorage.Database.Item
-import java.lang.Exception
 
 class AttachmentPOJO {
     var itemKey: String

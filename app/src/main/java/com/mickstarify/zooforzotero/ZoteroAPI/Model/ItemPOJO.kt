@@ -21,7 +21,7 @@ open class ItemPOJO(
     var mtime: Double = 0.0
 ) : Parcelable {
     @IgnoredOnParcel
-    var localMd5 : String = ""
+    var localMd5: String = ""
 
     fun getValue(key: String): Any? {
         when (key) {
@@ -48,7 +48,6 @@ open class ItemPOJO(
     }
 
 
-
     fun getItemType(): String {
         return if ("itemType" in data) {
             (data["itemType"] as String)
@@ -56,7 +55,6 @@ open class ItemPOJO(
             "error"
         }
     }
-
 
 
     /* Matches the query text against the metadata stored in item,

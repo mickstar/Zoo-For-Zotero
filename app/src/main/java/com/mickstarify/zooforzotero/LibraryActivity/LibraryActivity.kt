@@ -26,8 +26,8 @@ import com.google.firebase.analytics.FirebaseAnalytics
 import com.mickstarify.zooforzotero.AttachmentManager.AttachmentManager
 import com.mickstarify.zooforzotero.LibraryActivity.ItemView.ItemAttachmentEntry
 import com.mickstarify.zooforzotero.LibraryActivity.ItemView.ItemViewFragment
-import com.mickstarify.zooforzotero.LibraryActivity.Notes.NoteView
 import com.mickstarify.zooforzotero.LibraryActivity.Notes.NoteInteractionListener
+import com.mickstarify.zooforzotero.LibraryActivity.Notes.NoteView
 import com.mickstarify.zooforzotero.LibraryActivity.WebDAV.WebDAVSetup
 import com.mickstarify.zooforzotero.R
 import com.mickstarify.zooforzotero.SettingsActivity
@@ -43,8 +43,7 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
     SwipeRefreshLayout.OnRefreshListener,
     ItemViewFragment.OnItemFragmentInteractionListener,
     ItemAttachmentEntry.OnAttachmentFragmentInteractionListener,
-        NoteInteractionListener
-{
+    NoteInteractionListener {
 
     private lateinit var presenter: Contract.Presenter
     private lateinit var firebaseAnalytics: FirebaseAnalytics
@@ -77,8 +76,7 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
 
         // add our "unfiled items" entry
         navigationView.menu.add(R.id.group_other, Menu.NONE, Menu.NONE, "Unfiled Items")
-            .setIcon(R.drawable.baseline_description_24)
-            .setCheckable(true)
+            .setIcon(R.drawable.baseline_description_24).isCheckable = true
 
         sharedCollections = navigationView.menu.addSubMenu(
             R.id.group_shared_collections,
@@ -94,8 +92,7 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
 
     override fun addNavigationEntry(collection: Collection, parent: String) {
         collectionsMenu.add(R.id.group_collections, Menu.NONE, Menu.NONE, collection.name)
-            .setIcon(R.drawable.ic_folder_black_24dp)
-            .setCheckable(true)
+            .setIcon(R.drawable.ic_folder_black_24dp).isCheckable = true
 
     }
 
@@ -108,8 +105,7 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
             Menu.NONE,
             groupInfo.name
         )
-            .setIcon(R.drawable.ic_folder_black_24dp)
-            .setCheckable(true)
+            .setIcon(R.drawable.ic_folder_black_24dp).isCheckable = true
     }
 
     override fun clearSidebar() {
@@ -140,9 +136,9 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
                 showWebDAVSetup()
             }
             R.id.zotero_save -> {
-                val url = "https://www.zotero.org/save";
+                val url = "https://www.zotero.org/save"
                 val intent = Intent(Intent.ACTION_VIEW)
-                intent.setData(Uri.parse(url))
+                intent.data = Uri.parse(url)
                 startActivity(intent)
             }
             R.id.attachment_manager -> {
@@ -249,11 +245,10 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
                 totalItemCount: Int
             ) {
                 if (listView.getChildAt(0) != null) {
-                    swipeRefreshLayout.setEnabled(
-                        listView.getFirstVisiblePosition() == 0 && listView.getChildAt(
+                    swipeRefreshLayout.isEnabled =
+                        listView.firstVisiblePosition == 0 && listView.getChildAt(
                             0
-                        ).getTop() == 0
-                    )
+                        ).top == 0
                 }
             }
 
@@ -335,7 +330,7 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
 
     }
 
-    override fun showNote(note: Note){
+    override fun showNote(note: Note) {
         val noteView = NoteView(this, note, this)
         noteView.show()
     }
@@ -452,7 +447,7 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        Log.d(packageName, "got intent ${intent.action} ${intent.toString()}")
+        Log.d(packageName, "got intent ${intent.action} $intent")
         if (intent.action == ACTION_FILTER) {
             val query = intent.getStringExtra(EXTRA_QUERY) ?: ""
             Log.d(packageName, "got intent for library filter $query")
@@ -513,7 +508,7 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
         if (message == "") {
             textView.setText(R.string.library_content_empty_library)
         } else {
-            textView.setText(message)
+            textView.text = message
         }
     }
 

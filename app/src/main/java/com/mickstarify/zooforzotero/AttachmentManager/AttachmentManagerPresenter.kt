@@ -1,7 +1,6 @@
 package com.mickstarify.zooforzotero.AttachmentManager
 
 import android.content.Context
-import com.mickstarify.zooforzotero.ZoteroStorage.Database.Item
 import kotlin.math.round
 
 class AttachmentManagerPresenter(val view: Contract.View, context: Context) : Contract.Presenter {

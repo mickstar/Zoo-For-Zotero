@@ -1,6 +1,5 @@
 package com.mickstarify.zooforzotero.ZoteroAPI
 
-import android.net.Uri
 import java.util.concurrent.Future
 
 interface ZoteroAPIDownloadAttachmentListener {

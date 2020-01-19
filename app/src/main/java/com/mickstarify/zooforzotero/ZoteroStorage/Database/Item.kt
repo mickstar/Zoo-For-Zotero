@@ -2,10 +2,8 @@ package com.mickstarify.zooforzotero.ZoteroStorage.Database
 
 import android.os.Parcelable
 import android.text.Html
-import android.util.ArrayMap
 import android.util.Log
 import androidx.room.*
-import com.mickstarify.zooforzotero.ZoteroAPI.Model.ItemPOJO
 import io.reactivex.Completable
 import io.reactivex.Maybe
 import io.reactivex.Single
@@ -117,7 +115,7 @@ class Item : Parcelable {
             else -> this.getItemData("title")
         }
 
-        return (title ?: "unknown") as String
+        return (title ?: "unknown")
     }
 
     fun getAuthor(): String {
@@ -176,7 +174,7 @@ class Item : Parcelable {
 
     fun isDownloadable(): Boolean {
         /*Returns whether should be able to download this attachment and open it*/
-        if (this.itemType != "attachment"){
+        if (this.itemType != "attachment") {
             return false
         }
 
@@ -188,7 +186,7 @@ class Item : Parcelable {
     }
 
     fun getFileExtension(): String {
-        return when (this.data["contentType"]){
+        return when (this.data["contentType"]) {
             "application/pdf" -> "pdf"
             "image/vnd.djvu" -> "djvu"
             else -> "UNKNOWN"

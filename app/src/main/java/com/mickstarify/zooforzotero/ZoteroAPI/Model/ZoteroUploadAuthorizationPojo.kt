@@ -19,5 +19,4 @@ data class ParamsPojo(
     @SerializedName("x-amz-date") val x_amz_date: String,
     @SerializedName("x-amz-signature") val x_amz_signature: String,
     @SerializedName("x-amz-security-token") val x_amz_security_token: String
-) {
-}
+)

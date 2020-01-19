@@ -18,12 +18,13 @@ import com.mickstarify.zooforzotero.ZoteroAPI.Model.Note
 import com.mickstarify.zooforzotero.ZoteroStorage.AttachmentStorageManager
 import com.mickstarify.zooforzotero.ZoteroStorage.Database.*
 import com.mickstarify.zooforzotero.ZoteroStorage.Database.Collection
-import com.mickstarify.zooforzotero.ZoteroStorage.ZoteroDB.*
+import com.mickstarify.zooforzotero.ZoteroStorage.ZoteroDB.ItemsDownloadProgress
+import com.mickstarify.zooforzotero.ZoteroStorage.ZoteroDB.ZoteroDB
+import com.mickstarify.zooforzotero.ZoteroStorage.ZoteroDB.ZoteroDBPicker
+import com.mickstarify.zooforzotero.ZoteroStorage.ZoteroDB.ZoteroGroupDB
 import io.reactivex.Completable
 import io.reactivex.CompletableObserver
-import io.reactivex.CompletableSource
 import io.reactivex.MaybeObserver
-import io.reactivex.Observable
 import io.reactivex.Observer
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposable
@@ -149,6 +150,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
             return zoteroDB.getSubCollectionsFor(collectionKey)
         }
         presenter.makeToastAlert("Error, could not open collection: $collectionName Try Refreshing your Library.")
+
         val bundle = Bundle()
         bundle.putBoolean("collection_is_null", zoteroDB.collections == null)
         bundle.putBoolean("is_populated", zoteroDB.isPopulated())
@@ -388,7 +390,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                 finishLoading()
             }
 
-            if (zoteroDB.items?.size == 0){
+            if (zoteroDB.items?.size == 0) {
                 zoteroDB.clearItemsVersion()
             }
         }
@@ -1093,8 +1095,9 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
             .subscribeOn(Schedulers.io()).subscribe()
     }
 
-    fun loadGroupItemsLocally(group: GroupInfo, db: ZoteroDB){
-        db.loadItemsFromDatabase().subscribeOn(Schedulers.io()).observeOn(AndroidSchedulers.mainThread()).doOnComplete {
+    fun loadGroupItemsLocally(group: GroupInfo, db: ZoteroDB) {
+        db.loadItemsFromDatabase().subscribeOn(Schedulers.io())
+            .observeOn(AndroidSchedulers.mainThread()).doOnComplete {
             finishLoadingGroups(group)
         }.subscribe()
     }
@@ -1262,7 +1265,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
 
     private fun finishLoadingGroups(group: GroupInfo) {
         val db = zoteroGroupDB.getGroup(group.id)
-        if (db.items == null || db.collections == null){
+        if (db.items == null || db.collections == null) {
             Log.d("zotero", "not finished loading groups yet")
             return
         }
@@ -1375,7 +1378,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                 "Error with stored API",
                 "The API Key we have stored in the application is invalid!" +
                         "Please re-authenticate the application"
-            ) { (context as Activity).finish() }
+            ) { context.finish() }
             auth.destroyCredentials()
             zoteroDB.clearItemsVersion()
         }

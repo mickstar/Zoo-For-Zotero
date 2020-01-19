@@ -36,13 +36,13 @@ class EditNoteDialog {
 
         cancelButton.onClick {
             onEditNoteChangeListener.onCancel()
-            imm.hideSoftInputFromWindow(editTextNote.getWindowToken(), 0);
+            imm.hideSoftInputFromWindow(editTextNote.windowToken, 0)
             dialogBuilder.dismiss()
         }
 
         submitButton.onClick {
             onEditNoteChangeListener.onSubmit(editTextNote.text.toString())
-            imm.hideSoftInputFromWindow(editTextNote.getWindowToken(), 0);
+            imm.hideSoftInputFromWindow(editTextNote.windowToken, 0)
             dialogBuilder.dismiss()
         }
 

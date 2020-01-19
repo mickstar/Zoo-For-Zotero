@@ -34,16 +34,16 @@ class ItemViewFragment : BottomSheetDialogFragment(), NoteInteractionListener {
         EditNoteDialog()
             .show(context, note.note, object :
                 onEditNoteChangeListener {
-            override fun onCancel() {
-            }
+                override fun onCancel() {
+                }
 
-            override fun onSubmit(noteText: String) {
-                note.note = noteText
-                listener?.onNoteEdit(note)
+                override fun onSubmit(noteText: String) {
+                    note.note = noteText
+                    listener?.onNoteEdit(note)
 
-            }
+                }
 
-        })
+            })
     }
 
     private lateinit var item: Item
@@ -89,18 +89,19 @@ class ItemViewFragment : BottomSheetDialogFragment(), NoteInteractionListener {
         EditNoteDialog()
             .show(context, "", object :
                 onEditNoteChangeListener {
-            override fun onCancel() {
-            }
+                override fun onCancel() {
+                }
 
-            override fun onSubmit(noteText: String) {
-                Log.d("zotero", "got note $noteText")
-                val note = Note(noteText, item.itemKey)
-                listener?.onNoteCreate(note)
+                override fun onSubmit(noteText: String) {
+                    Log.d("zotero", "got note $noteText")
+                    val note = Note(noteText, item.itemKey)
+                    listener?.onNoteCreate(note)
 
-            }
+                }
 
-        })
+            })
     }
+
     var toolbar: Toolbar? = null
 
     override fun onCreateView(

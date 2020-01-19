@@ -14,11 +14,11 @@ class NoteView(val context: Context, val note: Note, val listener: NoteInteracti
             .setTitle("Note")
             .setMessage(Html.fromHtml(note.note))
             .setPositiveButton("Dismiss", { _, _ -> })
-            .setNeutralButton("Edit", {_,_ -> showNoteEditingDialog()})
+            .setNeutralButton("Edit", { _, _ -> showNoteEditingDialog() })
             .show()
     }
 
-    fun showNoteEditingDialog(){
+    fun showNoteEditingDialog() {
         EditNoteDialog()
             .show(context, note.note, object :
                 onEditNoteChangeListener {

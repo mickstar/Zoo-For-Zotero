@@ -9,7 +9,6 @@ import android.util.Log
 import androidx.core.content.FileProvider
 import androidx.documentfile.provider.DocumentFile
 import com.mickstarify.zooforzotero.PreferenceManager
-import com.mickstarify.zooforzotero.ZooForZoteroApplication
 import com.mickstarify.zooforzotero.ZoteroStorage.Database.Item
 import okhttp3.internal.toHexString
 import okio.buffer
@@ -87,7 +86,7 @@ class AttachmentStorageManager @Inject constructor(
                 return false
             }
             val file = File(outputDir, filename)
-            if (file.length() == 0L){
+            if (file.length() == 0L) {
                 file.delete()
                 return false
             }
@@ -108,7 +107,7 @@ class AttachmentStorageManager @Inject constructor(
             if (file == null) {
                 return false
             }
-            if (file.length() == 0L){
+            if (file.length() == 0L) {
                 file.delete()
                 return false
             }
@@ -212,7 +211,7 @@ class AttachmentStorageManager @Inject constructor(
     fun askUserForPath(activity: Activity) {
         /* Attempts to get access to a directory to store zotero storage. */
         val intent = Intent()
-        intent.setAction(Intent.ACTION_OPEN_DOCUMENT_TREE)
+        intent.action = Intent.ACTION_OPEN_DOCUMENT_TREE
         intent.addFlags(Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION)
         intent.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
         intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
@@ -233,7 +232,7 @@ class AttachmentStorageManager @Inject constructor(
             intent.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
         } else {
             intent.setDataAndType(attachmentUri, attachment.data["contentType"])
-            intent.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY)
+            intent.flags = Intent.FLAG_ACTIVITY_NO_HISTORY
             intent = Intent.createChooser(intent, "Open File")
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
 
@@ -318,7 +317,7 @@ class AttachmentStorageManager @Inject constructor(
     }
 
     fun getFileSize(attachment: Item): Long {
-        if (storageMode == StorageMode.EXTERNAL_CACHE){
+        if (storageMode == StorageMode.EXTERNAL_CACHE) {
             return getAttachmentFile(attachment).length()
 
         } else if (storageMode == StorageMode.CUSTOM) {
@@ -351,9 +350,9 @@ class AttachmentStorageManager @Inject constructor(
     fun deleteAttachment(attachment: Item) {
         when (storageMode) {
             StorageMode.EXTERNAL_CACHE -> {
-                try{
+                try {
                     getAttachmentFile(attachment).delete()
-                } catch (e: Exception){
+                } catch (e: Exception) {
                     Log.d("zotero", "cannot delete file. Not found.")
                 }
             }
@@ -361,7 +360,7 @@ class AttachmentStorageManager @Inject constructor(
                 try {
                     val docFile = DocumentFile.fromSingleUri(context, getAttachmentUri(attachment))
                     docFile?.delete()
-                } catch (e: java.io.FileNotFoundException){
+                } catch (e: java.io.FileNotFoundException) {
                     Log.d("zotero", "cannot delete file. Not found.")
                 }
             }

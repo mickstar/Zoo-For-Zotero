@@ -1,6 +1,5 @@
 package com.mickstarify.zooforzotero.LibraryActivity.ItemView
 
-import android.content.Context
 import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -19,7 +18,8 @@ class ItemAuthorsEntry : Fragment() {
     private var creator: Creator? = null
     private var listener: OnFragmentInteractionListener? = null
 
-    private val authorTypes = arrayOf("Author", "Contributor","Editor", "Series Editor", "Translator")
+    private val authorTypes =
+        arrayOf("Author", "Contributor", "Editor", "Series Editor", "Translator")
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -34,31 +34,23 @@ class ItemAuthorsEntry : Fragment() {
     ): View? {
         // Inflate the layout for this fragment
         val view = inflater.inflate(R.layout.fragment_item_authors_entry, container, false)
-        val authorTypesAdapter = ArrayAdapter<String>(this.context!!, R.layout.simple_spinner_item, authorTypes)
+        val authorTypesAdapter =
+            ArrayAdapter<String>(this.context!!, R.layout.simple_spinner_item, authorTypes)
         authorTypesAdapter.setDropDownViewResource(R.layout.simple_spinner_item)
         val creatorType = view.findViewById<Spinner>(R.id.spinner_creatorType)
-        creatorType.setAdapter(authorTypesAdapter)
+        creatorType.adapter = authorTypesAdapter
 
         val lastName = view.findViewById<EditText>(R.id.editText_lastname)
         val firstName = view.findViewById<EditText>(R.id.editText_firstname)
 
-        lastName.setText(creator?.lastName?:"")
-        firstName.setText(creator?.firstName?:"")
+        lastName.setText(creator?.lastName ?: "")
+        firstName.setText(creator?.firstName ?: "")
 
         return view
     }
 
     fun onButtonPressed(uri: Uri) {
         listener?.onFragmentInteraction(uri)
-    }
-
-    override fun onAttach(context: Context) {
-        super.onAttach(context)
-//        if (context is OnFragmentInteractionListener) {
-//            listener = context
-//        } else {
-//            throw RuntimeException(context.toString() + " must implement OnFragmentInteractionListener")
-//        }
     }
 
     override fun onDetach() {
@@ -73,7 +65,7 @@ class ItemAuthorsEntry : Fragment() {
 
     companion object {
         @JvmStatic
-        fun newInstance(creator : Creator) =
+        fun newInstance(creator: Creator) =
             ItemAuthorsEntry().apply {
                 arguments = Bundle().apply {
                     putParcelable(ARG_CREATOR, creator)

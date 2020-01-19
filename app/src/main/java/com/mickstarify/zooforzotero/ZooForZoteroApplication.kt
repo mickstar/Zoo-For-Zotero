@@ -11,7 +11,7 @@ import com.mickstarify.zooforzotero.di.component.ApplicationComponent
 import com.mickstarify.zooforzotero.di.component.DaggerApplicationComponent
 import com.mickstarify.zooforzotero.di.module.ApplicationModule
 
-class ZooForZoteroApplication: Application() {
+class ZooForZoteroApplication : Application() {
 
     lateinit var component: ApplicationComponent
 

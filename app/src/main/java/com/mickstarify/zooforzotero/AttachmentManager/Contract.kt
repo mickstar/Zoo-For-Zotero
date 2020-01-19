@@ -1,7 +1,5 @@
 package com.mickstarify.zooforzotero.AttachmentManager
 
-import com.mickstarify.zooforzotero.ZoteroStorage.Database.Item
-
 interface Contract {
     interface View {
         fun initUI()

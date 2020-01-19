@@ -3,13 +3,11 @@ package com.mickstarify.zooforzotero.AttachmentManager
 import android.app.Activity
 import android.content.Context
 import android.util.Log
-import com.google.common.util.concurrent.Service
 import com.mickstarify.zooforzotero.PreferenceManager
 import com.mickstarify.zooforzotero.SyncSetup.AuthenticationStorage
 import com.mickstarify.zooforzotero.ZooForZoteroApplication
 import com.mickstarify.zooforzotero.ZoteroAPI.DownloadProgress
 import com.mickstarify.zooforzotero.ZoteroAPI.ZoteroAPI
-import com.mickstarify.zooforzotero.ZoteroAPI.ZoteroAPIDownloadAttachmentListener
 import com.mickstarify.zooforzotero.ZoteroStorage.AttachmentStorageManager
 import com.mickstarify.zooforzotero.ZoteroStorage.Database.AttachmentInfo
 import com.mickstarify.zooforzotero.ZoteroStorage.Database.GroupInfo
@@ -21,13 +19,9 @@ import io.reactivex.CompletableObserver
 import io.reactivex.Observer
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposable
-import io.reactivex.functions.Action
-import io.reactivex.functions.Consumer
 import io.reactivex.internal.operators.observable.ObservableFromIterable
-import io.reactivex.internal.operators.observable.ObservableJust
 import io.reactivex.schedulers.Schedulers
 import java.util.*
-import java.util.concurrent.Future
 import javax.inject.Inject
 
 class AttachmentManagerModel(val presenter: Contract.Presenter, val context: Context) :

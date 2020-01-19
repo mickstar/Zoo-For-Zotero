@@ -89,7 +89,7 @@ class LibraryFilterMenuDialog(val context: Context, val onFilterChange: (() -> (
         val dialogView: View = inflater.inflate(R.layout.dialog_filter_menu, null)
 
         val sortingMethodButton = dialogView.findViewById<Button>(R.id.button_sort_by)
-        sortingMethodButton.setText(this.getSortString(selected_sorting_method))
+        sortingMethodButton.text = this.getSortString(selected_sorting_method)
         val checkbox_show_only_pdf = dialogView.findViewById<CheckBox>(R.id.checkBox_show_only_pdf)
         val checkbox_show_only_notes =
             dialogView.findViewById<CheckBox>(R.id.checkBox_show_only_notes)
@@ -104,7 +104,7 @@ class LibraryFilterMenuDialog(val context: Context, val onFilterChange: (() -> (
             DialogInterface.OnClickListener
             { dialogInterface, i ->
                 this.setSortingMethod(i)
-                sortingMethodButton.setText(this.getSortString(this.selected_sorting_method))
+                sortingMethodButton.text = this.getSortString(this.selected_sorting_method)
 
             })
 

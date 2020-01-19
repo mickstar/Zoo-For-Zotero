@@ -28,6 +28,4 @@ data class CollectionData(
     val name: String,
     @SerializedName("parentCollection")
     val parentCollection: String
-) {
-
-}
+)

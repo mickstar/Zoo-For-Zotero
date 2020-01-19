@@ -8,7 +8,7 @@ import oauth.signpost.commonshttp.CommonsHttpOAuthProvider
 import org.jetbrains.anko.doAsync
 import org.jetbrains.anko.onComplete
 
-class ZoteroAPISetupModel (val presenter: Contract.Presenter): Contract.Model {
+class ZoteroAPISetupModel(val presenter: Contract.Presenter) : Contract.Model {
     private val API_URL = "https://api.zotero.org"
     private val REQUEST_TOKEN_ENDPOINT = "https://www.zotero.org/oauth/request?" +
             "library_access=1&" +
@@ -51,7 +51,8 @@ class ZoteroAPISetupModel (val presenter: Contract.Presenter): Contract.Model {
 
     override fun establishAPIConnection() {
         doAsync {
-            val requestURL = OAuthProvider.retrieveRequestToken(OAuthConsumer, "zooforzotero://oauth_callback")
+            val requestURL =
+                OAuthProvider.retrieveRequestToken(OAuthConsumer, "zooforzotero://oauth_callback")
 
             onComplete {
                 Log.d("zotero", "loading URL $requestURL")
@@ -59,7 +60,12 @@ class ZoteroAPISetupModel (val presenter: Contract.Presenter): Contract.Model {
             }
         }
     }
-    override fun handleOAuthCallback(oauth_token: String, oauth_verifier: String, authenticationStorage : AuthenticationStorage) {
+
+    override fun handleOAuthCallback(
+        oauth_token: String,
+        oauth_verifier: String,
+        authenticationStorage: AuthenticationStorage
+    ) {
         doAsync {
             OAuthProvider.retrieveAccessToken(OAuthConsumer, oauth_verifier)
             onComplete {

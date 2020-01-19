@@ -8,8 +8,7 @@ import io.reactivex.Maybe
 data class RecentlyOpenedAttachment(
     @PrimaryKey val itemKey: String,
     @ColumnInfo(name = "version") val version: Int
-) {
-}
+)
 
 @Dao
 interface RecentlyOpenedAttachmentDao {

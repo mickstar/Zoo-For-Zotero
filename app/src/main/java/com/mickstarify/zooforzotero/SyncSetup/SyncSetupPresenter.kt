@@ -17,7 +17,7 @@ class SyncSetupPresenter(private val view: SyncSetupContract.View, context: Cont
     }
 
     override fun selectSyncSetup(option: SyncOption) {
-        when(option){
+        when (option) {
             SyncOption.ZoteroAPI -> {
                 view.showHowToZoteroSyncDialog({
                     model.setupZoteroAPI()
@@ -35,7 +35,7 @@ class SyncSetupPresenter(private val view: SyncSetupContract.View, context: Cont
     private val model = SyncSetupModel(this, context)
 
 
-    init{
+    init {
         view.initUI()
     }
 

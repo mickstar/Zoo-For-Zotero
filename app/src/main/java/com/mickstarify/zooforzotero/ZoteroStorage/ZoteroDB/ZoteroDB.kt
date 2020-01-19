@@ -16,14 +16,10 @@ import com.mickstarify.zooforzotero.ZoteroStorage.Database.Collection
 import com.mickstarify.zooforzotero.ZoteroStorage.Database.Item
 import com.mickstarify.zooforzotero.ZoteroStorage.Database.ZoteroDatabase
 import io.reactivex.Completable
-import io.reactivex.CompletableObserver
-import io.reactivex.CompletableOnSubscribe
-import io.reactivex.disposables.Disposable
 import io.reactivex.functions.Consumer
 import io.reactivex.schedulers.Schedulers
 import java.io.File
 import java.io.InputStreamReader
-import java.io.OutputStreamWriter
 import java.util.*
 import javax.inject.Inject
 import kotlin.collections.HashMap
@@ -167,7 +163,7 @@ class ZoteroDB constructor(
     fun createAttachmentsMap() {
         this.attachments = HashMap()
 
-        if (items == null){
+        if (items == null) {
             Log.e("zotero", "items are null for some reason.")
             this.items = LinkedList()
         }
@@ -368,7 +364,7 @@ class ZoteroDB constructor(
         val attachmentInfo = this.attachmentInfo!![item.itemKey]
         if (attachmentInfo == null) {
             val md5Key = item.data["md5"]
-            if (md5Key != null){
+            if (md5Key != null) {
                 return md5Key
             }
             Log.d("zotero", "No metadata available for ${item.itemKey}")
@@ -439,7 +435,7 @@ class ZoteroDB constructor(
                 if (md5Key == "") {
                     continue
                 }
-                val mtime = (item.data["mtime"] ?: "0" as String).toLong()
+                val mtime = (item.data["mtime"] ?: "0").toLong()
 
                 this.updateAttachmentMetadata(item.itemKey, md5Key, mtime, AttachmentInfo.LOCALSYNC)
                     .blockingAwait()

@@ -7,18 +7,12 @@ import com.mickstarify.zooforzotero.ZoteroStorage.Database.Item
 import com.thegrizzlylabs.sardineandroid.impl.OkHttpSardine
 import io.reactivex.Completable
 import io.reactivex.Observable
-import io.reactivex.Single
-import io.reactivex.SingleEmitter
-import io.reactivex.functions.Action
 import net.lingala.zip4j.ZipFile
-import okio.Okio
 import okio.buffer
 import okio.sink
 import okio.source
 import java.io.File
-import java.io.IOException
 import java.io.InputStream
-import java.io.OutputStreamWriter
 import java.util.*
 
 class Webdav(

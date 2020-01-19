@@ -15,6 +15,7 @@ import javax.inject.Inject
 class SettingsActivity : AppCompatActivity() {
     @Inject
     lateinit var myStorageManager: AttachmentStorageManager
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.settings_activity)
@@ -74,13 +75,13 @@ class SettingsActivity : AppCompatActivity() {
         override fun onResume() {
             super.onResume()
             // Set up a listener whenever a key changes
-            getPreferenceScreen().getSharedPreferences()
+            preferenceScreen.sharedPreferences
                 .registerOnSharedPreferenceChangeListener(this)
         }
 
         override fun onPause() {
             super.onPause()
-            getPreferenceScreen().getSharedPreferences()
+            preferenceScreen.sharedPreferences
                 .unregisterOnSharedPreferenceChangeListener(this)
         }
 

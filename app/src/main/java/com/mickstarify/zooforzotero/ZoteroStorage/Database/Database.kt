@@ -7,8 +7,6 @@ import androidx.room.RoomDatabase
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.ItemPOJO
 import io.reactivex.Completable
 import io.reactivex.Maybe
-import io.reactivex.Single
-import io.reactivex.internal.operators.single.SingleJust
 import java.util.*
 import javax.inject.Inject
 import javax.inject.Singleton

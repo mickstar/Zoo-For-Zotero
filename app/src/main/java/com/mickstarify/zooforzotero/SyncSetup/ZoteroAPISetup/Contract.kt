@@ -4,7 +4,7 @@ import android.net.Uri
 import com.mickstarify.zooforzotero.SyncSetup.AuthenticationStorage
 
 interface Contract {
-    interface View{
+    interface View {
         fun loadURL(url: String)
         fun makeErrorAlert(title: String, message: String)
         fun startLoadingAnimation()
@@ -12,7 +12,7 @@ interface Contract {
         fun openLibraryView()
     }
 
-    interface Presenter{
+    interface Presenter {
         fun loadAuthorizationURL(authorizationURL: String)
         fun handleOAuthCallback(uri: Uri?)
         fun openLibraryView()
@@ -20,7 +20,11 @@ interface Contract {
 
     interface Model {
         fun establishAPIConnection()
-        fun handleOAuthCallback(oauth_token : String, oauth_verifier : String,authenticationStorage : AuthenticationStorage)
+        fun handleOAuthCallback(
+            oauth_token: String,
+            oauth_verifier: String,
+            authenticationStorage: AuthenticationStorage
+        )
 
     }
 }

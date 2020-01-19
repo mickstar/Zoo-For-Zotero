@@ -1,17 +1,13 @@
 package com.mickstarify.zooforzotero.AttachmentManager
 
-import android.content.Context
 import android.os.Bundle
-import android.os.Handler
 import android.util.Log
 import android.view.View
 import android.view.WindowManager
 import android.widget.*
 import androidx.appcompat.app.AlertDialog
-import com.google.android.material.snackbar.Snackbar
 import androidx.appcompat.app.AppCompatActivity
 import com.mickstarify.zooforzotero.R
-
 import kotlinx.android.synthetic.main.activity_attachment_manager.*
 import org.jetbrains.anko.sdk27.coroutines.onClick
 
@@ -31,7 +27,7 @@ class AttachmentManager : AppCompatActivity(), Contract.View {
         findViewById<Button>(R.id.button_download).onClick {
             presenter.pressedDownloadAttachments()
         }
-        setDownloadButtonState("Loading Library",false)
+        setDownloadButtonState("Loading Library", false)
     }
 
     override fun makeToastAlert(message: String) {
@@ -79,7 +75,7 @@ class AttachmentManager : AppCompatActivity(), Contract.View {
     override fun setDownloadButtonState(text: String, enabled: Boolean) {
         val button = findViewById<Button>(R.id.button_download)
         button.isEnabled = enabled
-        button.setText(text)
+        button.text = text
         Log.d("zotero", "button state changed. ${button.text} ${button.isEnabled}")
     }
 
@@ -105,7 +101,8 @@ class AttachmentManager : AppCompatActivity(), Contract.View {
         sizeLocal: String,
         nRemote: Int
     ) {
-        findViewById<TextView>(R.id.txt_number_attachments).text = "${nLocal} of ${nRemote} Downloaded"
+        findViewById<TextView>(R.id.txt_number_attachments).text =
+            "${nLocal} of ${nRemote} Downloaded"
         findViewById<TextView>(R.id.txt_local_size).text = "${sizeLocal} used"
 
         findViewById<LinearLayout>(R.id.ll_meta_information).visibility = View.VISIBLE
@@ -116,7 +113,7 @@ class AttachmentManager : AppCompatActivity(), Contract.View {
 
     private var doubleBackToExitPressedOnce = false
     override fun onBackPressed() {
-        if (presenter.isDownloading()){
+        if (presenter.isDownloading()) {
             this.makeToastAlert("Do not exit while download is active. Cancel it first.")
         } else {
             super.onBackPressed()

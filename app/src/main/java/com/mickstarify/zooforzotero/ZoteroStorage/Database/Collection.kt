@@ -22,8 +22,7 @@ class Collection(
         collectionPOJO.getName(),
         collectionPOJO.getParent(),
         groupID
-    ) {
-    }
+    )
 
     @Ignore
     private var subCollections: MutableList<Collection>? = LinkedList()

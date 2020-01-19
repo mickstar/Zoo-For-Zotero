@@ -69,7 +69,7 @@ class ZoteroAPISetup : AppCompatActivity(), Contract.View {
         webView.loadUrl(url)
     }
 
-    private lateinit var presenter : Contract.Presenter;
+    private lateinit var presenter: Contract.Presenter
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -88,7 +88,7 @@ class ZoteroAPISetup : AppCompatActivity(), Contract.View {
     }
 
     private fun handleZoteroOAuthIntent(intent: Intent?) {
-        if (intent != null){
+        if (intent != null) {
             val uri = intent.data
             Log.d(this.packageName, "got intent $uri")
             Log.d(packageName, "token ${uri?.getQueryParameter("oauth_token")}")

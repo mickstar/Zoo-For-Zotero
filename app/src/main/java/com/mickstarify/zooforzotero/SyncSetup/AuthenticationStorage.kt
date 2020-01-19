@@ -3,17 +3,22 @@ package com.mickstarify.zooforzotero.SyncSetup
 import android.content.Context
 import android.content.SharedPreferences
 
-class AuthenticationStorage (context : Context){
-    private var sharedPreferences : SharedPreferences = context.getSharedPreferences("credentials", Context.MODE_PRIVATE)
+class AuthenticationStorage(context: Context) {
+    private var sharedPreferences: SharedPreferences =
+        context.getSharedPreferences("credentials", Context.MODE_PRIVATE)
 
     fun hasCredentials(): Boolean {
-        return (sharedPreferences.contains("userkey") && sharedPreferences.getString("userkey", "") != "")
+        return (sharedPreferences.contains("userkey") && sharedPreferences.getString(
+            "userkey",
+            ""
+        ) != "")
     }
 
-    fun getUsername() : String {
+    fun getUsername(): String {
         return sharedPreferences.getString("username", "error")!!
     }
-    fun setCredentials (username: String, userID : String, userkey: String) {
+
+    fun setCredentials(username: String, userID: String, userkey: String) {
         val editor = sharedPreferences.edit()
         editor.putString("username", username)
         editor.putString("userID", userID)

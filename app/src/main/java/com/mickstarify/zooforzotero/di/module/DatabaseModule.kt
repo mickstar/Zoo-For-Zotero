@@ -10,7 +10,7 @@ import javax.inject.Singleton
 class DatabaseModule {
     @Singleton
     @Provides
-    fun getDatabase(context: Context) : ZoteroDatabase {
+    fun getDatabase(context: Context): ZoteroDatabase {
         return ZoteroDatabase(context)
     }
 }

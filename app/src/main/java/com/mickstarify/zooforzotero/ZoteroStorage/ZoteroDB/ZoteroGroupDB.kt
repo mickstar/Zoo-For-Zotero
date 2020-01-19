@@ -1,7 +1,6 @@
 package com.mickstarify.zooforzotero.ZoteroStorage.ZoteroDB
 
 import android.content.Context
-import com.mickstarify.zooforzotero.ZoteroStorage.Database.ZoteroDatabase
 
 /* This class manages multiple databases for different groups that the user is part of.
 *  We will do this buy holding many zoteroDB instances. */
