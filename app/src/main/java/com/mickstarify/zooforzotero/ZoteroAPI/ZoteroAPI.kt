@@ -19,6 +19,7 @@ import io.reactivex.disposables.Disposable
 import okhttp3.Interceptor
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
+import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.ResponseBody
 import okhttp3.logging.HttpLoggingInterceptor
@@ -536,13 +537,12 @@ class ZoteroAPI(
         val chain = authorizationObservable.map { authorizationPojo ->
             Log.d("zotero", "t ${authorizationPojo.uploadKey}")
             Log.d("zotero", "about to upload ${authorizationPojo.uploadKey}")
-            val requestBody = attachmentStorageManager.readBytes(
-                attachment
-            )
-                .toRequestBody(
-                    "multipart/form-data".toMediaType(),
-                    0, content.size
+            val requestBody = RequestBody.create(
+                "multipart/form-data".toMediaType(),
+                attachmentStorageManager.readBytes(
+                    attachment
                 )
+            )
             buildAmazonService().uploadAttachmentToAmazonMulti(
                 authorizationPojo.url,
                 authorizationPojo.params.key
