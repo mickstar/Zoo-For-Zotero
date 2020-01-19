@@ -1361,6 +1361,24 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
             })
     }
 
+    fun updateDeletedEntries(){
+        /* Checks for deleted entries on the zotero servers and mirrors those changes on the local database. */
+        // we have to assume the library is loaded.
+        if (!zoteroDB.isPopulated()){
+            Log.e("zotero", "error deleteEntries called without a loaded library")
+            return
+        }
+
+        val deletedItemsCheckVersion = zoteroDB.getLastDeletedItemsCheckVersion()
+
+        val single = zoteroAPI.getDeletedEntries(deletedItemsCheckVersion, zoteroDB.groupID)
+        single.subscribeOn(Schedulers.io()).observeOn(AndroidSchedulers.mainThread()).doOnError({
+            Log.e("zotero", "got error while requesting deleted entries $it")
+        }).subscribe(Consumer {
+
+        })
+    }
+
     init {
         ((context as Activity).application as ZooForZoteroApplication).component.inject(this)
         firebaseAnalytics = FirebaseAnalytics.getInstance(context)

@@ -280,6 +280,21 @@ class ZoteroAPI(
         return Completable.fromObservable(observable)
     }
 
+    fun getDeletedEntries(sinceVersion: Int, groupID: Int = GroupInfo.NO_GROUP_ID): Single<DeletedEntriesPojo> {
+        val service = buildZoteroAPI()
+        val observable = when (groupID){
+            GroupInfo.NO_GROUP_ID -> { service.getDeletedEntriesSince(userID, sinceVersion) }
+            else -> { throw NotImplementedError() }
+        }
+        return Single.fromObservable(observable.map { response ->
+            if (response.code() == 200){
+                response.body()
+            } else {
+                throw Exception("Error server responded with code ${response.code()}")
+            }
+        })
+    }
+
     fun deleteItem(itemKey: String, version: Int, listener: DeleteItemListener) {
         val zoteroAPI = buildZoteroAPI(ifUnmodifiedSinceVersion = version)
         val call: Call<ResponseBody> = zoteroAPI.deleteItem(userID, itemKey)

@@ -305,6 +305,18 @@ class ZoteroDB constructor(
         return ItemsDownloadProgress(downloadVersion, nDownload, total)
     }
 
+    fun getLastDeletedItemsCheckVersion(): Int {
+        val sharedPreferences = context.getSharedPreferences(namespace, MODE_PRIVATE)
+        return sharedPreferences.getInt("LastDeletedItemsCheckVersion", 0)
+    }
+
+    fun setLastDeletedItemsCheckVersion(version: Int) {
+        val sharedPreferences = context.getSharedPreferences(namespace, MODE_PRIVATE)
+        val editor = sharedPreferences.edit()
+        editor.putInt("LastDeletedItemsCheckVersion", version)
+        editor.commit()
+    }
+
     fun getLibraryVersion(): Int {
         val sharedPreferences = context.getSharedPreferences(namespace, MODE_PRIVATE)
         return sharedPreferences.getInt("ItemsLibraryVersion", -1)
@@ -467,4 +479,6 @@ class ZoteroDB constructor(
         this.attachmentInfo!![itemKey] = attachmentInfo
         return zoteroDatabase.writeAttachmentInfo(attachmentInfo)
     }
+
+
 }
