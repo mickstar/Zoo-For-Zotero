@@ -305,8 +305,7 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
                 model.loadGroups()
                 model.downloadLibrary()
             } else {
-                model.loadCollectionsLocally()
-                model.loadItemsLocally()
+                model.loadLibraryLocally()
                 model.loadGroups()
             }
         }

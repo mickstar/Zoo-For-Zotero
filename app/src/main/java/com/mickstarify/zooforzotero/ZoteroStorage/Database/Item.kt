@@ -300,6 +300,10 @@ interface ItemDao {
     @Delete
     fun delete(item: ItemInfo)
 
+    @Transaction
+    @Query("DELETE FROM ItemInfo WHERE `itemKey`=:itemKey")
+    fun deleteUsingItemKey(itemKey: String)
+
     @Query("DELETE FROM iteminfo WHERE `group`=:groupID")
     fun deleteAllForGroup(groupID: Int): Completable
 }
