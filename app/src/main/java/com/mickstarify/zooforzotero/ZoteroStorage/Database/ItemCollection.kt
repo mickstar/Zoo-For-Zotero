@@ -20,3 +20,6 @@ data class ItemCollection(
     @ColumnInfo(name = "collectionKey") val collectionKey: String,
     @ColumnInfo(name = "itemKey") val itemKey: String
 ) : Parcelable
+
+// todo write a method for deleting all items from a collection
+// todo rewrite librarymodel library loading.

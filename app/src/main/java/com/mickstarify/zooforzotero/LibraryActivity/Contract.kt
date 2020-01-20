@@ -85,7 +85,7 @@ interface Contract {
     }
 
     interface Model {
-        fun downloadLibrary(refresh: Boolean = false, useSmallLoadingAnimation: Boolean = false)
+        fun downloadLibrary(doRefresh: Boolean = false, useSmallLoadingAnimation: Boolean = false)
         fun getLibraryItems(): List<Item>
         fun getItemsFromCollection(collectionName: String): List<Item>
         fun refreshLibrary(useSmallLoadingAnimation: Boolean = false)

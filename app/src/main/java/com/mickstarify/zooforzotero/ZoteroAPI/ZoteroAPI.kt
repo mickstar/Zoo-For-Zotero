@@ -252,6 +252,20 @@ class ZoteroAPI(
         return Completable.fromObservable(observable)
     }
 
+    fun getDeletedEntries(sinceVersion: Int, groupID: Int = GroupInfo.NO_GROUP_ID): Single<DeletedEntriesPojo> {
+        val observable = when (groupID){
+            GroupInfo.NO_GROUP_ID -> { service.getDeletedEntriesSince(userID, sinceVersion) }
+            else -> { throw NotImplementedError() }
+        }
+        return Single.fromObservable(observable.map { response ->
+            if (response.code() == 200){
+                response.body()
+            } else {
+                throw Exception("Error server responded with code ${response.code()}")
+            }
+        })
+    }
+
     fun deleteItem(itemKey: String, version: Int, listener: DeleteItemListener) {
         val call: Call<ResponseBody> = service.deleteItem(userID, itemKey, version)
 
@@ -290,14 +304,12 @@ class ZoteroAPI(
 
     private fun getItemsFromIndex(
         modificationSinceVersion: Int,
-        useCaching: Boolean,
         index: Int,
-        isGroup: Boolean,
         groupID: Int
     ): Observable<ZoteroAPIItemsResponse> {
 
         val observable = if (modificationSinceVersion > -1) {
-            if (isGroup) {
+            if (groupID != GroupInfo.NO_GROUP_ID) {
                 service.getItemsForGroupSince(
                     modificationSinceVersion,
                     groupID,
@@ -313,7 +325,7 @@ class ZoteroAPI(
                 )
             }
         } else {
-            if (isGroup) {
+            if (groupID != GroupInfo.NO_GROUP_ID) {
                 service.getItemsForGroup(0, groupID, index)
             } else {
                 service.getItems(0, userID, index)
@@ -321,7 +333,7 @@ class ZoteroAPI(
 
         }
 
-        Log.d("zotero", "got since=$modificationSinceVersion useCaching=$useCaching")
+        Log.d("zotero", "got since=$modificationSinceVersion")
 
         return observable.map { response: Response<ResponseBody> ->
             if (response.code() == 304) {
@@ -341,7 +353,6 @@ class ZoteroAPI(
 
     fun getItems(
         libraryVersion: Int = -1,
-        useCaching: Boolean = false,
         groupID: Int = GroupInfo.NO_GROUP_ID,
         downloadProgress: ItemsDownloadProgress? = null
     ): Observable<ZoteroAPIItemsResponse> {
@@ -355,9 +366,7 @@ class ZoteroAPI(
                 var itemCount = fromIndex
                 val s = getItemsFromIndex(
                     libraryVersion,
-                    useCaching,
                     itemCount,
-                    isGroup,
                     groupID
                 )
                 val response = s.blockingSingle()
@@ -374,9 +383,7 @@ class ZoteroAPI(
                 while (itemCount < total) {
                     val res = getItemsFromIndex(
                         libraryVersion,
-                        useCaching,
                         itemCount,
-                        isGroup,
                         groupID
                     ).blockingSingle()
                     itemCount += res.items.size
@@ -390,15 +397,13 @@ class ZoteroAPI(
 
 
     private fun getCollectionFromIndex(
-        useGroup: Boolean,
         groupID: Int,
-        useCaching: Boolean,
         modificationSinceVersion: Int,
         index: Int = 0
     ): Observable<ZoteroAPICollectionsResponse> {
         /* Obvservable that gets collections from a certain index. */
 
-        val observable = if (useGroup) {
+        val observable = if (groupID != GroupInfo.NO_GROUP_ID) {
             service.getCollectionsForGroup(modificationSinceVersion, groupID, index)
         } else {
             service.getCollections(modificationSinceVersion, userID, index)
@@ -419,25 +424,17 @@ class ZoteroAPI(
 
     fun getCollections(
         libraryVersion: Int,
-        useCaching: Boolean,
-        isGroup: Boolean = false,
-        groupID: Int = -1
+        groupID: Int = GroupInfo.NO_GROUP_ID
     ): Observable<List<CollectionPOJO>> {
         /* This method provides access to the zotero api collections endpoint.
         *  It allows for both user personal access as well as shared collections (group) access.
         *  You must specify useGroup, as well as provide a groupID*/
 
-        if ((isGroup && groupID == -1) || !isGroup && groupID != -1) {
-            throw Exception("Error, if isGroup=true, you must specify a groupID. Likewise if it is false, groupID cannot be given.")
-        }
-
         val observable = Observable.create(object : ObservableOnSubscribe<List<CollectionPOJO>> {
             override fun subscribe(emitter: ObservableEmitter<List<CollectionPOJO>>) {
 
                 val s = getCollectionFromIndex(
-                    isGroup,
                     groupID,
-                    useCaching,
                     libraryVersion
                 )
                 val response = s.blockingSingle()
@@ -446,9 +443,7 @@ class ZoteroAPI(
                 var itemCount = response.collections.size
                 while (itemCount < total) {
                     val r = getCollectionFromIndex(
-                        isGroup,
                         groupID,
-                        useCaching,
                         libraryVersion,
                         index = itemCount
                     ).blockingSingle()

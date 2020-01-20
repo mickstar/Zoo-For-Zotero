@@ -80,4 +80,8 @@ interface CollectionDao {
 
     @Delete
     fun delete(collection: Collection)
+
+    @Transaction
+    @Query("DELETE FROM Collections where `key`=:collectionKey")
+    fun deleteUsingKey(collectionKey: String)
 }

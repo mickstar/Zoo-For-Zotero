@@ -7,6 +7,7 @@ import androidx.room.RoomDatabase
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.ItemPOJO
 import io.reactivex.Completable
 import io.reactivex.Maybe
+import io.reactivex.functions.Action
 import java.util.*
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -64,6 +65,18 @@ class ZoteroDatabase @Inject constructor(val context: Context) {
         }
         return completable
     }
+
+    fun deleteItem(itemKey: String): Completable {
+        return Completable.fromAction(Action {
+            db.itemDao().deleteUsingItemKey(itemKey)
+        })
+    }
+    fun deleteCollection(collectionKey: String): Completable {
+        return Completable.fromAction(Action {
+            db.collectionDao().deleteUsingKey(collectionKey)
+        })
+    }
+
 
     fun writeItems(
         groupID: Int,

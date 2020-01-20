@@ -16,6 +16,7 @@ import com.mickstarify.zooforzotero.ZoteroStorage.Database.Collection
 import com.mickstarify.zooforzotero.ZoteroStorage.Database.Item
 import com.mickstarify.zooforzotero.ZoteroStorage.Database.ZoteroDatabase
 import io.reactivex.Completable
+import io.reactivex.functions.Action
 import io.reactivex.functions.Consumer
 import io.reactivex.schedulers.Schedulers
 import java.io.File
@@ -105,8 +106,6 @@ class ZoteroDB constructor(
     }
 
     fun loadCollectionsFromDatabase(): Completable {
-        val observable = zoteroDatabase.getCollections(groupID)
-
         return Completable.fromMaybe(zoteroDatabase.getCollections(groupID).doOnSuccess(
             Consumer {
                 collections = it
@@ -305,6 +304,18 @@ class ZoteroDB constructor(
         return ItemsDownloadProgress(downloadVersion, nDownload, total)
     }
 
+    fun getLastDeletedItemsCheckVersion(): Int {
+        val sharedPreferences = context.getSharedPreferences(namespace, MODE_PRIVATE)
+        return sharedPreferences.getInt("LastDeletedItemsCheckVersion", 0)
+    }
+
+    fun setLastDeletedItemsCheckVersion(version: Int) {
+        val sharedPreferences = context.getSharedPreferences(namespace, MODE_PRIVATE)
+        val editor = sharedPreferences.edit()
+        editor.putInt("LastDeletedItemsCheckVersion", version)
+        editor.commit()
+    }
+
     fun getLibraryVersion(): Int {
         val sharedPreferences = context.getSharedPreferences(namespace, MODE_PRIVATE)
         return sharedPreferences.getInt("ItemsLibraryVersion", -1)
@@ -467,4 +478,27 @@ class ZoteroDB constructor(
         this.attachmentInfo!![itemKey] = attachmentInfo
         return zoteroDatabase.writeAttachmentInfo(attachmentInfo)
     }
+
+    fun deleteItems(itemKeys: List<String>): Completable {
+        return Completable.fromAction(
+            Action {
+                for (itemKey in itemKeys){
+                    zoteroDatabase.deleteItem(itemKey).blockingAwait()
+                }
+            }
+        )
+        // todo work out a way to update live data.
+    }
+
+    fun deleteCollections(collectionKeys: List<String>): Completable {
+        return Completable.fromAction(
+            Action {
+                for (collectionKey in collectionKeys){
+                    zoteroDatabase.deleteCollection(collectionKey).blockingAwait()
+                }
+            }
+        )
+    }
+
+
 }

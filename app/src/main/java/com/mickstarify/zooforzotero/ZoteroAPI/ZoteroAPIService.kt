@@ -3,6 +3,7 @@ package com.mickstarify.zooforzotero.ZoteroAPI
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.CollectionPOJO
+import com.mickstarify.zooforzotero.ZoteroAPI.Model.DeletedEntriesPojo
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.GroupPojo
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.KeyInfo
 import io.reactivex.Observable
@@ -70,6 +71,12 @@ interface ZoteroAPIService {
     fun getKeyInfo(
         @Path("key") key: String
     ): Call<KeyInfo>
+
+    @GET("users/{user}/deleted")
+    fun getDeletedEntriesSince(
+        @Path("user") user: String,
+        @Query("since") since: Int
+    ): Observable<Response<DeletedEntriesPojo>>
 
     @GET("users/{user}/collections")
     fun getCollections(
