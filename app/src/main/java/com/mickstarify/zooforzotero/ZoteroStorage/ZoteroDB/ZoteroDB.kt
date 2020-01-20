@@ -106,8 +106,6 @@ class ZoteroDB constructor(
     }
 
     fun loadCollectionsFromDatabase(): Completable {
-        val observable = zoteroDatabase.getCollections(groupID)
-
         return Completable.fromMaybe(zoteroDatabase.getCollections(groupID).doOnSuccess(
             Consumer {
                 collections = it
