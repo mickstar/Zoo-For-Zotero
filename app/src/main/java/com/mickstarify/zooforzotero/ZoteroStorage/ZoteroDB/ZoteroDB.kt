@@ -16,6 +16,7 @@ import com.mickstarify.zooforzotero.ZoteroStorage.Database.Collection
 import com.mickstarify.zooforzotero.ZoteroStorage.Database.Item
 import com.mickstarify.zooforzotero.ZoteroStorage.Database.ZoteroDatabase
 import io.reactivex.Completable
+import io.reactivex.functions.Action
 import io.reactivex.functions.Consumer
 import io.reactivex.schedulers.Schedulers
 import java.io.File
@@ -478,6 +479,27 @@ class ZoteroDB constructor(
 
         this.attachmentInfo!![itemKey] = attachmentInfo
         return zoteroDatabase.writeAttachmentInfo(attachmentInfo)
+    }
+
+    fun deleteItems(itemKeys: List<String>): Completable {
+        return Completable.fromAction(
+            Action {
+                for (itemKey in itemKeys){
+                    zoteroDatabase.deleteItem(itemKey).blockingAwait()
+                }
+            }
+        )
+        // todo work out a way to update live data.
+    }
+
+    fun deleteCollections(collectionKeys: List<String>): Completable {
+        return Completable.fromAction(
+            Action {
+                for (collectionKey in collectionKeys){
+                    zoteroDatabase.deleteCollection(collectionKey).blockingAwait()
+                }
+            }
+        )
     }
 
 

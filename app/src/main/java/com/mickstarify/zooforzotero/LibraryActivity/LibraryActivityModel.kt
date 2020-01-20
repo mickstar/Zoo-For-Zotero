@@ -161,6 +161,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
 
 
     fun loadItemsLocally(db: ZoteroDB = zoteroDB) {
+
         db.loadItemsFromDatabase().subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread()).subscribe(object : CompletableObserver {
                 override fun onComplete() {
@@ -207,7 +208,10 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
     }
 
     override fun downloadLibrary(refresh: Boolean, useSmallLoadingAnimation: Boolean) {
-        /* This function updates the local copies of the items and collections databases.*/
+        /* This function updates the local copies of the items and collections databases.
+        *
+        * Clearly the process has become rather convoluted and is in dire need of a rewrite.
+        * */
         loadingCollections = true
 
         val db = zoteroDB
@@ -372,6 +376,9 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                     }
                 }
             })
+
+        // todo move this call.
+        updateDeletedEntries()
     }
 
     private fun finishGetCollections() {
@@ -1364,18 +1371,23 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
     fun updateDeletedEntries(){
         /* Checks for deleted entries on the zotero servers and mirrors those changes on the local database. */
         // we have to assume the library is loaded.
-        if (!zoteroDB.isPopulated()){
-            Log.e("zotero", "error deleteEntries called without a loaded library")
-            return
-        }
 
         val deletedItemsCheckVersion = zoteroDB.getLastDeletedItemsCheckVersion()
 
         val single = zoteroAPI.getDeletedEntries(deletedItemsCheckVersion, zoteroDB.groupID)
-        single.subscribeOn(Schedulers.io()).observeOn(AndroidSchedulers.mainThread()).doOnError({
+        val disposable = single.subscribeOn(Schedulers.io()).observeOn(AndroidSchedulers.mainThread()).doOnError({
             Log.e("zotero", "got error while requesting deleted entries $it")
         }).subscribe(Consumer {
-
+            val completable = Completable.complete()
+            if (it.items.size > 0){
+                completable.andThen(zoteroDB.deleteItems(it.items))
+            }
+            if (it.collections.size > 0){
+                completable.andThen(zoteroDB.deleteCollections(it.collections))
+            }
+            completable.subscribeOn(Schedulers.io()).observeOn(AndroidSchedulers.mainThread()).doOnComplete {
+                presenter.makeToastAlert("Deleted ${it.items.size + it.collections.size}")
+            }.subscribe()
         })
     }
 

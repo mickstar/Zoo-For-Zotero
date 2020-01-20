@@ -253,7 +253,6 @@ class ZoteroAPI(
     }
 
     fun getDeletedEntries(sinceVersion: Int, groupID: Int = GroupInfo.NO_GROUP_ID): Single<DeletedEntriesPojo> {
-        val service = buildZoteroAPI()
         val observable = when (groupID){
             GroupInfo.NO_GROUP_ID -> { service.getDeletedEntriesSince(userID, sinceVersion) }
             else -> { throw NotImplementedError() }
