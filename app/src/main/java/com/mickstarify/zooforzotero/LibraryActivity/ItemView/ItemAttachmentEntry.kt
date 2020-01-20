@@ -50,6 +50,8 @@ class ItemAttachmentEntry : Fragment() {
                 icon.setImageResource(R.drawable.treeitem_attachment_pdf_2x)
             } else if (filetype == "image/vnd.djvu") {
                 icon.setImageResource(R.drawable.djvu_icon)
+            } else if (attachment?.getFileExtension() == "epub"){
+                icon.setImageResource(R.drawable.epub_icon)
             }
             layout.setOnClickListener {
                 if (linkMode == "linked_file") {

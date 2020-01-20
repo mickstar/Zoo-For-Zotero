@@ -179,8 +179,7 @@ class Item : Parcelable {
         }
 
         if (this.data.containsKey("contentType")) {
-            val contentType = this.data["contentType"]!!
-            return (contentType == "application/pdf" || contentType == "image/vnd.djvu")
+            return (this.getFileExtension() != "UNKNOWN")
         }
         return false
     }
@@ -189,6 +188,7 @@ class Item : Parcelable {
         return when (this.data["contentType"]) {
             "application/pdf" -> "pdf"
             "image/vnd.djvu" -> "djvu"
+            "application/epub+zip" -> "epub"
             else -> "UNKNOWN"
         }
     }
