@@ -157,25 +157,6 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
         return LinkedList()
     }
 
-    fun loadCollectionsLocally(db: ZoteroDB = zoteroDB) {
-        db.loadCollectionsFromDatabase().subscribeOn(Schedulers.io())
-            .observeOn(AndroidSchedulers.mainThread())
-            .doOnComplete(
-                { finishGetCollections(db) }
-            ).doOnError { e ->
-                firebaseAnalytics.logEvent(
-                    "failed_loading_collections_database",
-                    Bundle().apply { putString("error_message", "${e}") })
-                presenter.createErrorAlert(
-                    "Error Loading Collections",
-                    "There was an error loading Collections from storage. Error: ${e}",
-                    {})
-                db.destroyItemsDatabase().subscribeOn(Schedulers.io()).subscribe()
-                db.collections = LinkedList()
-                finishGetCollections(db)
-            }.subscribe()
-    }
-
 //    override fun downloadLibrary(refresh: Boolean, useSmallLoadingAnimation: Boolean) {
 //        /* This function updates the local copies of the items and collections databases.
 //        *
@@ -461,6 +442,11 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                 } else {
                     presenter.redisplayItems()
                 }
+                if (db.items?.size == 0){
+                    // incase there was an error, i don't want users to be stuck with an empty library.
+                    db.setItemsVersion(0)
+                }
+
 
                 this.checkAllAttachmentsForModification()
             }.subscribe()
