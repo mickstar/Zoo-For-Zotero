@@ -11,13 +11,20 @@ Zoo for Zotero is an Android application for viewing zotero libraries.
 ## Features
   - Material Design
   - Support for organization via Collections, including subcollections
-  - Allows for viewing of attached PDFs, including via WebDAV
-  - Support for viewing Shared Libraries
+  - Supports two way syncing of attachments for (including WebDav)
+  - Support for viewing group libraries
   - Supports the creating, editing and deleting Zotero's notes
   - Flexible searching of your library
   - Written in Kotlin using the MVP design pattern for a fast native experience
   - Currently readonly, but have plans allow for editing in the future
-  - Support for the Zotero Account Sync service with plans for cloudsharing providers in the future.
+  - Support for the Zotero Account Sync service
+
+## Libraries utilised
+  - Dagger2
+  - RxJava2
+  - Room
+  - Retrofit
+  - And more, the full list can be found in the app.gradle.
 
 ## How to Contribute
 Any contributions, whether it be pull requests or even suggestions are welcome!
@@ -32,4 +39,4 @@ I am kind of busy but I will get to it!
 Credits:
   - Michael Johnston <michael.johnston29@gmail.com>
 
-This is a third party zotero client and is not affiliated with Zotero at all.
+This is a third party zotero client and is not affiliated with Zotero.
