@@ -149,7 +149,7 @@ class Item : Parcelable {
     }
 
     fun getSortableDateAddedString(): String {
-        return getItemData("date") ?: "XXXX-XX-XX"
+        return getItemData("dateAdded") ?: "XXXX-XX-XX"
     }
 
     fun getMd5Key(): String {
