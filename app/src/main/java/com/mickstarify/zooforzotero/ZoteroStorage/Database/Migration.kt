@@ -29,3 +29,11 @@ val MIGRATION_2_3 = object : Migration(2, 3) {
         database.execSQL("ALTER TABLE `RecentlyOpenedAttachment` ADD `version` INTEGER NOT NULL DEFAULT 0")
     }
 }
+
+val MIGRATION_3_4 = object : Migration(3,4) {
+    override fun migrate(database: SupportSQLiteDatabase) {
+        database.execSQL("ALTER TABLE `ItemInfo` ADD `deleted` INTEGER NOT NULL DEFAULT 0")
+        database.execSQL("CREATE INDEX IF NOT EXISTS `index_ItemCollection_itemKey_collectionKey` ON `ItemCollection` (`itemKey`, `collectionKey`)")
+    }
+
+}

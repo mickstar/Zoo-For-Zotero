@@ -24,7 +24,7 @@ import javax.inject.Singleton
         ItemCollection::class,
         AttachmentInfo::class
     ),
-    version = 3,
+    version = 4,
     exportSchema = true
 )
 abstract class ZoteroRoomDatabase : RoomDatabase() {
@@ -40,8 +40,10 @@ class ZoteroDatabase @Inject constructor(val context: Context) {
     val db = Room.databaseBuilder(
         context.applicationContext,
         ZoteroRoomDatabase::class.java, "zotero"
-    ).addMigrations(MIGRATION_1_2)
-        .addMigrations(MIGRATION_2_3).build()
+    )
+        .addMigrations(MIGRATION_1_2)
+        .addMigrations(MIGRATION_2_3)
+        .addMigrations(MIGRATION_3_4).build()
 
     fun addGroup(group: GroupInfo): Completable {
         return db.groupInfoDao().insertGroupInfos(group)
@@ -71,6 +73,7 @@ class ZoteroDatabase @Inject constructor(val context: Context) {
             db.itemDao().deleteUsingItemKey(itemKey)
         })
     }
+
     fun deleteCollection(collectionKey: String): Completable {
         return Completable.fromAction(Action {
             db.collectionDao().deleteUsingKey(collectionKey)
@@ -110,7 +113,7 @@ class ZoteroDatabase @Inject constructor(val context: Context) {
         groupID: Int,
         itemPOJO: ItemPOJO
     ): Completable {
-        val itemInfo = ItemInfo(itemPOJO.ItemKey, groupID, itemPOJO.version)
+        val itemInfo = ItemInfo(itemPOJO.ItemKey, groupID, itemPOJO.version, deleted = false)
         var itemDatas = LinkedList<ItemData>()
         var itemCreators = LinkedList<Creator>()
         for ((key, value) in itemPOJO.data) {

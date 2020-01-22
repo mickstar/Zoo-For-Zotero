@@ -4,10 +4,12 @@ import android.os.Parcelable
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
+import androidx.room.Index
 import kotlinx.android.parcel.Parcelize
 
 @Entity(
     tableName = "ItemCollection", primaryKeys = ["collectionKey", "itemKey"],
+    indices = [Index(value=["itemKey","collectionKey"])],
     foreignKeys = [ForeignKey(
         entity = ItemInfo::class,
         parentColumns = ["itemKey"],

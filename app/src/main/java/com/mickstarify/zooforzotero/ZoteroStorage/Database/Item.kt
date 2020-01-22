@@ -23,7 +23,8 @@ import kotlin.collections.HashMap
 class ItemInfo(
     @ColumnInfo(name = "itemKey") val itemKey: String,
     @ColumnInfo(name = "group") val groupParent: Int = Collection.NO_GROUP_ID,
-    @ColumnInfo(name = "version") val version: Int
+    @ColumnInfo(name = "version") val version: Int,
+    @ColumnInfo(name = "deleted") val deleted: Boolean
 ) : Parcelable {
 
     //@Relation(entity = ItemData::class, parentColumn = "itemKey", entityColumn = "parent")
