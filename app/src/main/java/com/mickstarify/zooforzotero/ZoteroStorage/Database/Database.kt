@@ -7,6 +7,7 @@ import androidx.room.RoomDatabase
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.ItemPOJO
 import io.reactivex.Completable
 import io.reactivex.Maybe
+import io.reactivex.Single
 import io.reactivex.functions.Action
 import java.util.*
 import javax.inject.Inject
@@ -176,5 +177,19 @@ class ZoteroDatabase @Inject constructor(val context: Context) {
 
     fun deleteAllItemsForGroup(groupID: Int): Completable {
         return db.itemDao().deleteAllForGroup(groupID)
+    }
+
+    fun containsItem(groupID: Int, itemKey: String): Single<Boolean> {
+        return db.itemDao().containsItem(groupID, itemKey)
+    }
+
+    fun moveItemToTrash(groupID: Int, itemKey: String): Completable {
+        //todo
+        return Completable.complete()
+    }
+
+    fun restoreItemFromTrash(groupID: Int, itemKey: String): Completable {
+        //todo
+        return Completable.complete()
     }
 }

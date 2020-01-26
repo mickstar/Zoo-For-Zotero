@@ -218,6 +218,15 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
         }
     }
 
+//    override fun openSubcollection(collection: Collection){
+//        if (!model.isLoaded()){
+//            Log.e("zotero", "tried to change collection before fully loaded!")
+//            return
+//        }
+//        model.setCurrentCollection(collection.name)
+//
+//    }
+
     override fun setCollection(collectionName: String, isSubCollection: Boolean) {
         /*SetCollection is the method used to display items on the listView. It
         * has to get the data, then sort it, then provide it to the view.*/

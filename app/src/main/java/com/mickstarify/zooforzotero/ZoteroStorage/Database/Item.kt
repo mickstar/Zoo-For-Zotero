@@ -263,6 +263,9 @@ interface ItemDao {
     @Query("SELECT * FROM itemInfo WHERE `group`=:groupID")
     fun getItemsForGroup(groupID: Int): Maybe<List<Item>>
 
+    @Query("SELECT COUNT(*) != 0 FROM ItemInfo WHERE `itemKey`=:itemKey and `group`=:groupID")
+    fun containsItem(groupID: Int, itemKey: String): Single<Boolean>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insertItemInfo(items: ItemInfo): Completable
 

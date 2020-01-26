@@ -51,32 +51,32 @@ class ZoteroAPI(
     val username: String,
     val attachmentStorageManager: AttachmentStorageManager
 ) {
-        val httpClient = OkHttpClient().newBuilder().apply {
-            if (BuildConfig.DEBUG) {
-                addInterceptor(HttpLoggingInterceptor().apply {
-                    this.level = HttpLoggingInterceptor.Level.BODY
-                })
-            }
-            writeTimeout(
-                10,
-                TimeUnit.MINUTES
-            ) // so socket doesn't timeout on large uploads (attachments)
-            addInterceptor(object : Interceptor {
-                override fun intercept(chain: Interceptor.Chain): okhttp3.Response {
-                    val request = chain.request().newBuilder()
-                        .addHeader("Zotero-API-Version", "3")
-                        .addHeader("Zotero-API-Key", API_KEY)
-                    return chain.proceed(request.build())
-                }
+    val httpClient = OkHttpClient().newBuilder().apply {
+        if (BuildConfig.DEBUG) {
+            addInterceptor(HttpLoggingInterceptor().apply {
+                this.level = HttpLoggingInterceptor.Level.BODY
             })
-        }.build()
+        }
+        writeTimeout(
+            10,
+            TimeUnit.MINUTES
+        ) // so socket doesn't timeout on large uploads (attachments)
+        addInterceptor(object : Interceptor {
+            override fun intercept(chain: Interceptor.Chain): okhttp3.Response {
+                val request = chain.request().newBuilder()
+                    .addHeader("Zotero-API-Version", "3")
+                    .addHeader("Zotero-API-Key", API_KEY)
+                return chain.proceed(request.build())
+            }
+        })
+    }.build()
 
-        val service = Retrofit.Builder()
-            .baseUrl(BASE_URL)
-            .client(httpClient)
-            .addConverterFactory(GsonConverterFactory.create())
-            .addCallAdapterFactory(RxJava2CallAdapterFactory.create())
-            .build().create(ZoteroAPIService::class.java)
+    val service = Retrofit.Builder()
+        .baseUrl(BASE_URL)
+        .client(httpClient)
+        .addConverterFactory(GsonConverterFactory.create())
+        .addCallAdapterFactory(RxJava2CallAdapterFactory.create())
+        .build().create(ZoteroAPIService::class.java)
 
     fun buildAmazonService(): ZoteroAPIService {
         val httpClient = OkHttpClient().newBuilder().apply {
@@ -252,13 +252,20 @@ class ZoteroAPI(
         return Completable.fromObservable(observable)
     }
 
-    fun getDeletedEntries(sinceVersion: Int, groupID: Int = GroupInfo.NO_GROUP_ID): Single<DeletedEntriesPojo> {
-        val observable = when (groupID){
-            GroupInfo.NO_GROUP_ID -> { service.getDeletedEntriesSince(userID, sinceVersion) }
-            else -> { throw NotImplementedError() }
+    fun getDeletedEntries(
+        sinceVersion: Int,
+        groupID: Int = GroupInfo.NO_GROUP_ID
+    ): Single<DeletedEntriesPojo> {
+        val observable = when (groupID) {
+            GroupInfo.NO_GROUP_ID -> {
+                service.getDeletedEntriesSince(userID, sinceVersion)
+            }
+            else -> {
+                throw NotImplementedError()
+            }
         }
         return Single.fromObservable(observable.map { response ->
-            if (response.code() == 200){
+            if (response.code() == 200) {
                 response.body()
             } else {
                 throw Exception("Error server responded with code ${response.code()}")
@@ -473,6 +480,31 @@ class ZoteroAPI(
                     url = groupPojo.groupData.url
                 )
             }
+        }
+    }
+
+    fun getTrashedItems(groupID: Int, sinceVersion: Int): Observable<List<ItemPOJO>> {
+        val observable = when (groupID) {
+            GroupInfo.NO_GROUP_ID -> service.getTrashedItemsForUser(
+                sinceVersion,
+                userID,
+                sinceVersion
+            )
+            else -> service.getTrashedItemsForGroup(
+                sinceVersion,
+                groupID,
+                sinceVersion
+            )
+        }
+        return observable.map { response ->
+            if (response.code() == 200) {
+                // success
+            } else if (response.code() == 304) {
+                throw UpToDateException("Trash up to date.")
+            } else {
+                throw Exception("error getting trash. zotero server responded ${response.code()}")
+            }
+            response.body() ?: LinkedList<ItemPOJO>()
         }
     }
 
