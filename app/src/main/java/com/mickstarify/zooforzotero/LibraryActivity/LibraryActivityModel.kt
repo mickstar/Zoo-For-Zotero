@@ -41,9 +41,6 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
     var selectedItem: Item? = null
     var isDisplayingItems = false
 
-    var loadingItems = false
-    var loadingCollections = false
-
     private var firebaseAnalytics: FirebaseAnalytics
 
     private lateinit var zoteroAPI: ZoteroAPI
@@ -70,6 +67,12 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
     val state = LibraryModelState()
 
     private var zoteroDB: ZoteroDB by zoteroDBPicker
+
+    // these three variables keep track of our download progress and are used to make sure
+    // all 3 downloads finish.
+    var loadingItems = false
+    var loadingCollections = false
+    var loadingTrash = false
 
     override fun refreshLibrary(useSmallLoadingAnimation: Boolean) {
         if (!state.usingGroup) {
@@ -186,7 +189,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
             return
         }
 
-        loadingCollections = true
+
 
         // show our loading animation.
         if (useSmallLoadingAnimation) {
@@ -196,8 +199,18 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
         }
 
         val db = zoteroDB
-        val libraryVersion = db.getLibraryVersion()
+
         Log.d("zotero", "loading library for group ${db.groupID}")
+
+        loadItems(db, useSmallLoadingAnimation)
+        loadCollections(db)
+//        loadTrashedItems(db)
+
+    }
+
+    private fun loadCollections(db: ZoteroDB){
+        loadingCollections = true
+        val libraryVersion = db.getLibraryVersion()
         zoteroAPI.getCollections(libraryVersion, db.groupID).map { collectionPojos ->
             // we will write collections to the database as we receive them.
             // this will be done using the rxjava thread.
@@ -242,14 +255,12 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                 }
 
             })
-
-        loadItems(db, useSmallLoadingAnimation)
-
     }
 
     private fun loadTrashedItems(
         db: ZoteroDB
     ) {
+        loadingTrash = true
         val observable = zoteroAPI.getTrashedItems(db.groupID, db.getLibraryVersion())
         observable.doOnError { e ->
             if (e is UpToDateException) {
