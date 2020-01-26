@@ -157,75 +157,26 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
         return LinkedList()
     }
 
-//    override fun downloadLibrary(refresh: Boolean, useSmallLoadingAnimation: Boolean) {
-//        /* This function updates the local copies of the items and collections databases.
-//        *
-//        * Clearly the process has become rather convoluted and is in dire need of a rewrite.
-//        * */
-//        loadingCollections = true
-//
-//        val db = zoteroDB
-//        if (db.isPopulated() && refresh == false) {
-//            Log.d("zotero", "already loaded.")
-//            return
-//        }
-//        val useCaching = db.getLibraryVersion() > -1
-//
-//        val collectionsObservable =
-//            zoteroAPI.getCollections(
-//                zoteroDB.getLibraryVersion()
-//            )
-//        collectionsObservable.map { collections ->
-//            // we are going to write the objects to the database in the rxjava thread.
-//            val collectionObjects =
-//                collections.map { Collection(it, Collection.NO_GROUP_ID) }
-//            zoteroDatabase.writeCollections(collectionObjects)
-//            collections
-//        }.subscribeOn(Schedulers.io())
-//            .observeOn(AndroidSchedulers.mainThread())
-//            .unsubscribeOn(Schedulers.io())
-//            .subscribe(object : Observer<List<CollectionPOJO>> {
-//                override fun onComplete() {
-//                    finishGetCollections(db)
-//                }
-//
-//                override fun onSubscribe(d: Disposable) {
-//                }
-//
-//                override fun onNext(collections: List<CollectionPOJO>) {
-//                    Log.d("zotero", "got ${collections.size}")
-//                }
-//
-//                override fun onError(e: Throwable) {
-//                    if (e is UpToDateException) {
-//                        loadCollectionsLocally(db)
-//                    } else if (e is APIKeyRevokedException) {
-//                        presenter.createErrorAlert(
-//                            "Invalid API Key",
-//                            "Your API Key is invalid. To rectify this issue please clear app data for the app. " +
-//                                    "Then relogin."
-//                        ) {}
-//                    } else {
-//                        val bundle = Bundle()
-//                        bundle.putString("error_message", e.message)
-//                        firebaseAnalytics.logEvent("error_download_collections", bundle)
-//                        presenter.createErrorAlert(
-//                            "Error downloading Collections",
-//                            "Message: ${e}"
-//                        ) {}
-//
-//                        if (db.hasLegacyStorage()) {
-//                            Log.d("zotero", "no internet connection. Using cached copy")
-//                            loadCollectionsLocally(db)
-//                        }
-//                    }
-//                }
-//            })
-//
-//        loadItems(db, useCaching, useSmallLoadingAnimation)
-//    }
-
     override fun downloadLibrary(doRefresh: Boolean, useSmallLoadingAnimation: Boolean) {
+        /*LIbrary loading will load in 3 stages,
+        *
+        * Stage 1, Downloading stage
+        *   Here, 3 threads will run, downloading items, collections and trash.
+        *   All three threads run independently and will all need to complete before stage 2.
+        *
+        * Stage 2. Downloading Deleted Items
+        *   Here deleted items will need to be queried. This must complete after stage 1 because
+        *   there may be items that get deleted before being synced.
+        *
+        * Stage 3.
+        *   Loading, up until now  all downloaded data has been commited to the SQL DB. This has
+        *   to now be loaded to memory in ZoteroDB class.
+        *
+        *
+        *   How each stage is reached is somewhat complex but here in this method you will find stage 1.
+         */
+
+
         if (doRefresh == false && zoteroDB.isPopulated()) {
             Log.d("zotero", "The library is already loaded, not continuing")
             return
@@ -293,6 +244,52 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
             })
 
         loadItems(db, useSmallLoadingAnimation)
+
+    }
+
+    private fun loadTrashedItems(
+        db: ZoteroDB
+    ) {
+        val observable = zoteroAPI.getTrashedItems(db.groupID, db.getLibraryVersion())
+        observable.doOnError { e ->
+            if (e is UpToDateException) {
+                Log.d("zotero", "trashed items has not changed")
+            } else {
+                Log.e("zotero", "got error from request to /trash $e")
+            }
+        }.map {itemPojos ->
+            for (itemPojo in itemPojos){
+                if (zoteroDatabase.containsItem(db.groupID, itemPojo.ItemKey).blockingGet()){
+                    // there is a subtle flaw here.
+                    // If the item has changed since last sync, those changes won't be reflected in
+                    // zoo. I will ignore this error for the sake of simplicity.
+                    zoteroDatabase.moveItemToTrash(db.groupID, itemPojo.ItemKey).blockingGet()
+                } else {
+                    zoteroDatabase.writeItem(db.groupID, itemPojo).blockingAwait()
+                    zoteroDatabase.moveItemToTrash(db.groupID, itemPojo.ItemKey).blockingAwait()
+                }
+            }
+            itemPojos.size
+        }.subscribe(object: Observer<Int>{
+            override fun onComplete() {
+                // finished syncing trash.
+                // maybe load it?
+            }
+
+            override fun onSubscribe(d: Disposable) {
+                Log.d("zotero", "beginning sync request for trash")
+            }
+
+            override fun onNext(t: Int) {
+                Log.d("zotero", "finished, synced ${t} items.")
+            }
+
+            override fun onError(e: Throwable) {
+                Log.e("zotero", "got error messsage $e")
+                throw e
+            }
+
+        })
     }
 
     private fun loadItems(
@@ -442,7 +439,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                 } else {
                     presenter.redisplayItems()
                 }
-                if (db.items?.size == 0){
+                if (db.items?.size == 0) {
                     // incase there was an error, i don't want users to be stuck with an empty library.
                     db.setItemsVersion(0)
                 }
