@@ -106,7 +106,6 @@ class ZoteroAPI(
     ): Observable<DownloadProgress> {
 
         val useGroup = groupID != GroupInfo.NO_GROUP_ID
-
         if (item.itemType != "attachment") {
             Log.d("zotero", "got download request for item that isn't attachment")
         }
@@ -130,7 +129,12 @@ class ZoteroAPI(
         val outputFileStream = attachmentStorageManager.getItemOutputStream(item)
 
         val observable = Observable.create<DownloadProgress> { emitter ->
-            val downloader = service.getItemFileRx(userID, item.itemKey)
+
+            val downloader = if(!useGroup) {
+                service.getFileForUser(userID, item.itemKey)
+            } else {
+                service.getFileForGroup(groupID, item.itemKey)
+            }
             downloader.subscribe(object : Observer<Response<ResponseBody>> {
                 val disposable: Disposable? = null
                 override fun onComplete() {

@@ -98,15 +98,15 @@ interface ZoteroAPIService {
 
     @Streaming
     @GET("users/{user}/items/{itemKey}/file")
-    fun getItemFile(
+    fun getFileForUser(
         @Path("user") user: String,
         @Path("itemKey") itemKey: String
-    ): Call<ResponseBody>
+    ): Observable<Response<ResponseBody>>
 
     @Streaming
-    @GET("users/{user}/items/{itemKey}/file")
-    fun getItemFileRx(
-        @Path("user") user: String,
+    @GET("groups/{group}/items/{itemKey}/file")
+    fun getFileForGroup(
+        @Path("group") group: Int,
         @Path("itemKey") itemKey: String
     ): Observable<Response<ResponseBody>>
 
