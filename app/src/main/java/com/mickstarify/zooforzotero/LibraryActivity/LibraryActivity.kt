@@ -181,10 +181,18 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
             setOnQueryTextListener(object : SearchView.OnQueryTextListener {
                 override fun onQueryTextSubmit(query: String): Boolean {
                     setTitle("Search results for $query")
+                    // we will only search on submit for android 7<=
+                    if (android.os.Build.VERSION.SDK_INT <= 24){
+                        presenter.filterEntries(query)
+                        return true
+                    }
                     return false
                 }
 
                 override fun onQueryTextChange(query: String): Boolean {
+                    if (android.os.Build.VERSION.SDK_INT <= 24){
+                        return false
+                    }
                     presenter.filterEntries(query)
                     return true
                 }
