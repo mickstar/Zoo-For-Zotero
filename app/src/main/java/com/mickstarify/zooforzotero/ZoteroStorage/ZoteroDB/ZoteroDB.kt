@@ -67,6 +67,8 @@ class ZoteroDB constructor(
     private var notes: MutableMap<String, MutableList<Note>>? = null
     private var itemsFromCollections: HashMap<String, MutableList<Item>>? = null
 
+    private var trashItems: List<Item>? = null
+
     // we are adding this prefix stuff so we can have concurrent zoteroDBs that will allow users to store
     // shared collections.
     val ITEMS_FILENAME = if (prefix == "") {
@@ -131,6 +133,14 @@ class ZoteroDB constructor(
                 )
             )
         return completable
+    }
+
+
+    fun loadTrashItemsFromDB(): Completable{
+        zoteroDatabase.getItemsFromUserTrash()
+        return Completable.fromMaybe(zoteroDatabase.getItemsFromUserTrash().doOnSuccess{
+            this.trashItems = it
+        })
     }
 
     fun destroyItemsDatabase(): Completable {
@@ -321,6 +331,18 @@ class ZoteroDB constructor(
         return sharedPreferences.getInt("ItemsLibraryVersion", -1)
     }
 
+    fun getTrashVersion(): Int {
+        val sharedPreferences = context.getSharedPreferences(namespace, MODE_PRIVATE)
+        return sharedPreferences.getInt("TrashLibraryVersion", -1)
+    }
+
+    fun setTrashVersion(version: Int) {
+        val sharedPreferences = context.getSharedPreferences(namespace, MODE_PRIVATE)
+        val editor = sharedPreferences.edit()
+        editor.putInt("TrashLibraryVersion", version)
+        editor.apply()
+    }
+
     fun clearItemsVersion() {
         try {
             val sharedPreferences =
@@ -482,7 +504,7 @@ class ZoteroDB constructor(
     fun deleteItems(itemKeys: List<String>): Completable {
         return Completable.fromAction(
             Action {
-                for (itemKey in itemKeys){
+                for (itemKey in itemKeys) {
                     zoteroDatabase.deleteItem(itemKey).blockingAwait()
                 }
             }
@@ -493,11 +515,19 @@ class ZoteroDB constructor(
     fun deleteCollections(collectionKeys: List<String>): Completable {
         return Completable.fromAction(
             Action {
-                for (collectionKey in collectionKeys){
+                for (collectionKey in collectionKeys) {
                     zoteroDatabase.deleteCollection(collectionKey).blockingAwait()
                 }
             }
         )
+    }
+
+    fun getTrashItems(): List<Item> {
+        if (this.trashItems == null){
+            Log.e("zotero", "error trash not initialized")
+            return LinkedList()
+        }
+        return this.trashItems!!
     }
 
 

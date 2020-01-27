@@ -2,7 +2,10 @@ package com.mickstarify.zooforzotero.ZoteroAPI
 
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
-import com.mickstarify.zooforzotero.ZoteroAPI.Model.*
+import com.mickstarify.zooforzotero.ZoteroAPI.Model.CollectionPOJO
+import com.mickstarify.zooforzotero.ZoteroAPI.Model.DeletedEntriesPojo
+import com.mickstarify.zooforzotero.ZoteroAPI.Model.GroupPojo
+import com.mickstarify.zooforzotero.ZoteroAPI.Model.KeyInfo
 import io.reactivex.Observable
 import okhttp3.RequestBody
 import okhttp3.ResponseBody
@@ -79,15 +82,17 @@ interface ZoteroAPIService {
     fun getTrashedItemsForUser(
         @Header("If-Modified-Since-Version") ifModifiedSinceVersion: Int,
         @Path("user") user: String,
-        @Query("since") since: Int
-    ): Observable<Response<List<ItemPOJO>>>
+        @Query("since") since: Int,
+        @Query("start") index: Int
+    ): Observable<Response<ResponseBody>>
 
     @GET("groups/{groupID}/items/trash")
     fun getTrashedItemsForGroup(
         @Header("If-Modified-Since-Version") ifModifiedSinceVersion: Int,
         @Path("groupID") groupID: Int,
-        @Query("since") since: Int
-    ): Observable<Response<List<ItemPOJO>>>
+        @Query("since") since: Int,
+        @Query("start") index: Int
+    ): Observable<Response<ResponseBody>>
 
     @GET("users/{user}/collections")
     fun getCollections(

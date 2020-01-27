@@ -260,8 +260,12 @@ interface ItemDao {
     fun getItem(key: String): Single<Item>
 
     @Transaction
-    @Query("SELECT * FROM itemInfo WHERE `group`=:groupID")
+    @Query("SELECT * FROM itemInfo WHERE `group`=:groupID and `deleted`=0")
     fun getItemsForGroup(groupID: Int): Maybe<List<Item>>
+
+    @Transaction
+    @Query("SELECT * FROM itemInfo WHERE `group`=${GroupInfo.NO_GROUP_ID} and `deleted`=1")
+    fun getTrashedItemsForUser(): Maybe<List<Item>>
 
     @Query("SELECT COUNT(*) != 0 FROM ItemInfo WHERE `itemKey`=:itemKey and `group`=:groupID")
     fun containsItem(groupID: Int, itemKey: String): Single<Boolean>

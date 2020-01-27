@@ -487,29 +487,60 @@ class ZoteroAPI(
         }
     }
 
-    fun getTrashedItems(groupID: Int, sinceVersion: Int): Observable<List<ItemPOJO>> {
-        val observable = when (groupID) {
-            GroupInfo.NO_GROUP_ID -> service.getTrashedItemsForUser(
-                sinceVersion,
-                userID,
-                sinceVersion
-            )
-            else -> service.getTrashedItemsForGroup(
-                sinceVersion,
-                groupID,
-                sinceVersion
-            )
+    fun getTrashedItemsFromIndex(groupID: Int, sinceVersion: Int, index: Int): Observable<ZoteroAPIItemsResponse> {
+        val call = when(groupID){
+            GroupInfo.NO_GROUP_ID -> {service.getTrashedItemsForUser(sinceVersion, userID, sinceVersion, index)}
+            else -> {service.getTrashedItemsForGroup(sinceVersion, groupID, sinceVersion, index)}
         }
-        return observable.map { response ->
-            if (response.code() == 200) {
-                // success
-            } else if (response.code() == 304) {
-                throw UpToDateException("Trash up to date.")
+
+        return call.map {response ->
+            if (response.code() == 304) {
+                throw UpToDateException("304 trash already up to date.")
+            } else if (response.code() == 200) {
+                val s = response.body()?.string() ?: "[]"
+                val newItems = ItemJSONConverter().deserialize(s)
+                val lastModifiedVersion = response.headers()["Last-Modified-Version"]?.toInt() ?: -1
+                val totalResults = response.headers()["Total-Results"]?.toInt() ?: -1
+
+                ZoteroAPIItemsResponse(false, newItems, lastModifiedVersion, totalResults)
             } else {
-                throw Exception("error getting trash. zotero server responded ${response.code()}")
+                throw Exception("getTrash() Server gave back ${response.code()} message: ${response.body()}")
             }
-            response.body() ?: LinkedList<ItemPOJO>()
         }
+    }
+
+    fun getTrashedItems(groupID: Int, sinceVersion: Int): Observable<ZoteroAPIItemsResponse> {
+
+
+        val observable = Observable.create(object : ObservableOnSubscribe<ZoteroAPIItemsResponse> {
+            override fun subscribe(emitter: ObservableEmitter<ZoteroAPIItemsResponse>) {
+                var itemCount = 0
+                val s = getTrashedItemsFromIndex(
+                    groupID,
+                    sinceVersion,
+                    itemCount
+                )
+                val response = s.blockingSingle()
+                val total = response.totalResults
+                itemCount += response.items.size
+                emitter.onNext(response)
+                while (itemCount < total) {
+                    val res = getTrashedItemsFromIndex(
+                        groupID,
+                        sinceVersion,
+                        itemCount
+                    ).blockingSingle()
+                    itemCount += res.items.size
+                    if (res.items.size == 0){
+                        throw(RuntimeException("Error, zotero api did not respond with any items for /trash/ $itemCount of ${res.totalResults}"))
+                    }
+                    emitter.onNext(res)
+                }
+                emitter.onComplete()
+            }
+        })
+
+        return observable
     }
 
     fun uploadAttachmentWithWebdav(attachment: Item, context: Context): Completable {
