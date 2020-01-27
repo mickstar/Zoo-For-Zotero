@@ -184,11 +184,10 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
             Log.d("zotero", "The library is already loaded, not continuing")
             return
         }
-        if (loadingCollections || loadingItems) {
+        if (loadingCollections || loadingItems || loadingTrash) {
             Log.e("zotero", "Error, we are already loading our library! not doing it again.")
             return
         }
-
 
 
         // show our loading animation.
@@ -204,11 +203,10 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
 
         loadItems(db, useSmallLoadingAnimation)
         loadCollections(db)
-//        loadTrashedItems(db)
-
+        loadTrashedItems(db)
     }
 
-    private fun loadCollections(db: ZoteroDB){
+    private fun loadCollections(db: ZoteroDB) {
         loadingCollections = true
         val libraryVersion = db.getLibraryVersion()
         zoteroAPI.getCollections(libraryVersion, db.groupID).map { collectionPojos ->
@@ -261,46 +259,50 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
         db: ZoteroDB
     ) {
         loadingTrash = true
-        val observable = zoteroAPI.getTrashedItems(db.groupID, db.getLibraryVersion())
-        observable.doOnError { e ->
-            if (e is UpToDateException) {
-                Log.d("zotero", "trashed items has not changed")
-            } else {
-                Log.e("zotero", "got error from request to /trash $e")
-            }
-        }.map {itemPojos ->
-            for (itemPojo in itemPojos){
-                if (zoteroDatabase.containsItem(db.groupID, itemPojo.ItemKey).blockingGet()){
+        val observable = zoteroAPI.getTrashedItems(db.groupID, db.getTrashVersion()).map{response ->
+            for (itemPojo in response.items) {
+                if (zoteroDatabase.containsItem(db.groupID, itemPojo.ItemKey).blockingGet()) {
                     // there is a subtle flaw here.
                     // If the item has changed since last sync, those changes won't be reflected in
                     // zoo. I will ignore this error for the sake of simplicity.
-                    zoteroDatabase.moveItemToTrash(db.groupID, itemPojo.ItemKey).blockingGet()
+                    zoteroDatabase.moveItemToTrash(db.groupID, itemPojo.ItemKey).blockingAwait()
                 } else {
                     zoteroDatabase.writeItem(db.groupID, itemPojo).blockingAwait()
                     zoteroDatabase.moveItemToTrash(db.groupID, itemPojo.ItemKey).blockingAwait()
                 }
             }
-            itemPojos.size
-        }.subscribe(object: Observer<Int>{
-            override fun onComplete() {
-                // finished syncing trash.
-                // maybe load it?
-            }
+            response
+        }
+        observable.subscribeOn(Schedulers.io()).observeOn(AndroidSchedulers.mainThread())
+            .subscribe(object : Observer<ZoteroAPIItemsResponse> {
+                var received = 0
+                var trashLibraryVersion = 0
+                override fun onComplete() {
+                    // finished syncing trash.
+                    db.setTrashVersion(trashLibraryVersion)
+                    finishGetTrash(db)
+                }
 
-            override fun onSubscribe(d: Disposable) {
-                Log.d("zotero", "beginning sync request for trash")
-            }
+                override fun onSubscribe(d: Disposable) {
+                    Log.d("zotero", "beginning sync request for trash")
+                }
 
-            override fun onNext(t: Int) {
-                Log.d("zotero", "finished, synced ${t} items.")
-            }
+                override fun onNext(response: ZoteroAPIItemsResponse) {
+                    received += response.items.size
+                    trashLibraryVersion = response.LastModifiedVersion
+                    Log.d("zotero", "received ${received} of ${response.totalResults} trash items")
+                }
 
-            override fun onError(e: Throwable) {
-                Log.e("zotero", "got error messsage $e")
-                throw e
-            }
+                override fun onError(e: Throwable) {
+                    if (e is UpToDateException) {
+                        Log.d("zotero", "trashed items has not changed")
+                    } else {
+                        Log.e("zotero", "got error from request to /trash $e")
+                    }
+                    finishGetTrash(db)
+                }
 
-        })
+            })
     }
 
     private fun loadItems(
@@ -399,15 +401,22 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
 
     private fun finishGetCollections(db: ZoteroDB) {
         loadingCollections = false
-        if (!loadingItems) {
-            finishLoading(db)
+        if (!loadingItems && !loadingTrash) {
+            loadLibraryStage2(db)
         }
     }
 
     private fun finishGetItems(db: ZoteroDB) {
         loadingItems = false
-        if (!loadingCollections) {
-            finishLoading(db)
+        if (!loadingCollections && !loadingTrash) {
+            loadLibraryStage2(db)
+        }
+    }
+
+    private fun finishGetTrash(db: ZoteroDB) {
+        loadingTrash = false
+        if (!loadingItems && !loadingCollections) {
+            loadLibraryStage2(db)
         }
     }
 
@@ -416,8 +425,20 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
             finishLoading(zoteroDB)
     }
 
+    fun loadLibraryStage2(db: ZoteroDB) {
+        // as  defined above, stage 2 handles deleted files.
+        if (loadingTrash || loadingCollections || loadingItems) {
+            throw Exception("Error cannot proceed to stage 2 if library still loading.")
+        }
+        // todo implement deleted items here.
+
+        finishLoading(db)
+
+
+    }
+
     private fun finishLoading(db: ZoteroDB) {
-        Log.d("zotero", "finishedLoadingCalled()")
+        Log.d("zotero", "finished library loading.")
 
 
         val loadCollections = db.loadCollectionsFromDatabase().doOnError { e ->
@@ -436,10 +457,9 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
             db.items = LinkedList()
         }
 
-        // TODO implement Trash and Deleted
-
         loadCollections
             .andThen(loadItems)
+            .andThen(zoteroDB.loadTrashItemsFromDB())
             .subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())
             .doOnComplete {
@@ -457,6 +477,11 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
 
 
                 this.checkAllAttachmentsForModification()
+            }.doOnError {
+                firebaseAnalytics.logEvent(
+                    "error_finish_loading",
+                    Bundle().apply { putString("error_message", it.toString()) })
+                presenter.createErrorAlert("error loading library", "got error message ${it}", {})
             }.subscribe()
     }
 
@@ -1486,5 +1511,10 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                 )
             }
         }
+    }
+
+
+    fun getTrashedItems(): List<Item> {
+        return zoteroDB.getTrashItems()
     }
 }

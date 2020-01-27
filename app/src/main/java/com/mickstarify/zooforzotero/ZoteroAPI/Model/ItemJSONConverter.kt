@@ -30,6 +30,7 @@ class ItemJSONConverter {
                 val itemDataMap = ((itemMap["data"] ?: HashMap<String, Any>()) as Map<String, Any>)
                 var collections: List<String> = LinkedList()
                 var mtime: Double = 0.0
+                var deleted = 0
                 for ((key: String, value: Any) in itemDataMap) {
                     when (key) {
                         "tags" -> {
@@ -67,6 +68,10 @@ class ItemJSONConverter {
                                 mtime = value
                             }
                         }
+                        "deleted" -> {
+                            deleted = (value as Double).toInt()
+                        }
+
                         else -> {
                             if (value is String) {
                                 data[key] = value
@@ -84,9 +89,10 @@ class ItemJSONConverter {
                     }
                 }
 
-                items.add(ItemPOJO(itemKey, version, data, tags, creators, collections, mtime))
+                items.add(ItemPOJO(itemKey, version, data, tags, creators, collections, mtime, deleted))
             } catch (e: Exception) {
                 Log.e("Zotero", "Error occurred when adding item. Skipping this item.")
+                Log.e("zotero", e.toString())
             }
         }
         return items

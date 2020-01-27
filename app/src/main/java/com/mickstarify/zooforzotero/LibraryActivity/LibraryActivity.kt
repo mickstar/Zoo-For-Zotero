@@ -45,6 +45,9 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
     ItemAttachmentEntry.OnAttachmentFragmentInteractionListener,
     NoteInteractionListener {
 
+    private val MENU_ID_UNFILED_ITEMS: Int = 1
+    private val MENU_ID_TRASH: Int = 2
+
     private lateinit var presenter: Contract.Presenter
     private lateinit var firebaseAnalytics: FirebaseAnalytics
     private var itemView: ItemViewFragment? = null
@@ -75,8 +78,12 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
         )
 
         // add our "unfiled items" entry
-        navigationView.menu.add(R.id.group_other, Menu.NONE, Menu.NONE, "Unfiled Items")
+        navigationView.menu.add(R.id.group_other, MENU_ID_UNFILED_ITEMS, Menu.NONE, "Unfiled Items")
             .setIcon(R.drawable.baseline_description_24).isCheckable = true
+
+        // add our "Trash" entry
+        navigationView.menu.add(R.id.group_other, MENU_ID_TRASH, Menu.NONE, "Trash")
+            .setIcon(R.drawable.baseline_delete_24).isCheckable = true
 
         sharedCollections = navigationView.menu.addSubMenu(
             R.id.group_shared_collections,
@@ -192,9 +199,12 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
         Log.d("zotero", "pressed ${item.groupId} - ${item.itemId}")
         if (item.itemId == R.id.my_library) {
             presenter.setCollection("all")
-        } else if (item.title == "Unfiled Items") {
+        } else if (item.itemId == MENU_ID_UNFILED_ITEMS) {
             presenter.setCollection("unfiled_items")
-        } else if (item.groupId == R.id.group_shared_collections) {
+        } else if (item.itemId == MENU_ID_TRASH) {
+            presenter.openTrash()
+        }
+        else if (item.groupId == R.id.group_shared_collections) {
             presenter.openGroup(item.title.toString())
         } else if (item.groupId == R.id.group_collections) {
             presenter.setCollection("${item.title}", isSubCollection = false)

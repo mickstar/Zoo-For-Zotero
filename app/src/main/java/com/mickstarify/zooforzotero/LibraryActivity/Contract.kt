@@ -82,6 +82,7 @@ interface Contract {
 
         fun showBasicSyncAnimation()
         fun hideBasicSyncAnimation()
+        fun openTrash()
     }
 
     interface Model {

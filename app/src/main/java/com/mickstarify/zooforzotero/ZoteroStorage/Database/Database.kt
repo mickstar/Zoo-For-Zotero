@@ -114,7 +114,7 @@ class ZoteroDatabase @Inject constructor(val context: Context) {
         groupID: Int,
         itemPOJO: ItemPOJO
     ): Completable {
-        val itemInfo = ItemInfo(itemPOJO.ItemKey, groupID, itemPOJO.version, deleted = false)
+        val itemInfo = ItemInfo(itemPOJO.ItemKey, groupID, itemPOJO.version, Boolean.fromInt(itemPOJO.deleted))
         var itemDatas = LinkedList<ItemData>()
         var itemCreators = LinkedList<Creator>()
         for ((key, value) in itemPOJO.data) {
@@ -169,6 +169,10 @@ class ZoteroDatabase @Inject constructor(val context: Context) {
         return db.AttachmentInfoDao().getAttachmentsForGroup(groupID)
     }
 
+    fun getItemsFromUserTrash(): Maybe<List<Item>>{
+        return db.itemDao().getTrashedItemsForUser()
+    }
+
     fun writeAttachmentInfo(
         attachmentInfo: AttachmentInfo
     ): Completable {
@@ -192,4 +196,8 @@ class ZoteroDatabase @Inject constructor(val context: Context) {
         //todo
         return Completable.complete()
     }
+}
+
+private fun Boolean.Companion.fromInt(param: Int): Boolean {
+    return param != 0
 }

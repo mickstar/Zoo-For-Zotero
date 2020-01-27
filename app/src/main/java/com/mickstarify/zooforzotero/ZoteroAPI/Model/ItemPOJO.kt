@@ -18,7 +18,8 @@ open class ItemPOJO(
     var tags: List<String>,
     val creators: List<CreatorPOJO>,
     val collections: List<String>,
-    var mtime: Double = 0.0
+    var mtime: Double = 0.0,
+    var deleted: Int
 ) : Parcelable {
     @IgnoredOnParcel
     var localMd5: String = ""

@@ -227,6 +227,18 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
 //
 //    }
 
+    override fun openTrash() {
+        if (!model.isLoaded()) {
+            Log.e("zotero", "tried to change collection before fully loaded!")
+            return
+        }
+        model.usePersonalLibrary()
+        view.setTitle("Trash")
+        val entries = model.getTrashedItems().map{ListEntry(it)}
+        model.isDisplayingItems = entries.size > 0
+        view.populateEntries(entries)
+    }
+
     override fun setCollection(collectionName: String, isSubCollection: Boolean) {
         /*SetCollection is the method used to display items on the listView. It
         * has to get the data, then sort it, then provide it to the view.*/
