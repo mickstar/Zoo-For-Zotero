@@ -1,7 +1,10 @@
 package com.mickstarify.zooforzotero.LibraryActivity.ItemView
 
 
+import android.app.AlertDialog
 import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -33,24 +36,38 @@ class ItemAttachmentEntry : Fragment() {
         savedInstanceState: Bundle?
     ): View? {
         val linkMode = attachment?.getItemData("linkMode")
-
         // Inflate the layout for this fragment
         val view = inflater.inflate(R.layout.fragment_item_attachment_entry, container, false)
+        val layout = view.findViewById<ConstraintLayout>(R.id.constraintLayout_attachments_entry)
+
         val filename = view.findViewById<TextView>(R.id.textView_filename)
         filename.text = attachment?.data?.get("filename") ?: "unknown"
         if (linkMode == "linked_file") { // this variant uses title as a filename.
             filename.text = "[Linked] ${attachment?.getItemData("title")}"
+        }else if (linkMode == "linked_url") {
+            filename.text = "[Linked Url] ${attachment?.getItemData("title")}"
+            layout.setOnClickListener {
+                val url = attachment?.getItemData("url")
+                AlertDialog.Builder(context)
+                    .setMessage("Would you like to open this URL: $url")
+                    .setPositiveButton("Yes", {dialog, which ->
+                        val intent = Intent(Intent.ACTION_VIEW)
+                        intent.setData(Uri.parse(url))
+                        startActivity(intent)
+                    })
+                    .setNegativeButton("No", {_,_ -> })
+                    .show()
+            }
         }
 
         val filetype = attachment?.data!!["contentType"] ?: ""
-        val layout = view.findViewById<ConstraintLayout>(R.id.constraintLayout_attachments_entry)
         val icon = view.findViewById<ImageView>(R.id.imageView_attachment_icon)
         if (attachment?.isDownloadable() == true) {
             if (filetype == "application/pdf") {
                 icon.setImageResource(R.drawable.treeitem_attachment_pdf_2x)
             } else if (filetype == "image/vnd.djvu") {
                 icon.setImageResource(R.drawable.djvu_icon)
-            } else if (attachment?.getFileExtension() == "epub"){
+            } else if (attachment?.getFileExtension() == "epub") {
                 icon.setImageResource(R.drawable.epub_icon)
             }
             layout.setOnClickListener {
