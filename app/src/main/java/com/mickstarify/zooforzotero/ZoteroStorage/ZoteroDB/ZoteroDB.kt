@@ -530,5 +530,17 @@ class ZoteroDB constructor(
         return this.trashItems!!
     }
 
+    fun getCollectionById(collectionKey: String): Collection? {
+        if (this.collections == null){
+            return null
+        }
+        for (collection in this.collections!!){
+            if (collection.key == collectionKey){
+                return collection
+            }
+        }
+        return null
+    }
+
 
 }
