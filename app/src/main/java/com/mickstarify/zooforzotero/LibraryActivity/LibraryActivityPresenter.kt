@@ -239,7 +239,7 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
         view.populateEntries(entries)
     }
 
-    override fun setCollection(collectionName: String, isSubCollection: Boolean) {
+    override fun setCollection(collectionKey: String, isSubCollection: Boolean) {
         /*SetCollection is the method used to display items on the listView. It
         * has to get the data, then sort it, then provide it to the view.*/
         if (!model.isLoaded()) {
@@ -251,19 +251,19 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
             model.usePersonalLibrary()
         }
 
-        Log.d("zotero", "Got request to change collection to ${collectionName}")
-        model.setCurrentCollection(collectionName)
-        if (collectionName == "all" && !model.isUsingGroups()) {
+        Log.d("zotero", "Got request to change collection to ${collectionKey}")
+        model.setCurrentCollection(collectionKey)
+        if (collectionKey == "all" && !model.isUsingGroups()) {
             view.setTitle("My Library")
             val entries = model.getLibraryItems().sort().map { ListEntry(it) }
             model.isDisplayingItems = entries.size > 0
             view.populateEntries(entries)
-        } else if (collectionName == "unfiled_items") {
+        } else if (collectionKey == "unfiled_items") {
             view.setTitle("Unfiled Items")
             val entries = model.getUnfiledItems().sort().map { ListEntry(it) }
             model.isDisplayingItems = entries.size > 0
             view.populateEntries(entries)
-        } else if (collectionName == "group_all" && model.isUsingGroups()) {
+        } else if (collectionKey == "group_all" && model.isUsingGroups()) {
             view.setTitle(model.getCurrentGroup().name)
             val entries = LinkedList<ListEntry>()
             entries.addAll(model.getCollections().filter {
@@ -277,13 +277,15 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
         }
         // It is an actual collection on the user's private.
         else {
-            view.setTitle(collectionName)
+            val collection = model.getCollectionFromKey(collectionKey)
+
+            view.setTitle(collection?.name ?: "Unknown Collection")
             val entries = LinkedList<ListEntry>()
-            entries.addAll(model.getSubCollections(collectionName).sortedBy {
+            entries.addAll(model.getSubCollections(collectionKey).sortedBy {
                 it.name.toLowerCase(Locale.ROOT)
             }.map { ListEntry(it) })
 
-            entries.addAll(model.getItemsFromCollection(collectionName).sort().map { ListEntry(it) })
+            entries.addAll(model.getItemsFromCollection(collectionKey).sort().map { ListEntry(it) })
             model.isDisplayingItems = entries.size > 0
             view.populateEntries(entries)
         }

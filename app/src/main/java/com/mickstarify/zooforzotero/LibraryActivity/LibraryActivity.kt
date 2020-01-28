@@ -8,6 +8,7 @@ import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
 import android.util.Log
+import android.util.SparseArray
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
@@ -47,6 +48,8 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
 
     private val MENU_ID_UNFILED_ITEMS: Int = 1
     private val MENU_ID_TRASH: Int = 2
+
+    private val MENU_ID_COLLECTIONS_OFFSET: Int = 10
 
     private lateinit var presenter: Contract.Presenter
     private lateinit var firebaseAnalytics: FirebaseAnalytics
@@ -96,11 +99,15 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
         swipeRefresh.setOnRefreshListener(this)
     }
 
+    val collectionKeyByMenuId = SparseArray<String>()
 
     override fun addNavigationEntry(collection: Collection, parent: String) {
-        collectionsMenu.add(R.id.group_collections, Menu.NONE, Menu.NONE, collection.name)
-            .setIcon(R.drawable.ic_folder_black_24dp).isCheckable = true
+        // we will add a collection to the menu, with the following menu ID.
+        val menuId = MENU_ID_COLLECTIONS_OFFSET + collectionKeyByMenuId.size()
+        collectionKeyByMenuId.put(menuId, collection.key)
 
+        collectionsMenu.add(R.id.group_collections, menuId, Menu.NONE, collection.name)
+            .setIcon(R.drawable.ic_folder_black_24dp).isCheckable = true
     }
 
     /* Shows a shared Collection (group) on the sidebar. */
@@ -215,7 +222,7 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
         else if (item.groupId == R.id.group_shared_collections) {
             presenter.openGroup(item.title.toString())
         } else if (item.groupId == R.id.group_collections) {
-            presenter.setCollection("${item.title}", isSubCollection = false)
+            presenter.setCollection(collectionKeyByMenuId[item.itemId], isSubCollection = false)
         } else {
             Log.e("zotero", "error unhandled menuitem. ${item.title}")
         }
@@ -247,7 +254,7 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
         listView.setOnItemClickListener { _, _, position: Int, _ ->
             val entry = listView.adapter.getItem(position) as ListEntry
             if (entry.isCollection()) {
-                presenter.setCollection(entry.getCollection().name, isSubCollection = true)
+                presenter.setCollection(entry.getCollection().key, isSubCollection = true)
             } else {
                 presenter.selectItem(entry.getItem(), false)
             }

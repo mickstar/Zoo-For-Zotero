@@ -37,6 +37,7 @@ import javax.inject.Inject
 class LibraryActivityModel(private val presenter: Contract.Presenter, val context: Context) :
     Contract.Model {
 
+    private var collectionsByMenuId: HashMap<Int, String>? = null
     // stores the current item being viewed by the user. (useful for refreshing the view)
     var selectedItem: Item? = null
     var isDisplayingItems = false
@@ -130,34 +131,14 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
         return filterItems(zoteroDB.getDisplayableItems())
     }
 
-    override fun getItemsFromCollection(collectionName: String): List<Item> {
-        val collectionKey = zoteroDB.getCollectionId(collectionName)
-        if (collectionKey != null) {
-            val items = zoteroDB.getItemsFromCollection(collectionKey)
-            return filterItems(items)
-        }
-        presenter.makeToastAlert("Error, could not open collection: $collectionName Try Refreshing your Library.")
-        val bundle = Bundle()
-        bundle.putBoolean("collections_is_null", zoteroDB.collections == null)
-        bundle.putBoolean("is_populated", zoteroDB.isPopulated())
-        bundle.putString("collection_name", collectionName)
-        firebaseAnalytics.logEvent("error_getting_subcollections_get_items", bundle)
-        return LinkedList()
+    override fun getItemsFromCollection(collectionKey: String): List<Item> {
+        val items = zoteroDB.getItemsFromCollection(collectionKey)
+        return filterItems(items)
     }
 
-    override fun getSubCollections(collectionName: String): List<Collection> {
-        val collectionKey = zoteroDB.getCollectionId(collectionName)
-        if (collectionKey != null) {
-            return zoteroDB.getSubCollectionsFor(collectionKey)
-        }
-        presenter.makeToastAlert("Error, could not open collection: $collectionName Try Refreshing your Library.")
-
-        val bundle = Bundle()
-        bundle.putBoolean("collection_is_null", zoteroDB.collections == null)
-        bundle.putBoolean("is_populated", zoteroDB.isPopulated())
-        bundle.putString("collection_name", collectionName)
-        firebaseAnalytics.logEvent("error_getting_subcollections_get_sub", bundle)
-        return LinkedList()
+    override fun getSubCollections(collectionKey: String): List<Collection> {
+//        val collectionKey = zoteroDB.getCollectionId(collectionName)
+        return zoteroDB.getSubCollectionsFor(collectionKey)
     }
 
     override fun downloadLibrary(doRefresh: Boolean, useSmallLoadingAnimation: Boolean) {
@@ -1516,5 +1497,9 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
 
     fun getTrashedItems(): List<Item> {
         return zoteroDB.getTrashItems()
+    }
+
+    fun getCollectionFromKey(collectionKey: String): Collection? {
+        return zoteroDB.getCollectionById(collectionKey)
     }
 }
