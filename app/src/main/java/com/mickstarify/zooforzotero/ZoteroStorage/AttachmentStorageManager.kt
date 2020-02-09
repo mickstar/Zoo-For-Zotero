@@ -101,9 +101,9 @@ class AttachmentStorageManager @Inject constructor(
             val rootDocFile = DocumentFile.fromTreeUri(context, Uri.parse(location))
             var directory = rootDocFile?.findFile(item.itemKey.toUpperCase(Locale.ROOT))
             if (directory == null || directory.isDirectory == false) {
-                directory = rootDocFile?.createDirectory(item.itemKey.toUpperCase(Locale.ROOT))
+                return false
             }
-            val file = directory?.findFile(filename)
+            val file = directory.findFile(filename)
             if (file == null) {
                 return false
             }
@@ -112,7 +112,7 @@ class AttachmentStorageManager @Inject constructor(
                 return false
             }
             val exists = file.exists()
-            if (file.exists() && checkMd5) {
+            if (exists && checkMd5) {
                 return calculateMd5(context.contentResolver.openInputStream(file.uri)!!) == item.data["md5"]
             } else {
                 return exists

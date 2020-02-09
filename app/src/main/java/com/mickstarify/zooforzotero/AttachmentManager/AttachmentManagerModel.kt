@@ -191,6 +191,7 @@ class AttachmentManagerModel(val presenter: Contract.Presenter, val context: Con
 
     override fun loadLibrary() {
         zoteroDB = ZoteroDB(context, groupID = GroupInfo.NO_GROUP_ID)
+        zoteroDB.collections = LinkedList()
         zoteroDB.loadItemsFromDatabase().subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())
             .subscribe(object : CompletableObserver {
@@ -226,7 +227,7 @@ class AttachmentManagerModel(val presenter: Contract.Presenter, val context: Con
         val localAttachments = LinkedList<Item>()
         val allAttachments = LinkedList<Item>()
         for (attachment in zoteroDB.items!!.filter { it.itemType == "attachment" }) {
-            if ((attachment.data["contentType"] != "application/pdf" && attachment.data["contentType"] != "image/vnd.djvu") || attachment.data["linkMode"] == "linked_file") {
+            if (!attachment.isDownloadable() || attachment.data["linkMode"] == "linked_file") {
                 continue
             }
             allAttachments.add(attachment)

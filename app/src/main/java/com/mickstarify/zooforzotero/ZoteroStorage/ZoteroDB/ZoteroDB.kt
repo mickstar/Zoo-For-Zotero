@@ -120,11 +120,13 @@ class ZoteroDB constructor(
         val completable =
             Completable.fromMaybe(zoteroDatabase.getItemsForGroup(groupID).doOnSuccess(
                 Consumer {
+                    Log.d("zotero", "loaded items from DB, setting now.")
                     items = it
                 }
             )).andThen(
                 Completable.fromMaybe(
                     zoteroDatabase.getAttachmentsForGroup(groupID).doOnSuccess(Consumer {
+                        Log.d("zotero", "Loading attachmentInfo from Database")
                         attachmentInfo = HashMap<String, AttachmentInfo>()
                         for (attachment in it) {
                             attachmentInfo!![attachment.itemKey] = attachment
