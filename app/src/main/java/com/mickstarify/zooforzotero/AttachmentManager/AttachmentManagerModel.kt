@@ -84,7 +84,7 @@ class AttachmentManagerModel(val presenter: Contract.Presenter, val context: Con
         Completable.fromAction({
             for (attachment in zoteroDB.items!!.filter { it.itemType == "attachment" && it.data["linkMode"] != "linked_file" }) {
                 val contentType = attachment.data["contentType"]
-                if (contentType != "application/pdf" && contentType != "image/vnd.djvu") {
+                if (!attachment.isDownloadable()) {
                     continue
                 }
                 if (!attachmentStorageManager.checkIfAttachmentExists(
