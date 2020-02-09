@@ -56,8 +56,7 @@ class SyncSetupModel(val presenter: SyncSetupPresenter, val context: Context) :
                         keyInfo.key
                     )
                     openLibrary()
-                }
-                if (response.code() == 404) {
+                } else if (response.code() == 404) {
                     presenter.createNetworkError("Error your key was not found. Server Response was:\n" + response.raw())
                 } else {
                     presenter.createNetworkError("Unknown network error, got back server code ${response.code()}")
