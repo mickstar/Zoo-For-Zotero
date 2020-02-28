@@ -79,7 +79,7 @@ class Item : Parcelable {
         get() = itemInfo.itemKey
 
     val itemType: String
-        get() = getItemData("itemType") ?: "error"
+        get() = data["itemType"] ?: "error"
 
     @IgnoredOnParcel
     @Ignore
@@ -107,13 +107,13 @@ class Item : Parcelable {
 
     fun getTitle(): String {
         val title = when (itemType) {
-            "case" -> this.getItemData("caseName")
-            "statute" -> this.getItemData("nameOfAct")
+            "case" -> this.data["caseName"]
+            "statute" -> this.data["nameOfAct"]
             "note" -> {
-                var noteHtml = this.getItemData("note")
+                var noteHtml = this.data["note"]
                 stripHtml(noteHtml ?: "unknown")
             }
-            else -> this.getItemData("title")
+            else -> this.data["title"]
         }
 
         return (title ?: "unknown")

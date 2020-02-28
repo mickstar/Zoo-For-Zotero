@@ -231,6 +231,7 @@ class AttachmentManagerModel(val presenter: Contract.Presenter, val context: Con
                 continue
             }
             allAttachments.add(attachment)
+            Log.d("zotero", "checking if ${attachment.data["filename"]} exists")
             if (attachmentStorageManager.checkIfAttachmentExists(attachment, checkMd5 = false)) {
                 localAttachments.add(attachment)
             }
