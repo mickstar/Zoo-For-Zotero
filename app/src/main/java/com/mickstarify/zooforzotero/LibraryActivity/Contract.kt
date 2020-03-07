@@ -72,8 +72,8 @@ interface Contract {
         fun refreshItemView()
         fun displayGroupsOnActionBar(groups: List<GroupInfo>)
         fun openGroup(groupTitle: String)
-        fun startUploadingAttachment(attachment: Item)
-        fun stopUploadingAttachment()
+        fun startUploadingAttachmentProgress(attachment: Item)
+        fun stopUploadingAttachmentProgress()
         fun onResume()
         fun createYesNoPrompt(
             title: String, message: String, yesText: String, noText: String, onYesClick: () -> Unit,
@@ -83,6 +83,7 @@ interface Contract {
         fun showBasicSyncAnimation()
         fun hideBasicSyncAnimation()
         fun openTrash()
+        fun uploadAttachment(item: Item)
     }
 
     interface Model {

@@ -461,6 +461,10 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
         presenter.openAttachment(item)
     }
 
+    override fun forceUploadAttachmentListener(item: Item) {
+        presenter.uploadAttachment(item)
+    }
+
     override fun onListFragmentInteraction(item: Item?) {
         Log.d("zotero", "got onListFragmentInteraction from item ${item?.itemKey}")
     }

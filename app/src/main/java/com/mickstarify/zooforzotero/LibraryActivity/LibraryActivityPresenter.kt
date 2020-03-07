@@ -34,11 +34,11 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
 
     }
 
-    override fun startUploadingAttachment(attachment: Item) {
+    override fun startUploadingAttachmentProgress(attachment: Item) {
         view.showAttachmentUploadProgress(attachment)
     }
 
-    override fun stopUploadingAttachment() {
+    override fun stopUploadingAttachmentProgress() {
         view.hideAttachmentUploadProgress()
         view.makeToastAlert("Finished uploading attachment.")
     }
@@ -245,6 +245,10 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
         val entries = model.getTrashedItems().map{ListEntry(it)}
         model.isDisplayingItems = entries.size > 0
         view.populateEntries(entries)
+    }
+
+    override fun uploadAttachment(item: Item) {
+        model.uploadAttachment(item)
     }
 
     override fun setCollection(collectionKey: String, isSubCollection: Boolean) {
