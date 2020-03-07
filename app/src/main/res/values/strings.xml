@@ -39,4 +39,5 @@
     <string name="zotero_save">Zotero Save</string>
     <string name="loading_your_library">Loading your library</string>
     <string name="filter">Filter Menu</string>
+    <string name="force_resync">Force Resync</string>
 </resources>

@@ -198,6 +198,9 @@ class ZoteroDatabase @Inject constructor(val context: Context) {
         //todo
         return Completable.complete()
     }
+
+    fun deleteEverything() {
+    }
 }
 
 private fun Boolean.Companion.fromInt(param: Int): Boolean {

@@ -40,4 +40,10 @@
         android:title="@string/zotero_save"
         app:showAsAction="collapseActionView" />
 
+    <item
+        android:id="@+id/force_resync"
+        android:visible="false"
+        android:title="@string/force_resync"
+        app:showAsAction="collapseActionView"/>
+
 </menu>

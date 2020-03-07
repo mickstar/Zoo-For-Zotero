@@ -160,6 +160,9 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
                 val intent = Intent(this, AttachmentManager::class.java)
                 startActivity(intent)
             }
+            R.id.force_resync -> {
+                presenter.requestForceResync()
+            }
 
         }
         return super.onOptionsItemSelected(item)

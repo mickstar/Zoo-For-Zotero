@@ -1490,4 +1490,9 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
     fun getCollectionFromKey(collectionKey: String): Collection? {
         return zoteroDB.getCollectionById(collectionKey)
     }
+
+    fun destroyLibrary() {
+        zoteroDB.clearItemsVersion()
+        zoteroDatabase.deleteEverything()
+    }
 }

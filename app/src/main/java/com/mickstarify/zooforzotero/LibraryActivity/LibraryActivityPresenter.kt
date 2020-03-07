@@ -251,6 +251,10 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
         model.uploadAttachment(item)
     }
 
+    override fun requestForceResync() {
+        model.destroyLibrary()
+    }
+
     override fun setCollection(collectionKey: String, isSubCollection: Boolean) {
         /*SetCollection is the method used to display items on the listView. It
         * has to get the data, then sort it, then provide it to the view.*/

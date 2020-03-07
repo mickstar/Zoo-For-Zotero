@@ -84,6 +84,7 @@ interface Contract {
         fun hideBasicSyncAnimation()
         fun openTrash()
         fun uploadAttachment(item: Item)
+        fun requestForceResync()
     }
 
     interface Model {
