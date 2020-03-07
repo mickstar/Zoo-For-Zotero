@@ -1471,27 +1471,6 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
         }
 
         checkAttachmentStorageAccess()
-
-        /*Do to a change in implementation this code will transition webdav configs.*/
-        if (preferences.firstRunForVersion25()) {
-            if (preferences.isWebDAVEnabled()) {
-                val address = preferences.getWebDAVAddress()
-                val newAddress = if (address.endsWith("/zotero")) {
-                    address
-                } else {
-                    if (address.endsWith("/")) { // so we don't get server.com//zotero
-                        address + "zotero"
-                    } else {
-                        address + "/zotero"
-                    }
-                }
-                preferences.setWebDAVAuthentication(
-                    newAddress,
-                    preferences.getWebDAVUsername(),
-                    preferences.getWebDAVPassword()
-                )
-            }
-        }
     }
 
 

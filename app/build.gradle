@@ -55,15 +55,15 @@ dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
 
     implementation 'androidx.appcompat:appcompat:1.1.0'
-    implementation 'androidx.core:core-ktx:1.1.0'
+    implementation 'androidx.core:core-ktx:1.2.0'
     implementation 'androidx.constraintlayout:constraintlayout:1.1.3'
-    implementation "androidx.navigation:navigation-fragment-ktx:2.1.0"
-    implementation "androidx.navigation:navigation-ui-ktx:2.1.0"
+    implementation "androidx.navigation:navigation-fragment-ktx:2.2.1"
+    implementation "androidx.navigation:navigation-ui-ktx:2.2.1"
     implementation 'com.google.android.material:material:1.0.0'
-    implementation 'com.google.android.material:material:1.2.0-alpha03'
+    implementation 'com.google.android.material:material:1.2.0-alpha05'
     api 'com.google.guava:guava:28.1-jre'
     implementation 'oauth.signpost:oauth-signpost:1.2.1.2'
-    implementation("com.squareup.okhttp3:okhttp:4.2.1")
+    implementation("com.squareup.okhttp3:okhttp:4.2.2")
     implementation('com.squareup.okhttp3:logging-interceptor:4.2.2')
     implementation('oauth.signpost:signpost-commonshttp4:1.2.1.2') {
         exclude group: 'org.apache.httpcomponents'
@@ -83,7 +83,7 @@ dependencies {
     androidTestImplementation 'androidx.test:runner:1.2.0'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0'
     implementation 'androidx.gridlayout:gridlayout:1.0.0'
-    implementation 'com.google.firebase:firebase-analytics:17.2.2'
+    implementation 'com.google.firebase:firebase-analytics:17.2.3'
     implementation 'net.lingala.zip4j:zip4j:2.2.7'
     releaseImplementation 'com.crashlytics.sdk.android:crashlytics:2.10.1'
 
@@ -96,9 +96,9 @@ dependencies {
     debugImplementation 'com.facebook.soloader:soloader:0.8.0'
 
     // Room Dependencies
-    implementation "androidx.room:room-runtime:2.2.3"
-    implementation 'androidx.room:room-rxjava2:2.2.3'
-    kapt "androidx.room:room-compiler:2.2.3"
+    implementation "androidx.room:room-runtime:2.2.4"
+    implementation 'androidx.room:room-rxjava2:2.2.4'
+    kapt "androidx.room:room-compiler:2.2.4"
 
     // Dagger Dependencies
     implementation 'com.google.dagger:dagger:2.25.2'

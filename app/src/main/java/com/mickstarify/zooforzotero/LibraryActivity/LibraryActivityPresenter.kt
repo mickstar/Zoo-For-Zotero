@@ -319,18 +319,12 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
         view.initUI()
         view.showLoadingAnimation(true)
         view.showLibraryContentDisplay("Loading your library content.")
-
-        //TODO i will delete this code next version. (just for version 2.2)
-        if (model.preferences.firstRunForVersion27() && model.hasOldStorage()) {
-            model.migrateFromOldStorage()
+        if (model.shouldIUpdateLibrary()) {
+            model.loadGroups()
+            model.downloadLibrary()
         } else {
-            if (model.shouldIUpdateLibrary()) {
-                model.loadGroups()
-                model.downloadLibrary()
-            } else {
-                model.loadLibraryLocally()
-                model.loadGroups()
-            }
+            model.loadLibraryLocally()
+            model.loadGroups()
         }
     }
 
