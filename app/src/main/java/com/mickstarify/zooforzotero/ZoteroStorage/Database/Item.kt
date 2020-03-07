@@ -61,6 +61,10 @@ class Item : Parcelable {
         return itemInfo.groupParent
     }
 
+    fun getSortedCreators() : List<Creator> {
+        return this.creators.sortedBy { it.order }
+    }
+
     fun getVersion(): Int {
         return itemInfo.version
     }
@@ -123,7 +127,7 @@ class Item : Parcelable {
         return when (creators.size) {
             0 -> ""
             1 -> creators[0].lastName
-            else -> "${creators[0].lastName} et al."
+            else -> "${getSortedCreators()[0].lastName} et al."
         }
     }
 
@@ -227,7 +231,8 @@ class Creator(
     @ColumnInfo(name = "parent") val parent: String, //itemKey of parent
     @ColumnInfo(name = "firstName") val firstName: String,
     @ColumnInfo(name = "lastName") val lastName: String,
-    @ColumnInfo(name = "creatorType") val creatorType: String
+    @ColumnInfo(name = "creatorType") val creatorType: String,
+    @ColumnInfo(name = "order") val order: Int
 ) : Parcelable {
     fun makeString(): String {
         return "${firstName} ${lastName}"

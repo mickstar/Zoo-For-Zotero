@@ -25,7 +25,7 @@ import javax.inject.Singleton
         ItemCollection::class,
         AttachmentInfo::class
     ),
-    version = 4,
+    version = 5,
     exportSchema = true
 )
 abstract class ZoteroRoomDatabase : RoomDatabase() {
@@ -44,7 +44,8 @@ class ZoteroDatabase @Inject constructor(val context: Context) {
     )
         .addMigrations(MIGRATION_1_2)
         .addMigrations(MIGRATION_2_3)
-        .addMigrations(MIGRATION_3_4).build()
+        .addMigrations(MIGRATION_3_4)
+        .addMigrations(MIGRATION_4_5).build()
 
     fun addGroup(group: GroupInfo): Completable {
         return db.groupInfoDao().insertGroupInfos(group)
@@ -123,13 +124,14 @@ class ZoteroDatabase @Inject constructor(val context: Context) {
             }
             itemDatas.add(itemData)
         }
-        for (creatorPOJO in itemPOJO.creators) {
+        for ((index, creatorPOJO) in itemPOJO.creators.withIndex()) {
             itemCreators.add(
                 Creator(
                     itemPOJO.ItemKey,
                     creatorPOJO.firstName,
                     creatorPOJO.lastName,
-                    creatorPOJO.creatorType
+                    creatorPOJO.creatorType,
+                    index
                 )
             )
         }
