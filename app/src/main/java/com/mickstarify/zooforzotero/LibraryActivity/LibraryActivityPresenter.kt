@@ -14,8 +14,16 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
         when (model.preferences.getSortMethod()) {
             SortMethod.TITLE -> it.getTitle().toLowerCase(Locale.ROOT)
             SortMethod.DATE -> it.getSortableDateString()
-            SortMethod.AUTHOR -> it.getAuthor().toLowerCase(Locale.ROOT)
             SortMethod.DATE_ADDED -> it.getSortableDateAddedString()
+            SortMethod.AUTHOR -> {
+                val authorText = it.getAuthor().toLowerCase(Locale.ROOT)
+                // force empty authors to the bottom. Just like the zotero desktop client.
+                if (authorText == ""){
+                    "zzz"
+                } else {
+                    authorText
+                }
+            }
         }
     }.thenBy { it.getTitle().toLowerCase(Locale.ROOT) }
 
