@@ -73,6 +73,7 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
 
     override fun initUI() {
         val navigationView = findViewById<NavigationView>(R.id.nav_view_library)
+        navigationView.setCheckedItem(R.id.my_library)
         collectionsMenu = navigationView.menu.addSubMenu(
             R.id.group_collections,
             Menu.NONE,
