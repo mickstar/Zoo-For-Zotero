@@ -71,6 +71,8 @@ class ItemAttachmentEntry : Fragment() {
                 icon.setImageResource(R.drawable.djvu_icon)
             } else if (attachment?.getFileExtension() == "epub") {
                 icon.setImageResource(R.drawable.epub_icon)
+            } else {
+                // todo get default attachment icon.
             }
             layout.setOnClickListener {
                 if (linkMode == "linked_file") {

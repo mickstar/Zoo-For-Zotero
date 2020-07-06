@@ -61,7 +61,7 @@ class Item : Parcelable {
         return itemInfo.groupParent
     }
 
-    fun getSortedCreators() : List<Creator> {
+    fun getSortedCreators(): List<Creator> {
         return this.creators.sortedBy { it.order }
     }
 
@@ -190,12 +190,20 @@ class Item : Parcelable {
     }
 
     fun getFileExtension(): String {
-        return when (this.data["contentType"]) {
+        val extension = when (this.data["contentType"]) {
             "application/pdf" -> "pdf"
             "image/vnd.djvu" -> "djvu"
             "application/epub+zip" -> "epub"
+            "application/x-mobipocket-ebook" -> "mobi"
+            "application/vnd.amazon.ebook" -> "azw"
             else -> "UNKNOWN"
         }
+
+        // I probably should have just used file extensions from the beginning...
+        if (extension == "UNKNOWN") {
+            return this.data["filename"]?.split(".")?.last() ?: "UNKNOWN"
+        }
+        return extension
     }
 }
 
