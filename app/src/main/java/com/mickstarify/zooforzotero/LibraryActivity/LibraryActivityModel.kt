@@ -550,6 +550,17 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
         /* This is the point of entry when a user clicks an attachment on the UI.
         *  We must decide whether we want to intitiate a download or just open a local copy. */
 
+        // first check to see if we are opening a linked attachment
+        if (item.data["linkMode"] == "linked_file"){
+            val intent = attachmentStorageManager.openLinkedAttachment(item)
+            if (intent != null){
+                context.startActivity(intent)
+            } else {
+                presenter.makeToastAlert("Error, could not find linked attachment ${item.data["path"]}")
+            }
+            return
+        }
+
         // check to see if the attachment exists but is invalid
         val attachmentExists: Boolean
         try {

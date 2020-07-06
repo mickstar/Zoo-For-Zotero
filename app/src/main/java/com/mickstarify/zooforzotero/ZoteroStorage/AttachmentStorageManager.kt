@@ -240,6 +240,24 @@ class AttachmentStorageManager @Inject constructor(
         return intent
     }
 
+    fun openAttachment(uri: Uri, contentType:String = ""): Intent {
+        var intent = Intent(Intent.ACTION_VIEW)
+        Log.d("zotero", "opening PDF with Uri $uri")
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            intent = Intent(Intent.ACTION_VIEW)
+            intent.data = uri
+            intent.flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
+            intent.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
+        } else {
+            intent.setDataAndType(uri, contentType)
+            intent.flags = Intent.FLAG_ACTIVITY_NO_HISTORY
+            intent = Intent.createChooser(intent, "Open File")
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+
+        }
+        return intent
+    }
+
 
     fun testStorage(): Boolean {
         if (storageMode == StorageMode.EXTERNAL_CACHE) {
@@ -366,6 +384,73 @@ class AttachmentStorageManager @Inject constructor(
             }
             else -> throw Exception("not implemented")
         }
+    }
+
+    fun openLinkedAttachment(item: Item): Intent? {
+        /* This method searches for the linked attachment in the users storage directory.
+        * This may fail and return nothing. */
+        if (item.data["linkMode"] != "linked_file") {
+            throw Exception("error attempting to open linked attachment on something this isn't elligible.")
+        }
+
+        // will work as followed:
+        // /home/michael/Downloads/Alice in Wonderland.pdf -> [home, michael, Downloads. Alice in Wonderland.pdf]
+        // for each path in list, check if folder exists in root dir
+        // if it does, pursue this path.
+        // if it doesn't, return to the root path, and repeat for the next item in the list.
+
+
+        val itemPath = item.data["path"] ?: ""
+        val directories = itemPath.split("/")
+        if (storageMode == StorageMode.CUSTOM) {
+            for ((index, path) in directories.withIndex()) {
+                val location = preferenceManager.getCustomAttachmentStorageLocation()
+                var documentFile = DocumentFile.fromTreeUri(context, Uri.parse(location))
+                var i = index
+                while (i < directories.size) {
+                    documentFile = documentFile?.findFile(directories[i])
+                    Log.d("zotero", "checking ${directories[i]}")
+                    if (documentFile?.exists() ?: false) {
+                        i++
+                    } else {
+                        break
+                    }
+                }
+                if (documentFile?.isFile ?: false) {
+                    Log.d("zotero", "found file ${documentFile?.name}")
+                    return openAttachment(documentFile!!.uri, item.data["contentType"]?:"")
+                }
+            }
+        } else if (storageMode == StorageMode.EXTERNAL_CACHE) {
+            // logic using File api is much simpler
+            for (i in 0..directories.size){
+                var path = directories.slice(i..directories.size-1).joinToString("/")
+                if (path.first() == '/'){
+                   path = path.slice(1..path.length-1)
+                }
+                Log.d("zotero", "checking path $path")
+                var document = File(context.externalCacheDir, path)
+                if (document.exists()){
+                    val uri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                        FileProvider.getUriForFile(
+                            context,
+                            "${context.packageName}.fileprovider",
+                            document
+                        )
+                    } else {
+                        Uri.fromFile(document)
+                    }
+                    return openAttachment(uri, item.data["contentType"]?:"")
+                }
+            }
+
+
+        }
+        else {
+            throw  NotImplementedError()
+        }
+
+        return null
     }
 
 }

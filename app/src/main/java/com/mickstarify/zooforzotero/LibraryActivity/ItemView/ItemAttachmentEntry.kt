@@ -17,7 +17,6 @@ import androidx.fragment.app.Fragment
 import com.mickstarify.zooforzotero.R
 import com.mickstarify.zooforzotero.ZoteroStorage.Database.Item
 import org.jetbrains.anko.sdk27.coroutines.onLongClick
-import org.jetbrains.anko.support.v4.toast
 
 private const val ARG_ATTACHMENT = "attachment"
 
@@ -76,7 +75,9 @@ class ItemAttachmentEntry : Fragment() {
             }
             layout.setOnClickListener {
                 if (linkMode == "linked_file") {
-                    toast("This attachment is linked and I cannot download it.")
+                    fileOpenListener?.openLinkedAttachmentListener(
+                        attachment ?: throw Exception("No Attachment given.")
+                    )
                 } else {
                     fileOpenListener?.openAttachmentFileListener(
                         attachment ?: throw Exception("No Attachment given.")
@@ -119,6 +120,7 @@ class ItemAttachmentEntry : Fragment() {
     interface OnAttachmentFragmentInteractionListener {
         fun openAttachmentFileListener(item: Item)
         fun forceUploadAttachmentListener(item: Item)
+        fun openLinkedAttachmentListener(item: Item)
     }
 
     companion object {
