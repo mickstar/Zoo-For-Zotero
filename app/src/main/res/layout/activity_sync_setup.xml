@@ -15,7 +15,7 @@
             android:layout_height="wrap_content"
             android:layout_marginLeft="24dp"
             android:layout_marginTop="16dp"
-            android:text="Pick your cloud storage provider"
+            android:text="@string/pick_your_cloud_storage_provider"
             app:layout_constraintLeft_toLeftOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
@@ -28,49 +28,20 @@
             android:layout_marginLeft="16dp"
             app:layout_constraintLeft_toLeftOf="parent">
 
-
-        <RadioButton
-                android:id="@+id/radio_googledrive"
-                android:textSize="24dp"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:drawableLeft="@mipmap/ic_drive_scaled"
-                android:enabled="false"
-                android:text="Google Drive" />
-
-        <RadioButton
-                android:id="@+id/radio_dropbox"
-                android:textSize="24dp"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="Dropbox"
-                android:drawableLeft="@mipmap/ic_dropbox"
-                android:enabled="false" />
-
-        <RadioButton
-                android:id="@+id/radio_onedrive"
-                android:textSize="24dp"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:drawableLeft="@mipmap/ic_onedrive"
-                android:enabled="false"
-                android:text="Onedrive" />
-
         <RadioButton
                 android:id="@+id/radio_zotero"
                 android:textSize="24dp"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:drawableLeft="@mipmap/ic_zoterosync"
-                android:text="Zotero Account Sync" />
+                android:text="@string/zotero_account_sync" />
 
         <RadioButton
                 android:id="@+id/radio_zotero_manual_apikey"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:drawableLeft="@mipmap/ic_zoterosync_grey"
-                android:text="Enter your Zotero API Key Manually"
+                android:text="@string/enter_your_zotero_api_key_manually"
                 android:textSize="24dp" />
     </RadioGroup>
 
@@ -82,7 +53,7 @@
             android:layout_marginBottom="32dp"
             android:layout_marginRight="32dp"
             android:padding="12dp"
-            android:text="Proceed"
+            android:text="@string/proceed"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintRight_toRightOf="parent" />
 
@@ -91,7 +62,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginTop="48dp"
-            android:text="I have only implemented support for the Zotero Account Syncing option. I will implement alternative syncing options in the future, sorry for the inconvenience."
+            android:text="@string/app_frontpage_disclaimer"
             app:layout_constraintEnd_toEndOf="@+id/btn_sync_proceed"
             app:layout_constraintHorizontal_bias="0.0"
             app:layout_constraintStart_toStartOf="@+id/radiogroup_cloudproviders"

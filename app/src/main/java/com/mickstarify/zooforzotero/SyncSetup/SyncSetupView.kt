@@ -84,9 +84,6 @@ class SyncSetupView : AppCompatActivity(), SyncSetupContract.View {
         val rg_cloudproviders = findViewById<RadioGroup>(R.id.radiogroup_cloudproviders)
         rg_cloudproviders.setOnCheckedChangeListener { _, i ->
             when (i) {
-                R.id.radio_dropbox -> selected_provider = SyncOption.Dropbox
-                R.id.radio_googledrive -> selected_provider = SyncOption.GoogleDrive
-                R.id.radio_onedrive -> selected_provider = SyncOption.Onedrive
                 R.id.radio_zotero -> selected_provider = SyncOption.ZoteroAPI
                 R.id.radio_zotero_manual_apikey -> selected_provider = SyncOption.ZoteroAPIManual
                 else -> throw Exception("Error, not sure what Radiobox was pressed")
