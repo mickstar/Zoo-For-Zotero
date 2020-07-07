@@ -201,7 +201,12 @@ class Item : Parcelable {
 
         // I probably should have just used file extensions from the beginning...
         if (extension == "UNKNOWN") {
-            return this.data["filename"]?.split(".")?.last() ?: "UNKNOWN"
+            val filename = if(this.data.containsKey("filename")){
+                this.data["filename"]
+            } else {
+                this.data["title"]
+            }
+            return filename?.split(".")?.last() ?: "UNKNOWN"
         }
         return extension
     }

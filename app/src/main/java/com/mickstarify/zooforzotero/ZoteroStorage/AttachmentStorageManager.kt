@@ -400,10 +400,13 @@ class AttachmentStorageManager @Inject constructor(
         // if it doesn't, return to the root path, and repeat for the next item in the list.
 
 
-        val itemPath = item.data["path"] ?: ""
+        var itemPath = item.data["path"] ?: ""
+        // do some transformations for windows style paths
+        // e.g C:\\Users\\michael\\file.txt -> C:/Users/michael/file.txt
+        itemPath = itemPath.replace("\\", "/")
         val directories = itemPath.split("/")
         if (storageMode == StorageMode.CUSTOM) {
-            for ((index, path) in directories.withIndex()) {
+            for (index in directories.indices) {
                 val location = preferenceManager.getCustomAttachmentStorageLocation()
                 var documentFile = DocumentFile.fromTreeUri(context, Uri.parse(location))
                 var i = index
@@ -423,7 +426,7 @@ class AttachmentStorageManager @Inject constructor(
             }
         } else if (storageMode == StorageMode.EXTERNAL_CACHE) {
             // logic using File api is much simpler
-            for (i in 0..directories.size){
+            for (i in directories.indices){
                 var path = directories.slice(i..directories.size-1).joinToString("/")
                 if (path.first() == '/'){
                    path = path.slice(1..path.length-1)
