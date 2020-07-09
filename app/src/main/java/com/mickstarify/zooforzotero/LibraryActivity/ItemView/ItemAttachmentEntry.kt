@@ -3,6 +3,7 @@ package com.mickstarify.zooforzotero.LibraryActivity.ItemView
 
 import android.app.AlertDialog
 import android.content.Context
+import android.content.DialogInterface
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
@@ -15,7 +16,7 @@ import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.fragment.app.Fragment
 import com.mickstarify.zooforzotero.R
 import com.mickstarify.zooforzotero.ZoteroStorage.Database.Item
-import org.jetbrains.anko.support.v4.toast
+import org.jetbrains.anko.sdk27.coroutines.onLongClick
 
 private const val ARG_ATTACHMENT = "attachment"
 
@@ -44,18 +45,19 @@ class ItemAttachmentEntry : Fragment() {
         filename.text = attachment?.data?.get("filename") ?: "unknown"
         if (linkMode == "linked_file") { // this variant uses title as a filename.
             filename.text = "[Linked] ${attachment?.getItemData("title")}"
-        }else if (linkMode == "linked_url") {
+
+        } else if (linkMode == "linked_url") {
             filename.text = "[Linked Url] ${attachment?.getItemData("title")}"
             layout.setOnClickListener {
                 val url = attachment?.getItemData("url")
                 AlertDialog.Builder(context)
                     .setMessage("Would you like to open this URL: $url")
-                    .setPositiveButton("Yes", {dialog, which ->
+                    .setPositiveButton("Yes", { dialog, which ->
                         val intent = Intent(Intent.ACTION_VIEW)
                         intent.setData(Uri.parse(url))
                         startActivity(intent)
                     })
-                    .setNegativeButton("No", {_,_ -> })
+                    .setNegativeButton("No", { _, _ -> })
                     .show()
             }
         }
@@ -69,15 +71,39 @@ class ItemAttachmentEntry : Fragment() {
                 icon.setImageResource(R.drawable.djvu_icon)
             } else if (attachment?.getFileExtension() == "epub") {
                 icon.setImageResource(R.drawable.epub_icon)
+            } else {
+                // todo get default attachment icon.
             }
             layout.setOnClickListener {
                 if (linkMode == "linked_file") {
-                    toast("This attachment is linked and I cannot download it.")
+                    fileOpenListener?.openLinkedAttachmentListener(
+                        attachment ?: throw Exception("No Attachment given.")
+                    )
                 } else {
                     fileOpenListener?.openAttachmentFileListener(
                         attachment ?: throw Exception("No Attachment given.")
                     )
                 }
+            }
+
+            layout.onLongClick {
+                AlertDialog.Builder(context)
+                    .setTitle("Attachment")
+                    .setItems(
+                        arrayOf("Open", "Force Re-upload"),
+                        object : DialogInterface.OnClickListener {
+                            override fun onClick(dialog: DialogInterface?, item: Int) {
+                                when (item) {
+                                    0 -> fileOpenListener?.openAttachmentFileListener(
+                                        attachment ?: throw Exception("No Attachment given.")
+                                    )
+                                    1 -> fileOpenListener?.forceUploadAttachmentListener(
+                                        attachment ?: throw Exception("No Attachment given.")
+                                    )
+                                }
+                            }
+
+                        }).show()
             }
         }
         return view
@@ -94,6 +120,8 @@ class ItemAttachmentEntry : Fragment() {
 
     interface OnAttachmentFragmentInteractionListener {
         fun openAttachmentFileListener(item: Item)
+        fun forceUploadAttachmentListener(item: Item)
+        fun openLinkedAttachmentListener(item: Item)
     }
 
     companion object {

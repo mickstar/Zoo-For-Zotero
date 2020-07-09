@@ -61,6 +61,10 @@ class Item : Parcelable {
         return itemInfo.groupParent
     }
 
+    fun getSortedCreators(): List<Creator> {
+        return this.creators.sortedBy { it.order }
+    }
+
     fun getVersion(): Int {
         return itemInfo.version
     }
@@ -123,7 +127,7 @@ class Item : Parcelable {
         return when (creators.size) {
             0 -> ""
             1 -> creators[0].lastName
-            else -> "${creators[0].lastName} et al."
+            else -> "${getSortedCreators()[0].lastName} et al."
         }
     }
 
@@ -186,12 +190,25 @@ class Item : Parcelable {
     }
 
     fun getFileExtension(): String {
-        return when (this.data["contentType"]) {
+        val extension = when (this.data["contentType"]) {
             "application/pdf" -> "pdf"
             "image/vnd.djvu" -> "djvu"
             "application/epub+zip" -> "epub"
+            "application/x-mobipocket-ebook" -> "mobi"
+            "application/vnd.amazon.ebook" -> "azw"
             else -> "UNKNOWN"
         }
+
+        // I probably should have just used file extensions from the beginning...
+        if (extension == "UNKNOWN") {
+            val filename = if(this.data.containsKey("filename")){
+                this.data["filename"]
+            } else {
+                this.data["title"]
+            }
+            return filename?.split(".")?.last() ?: "UNKNOWN"
+        }
+        return extension
     }
 }
 
@@ -227,7 +244,8 @@ class Creator(
     @ColumnInfo(name = "parent") val parent: String, //itemKey of parent
     @ColumnInfo(name = "firstName") val firstName: String,
     @ColumnInfo(name = "lastName") val lastName: String,
-    @ColumnInfo(name = "creatorType") val creatorType: String
+    @ColumnInfo(name = "creatorType") val creatorType: String,
+    @ColumnInfo(name = "order") val order: Int
 ) : Parcelable {
     fun makeString(): String {
         return "${firstName} ${lastName}"

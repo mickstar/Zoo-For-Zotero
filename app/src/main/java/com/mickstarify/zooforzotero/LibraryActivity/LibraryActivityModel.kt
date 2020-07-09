@@ -550,6 +550,17 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
         /* This is the point of entry when a user clicks an attachment on the UI.
         *  We must decide whether we want to intitiate a download or just open a local copy. */
 
+        // first check to see if we are opening a linked attachment
+        if (item.data["linkMode"] == "linked_file"){
+            val intent = attachmentStorageManager.openLinkedAttachment(item)
+            if (intent != null){
+                context.startActivity(intent)
+            } else {
+                presenter.makeToastAlert("Error, could not find linked attachment ${item.data["path"]}")
+            }
+            return
+        }
+
         // check to see if the attachment exists but is invalid
         val attachmentExists: Boolean
         try {
@@ -1034,7 +1045,13 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
     }
 
     override fun uploadAttachment(attachment: Item) {
-        val md5Key = attachmentStorageManager.calculateMd5(attachment)
+        val md5Key: String
+        try {
+             md5Key = attachmentStorageManager.calculateMd5(attachment)
+        } catch (e: FileNotFoundException){
+            presenter.makeToastAlert("Cannot upload attachment. File does not exist.")
+            return
+        }
         var mtime = attachmentStorageManager.getMtime(attachment)
 
         if (mtime < attachment.getMtime()) {
@@ -1056,7 +1073,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                 .subscribeOn(Schedulers.io()).observeOn(AndroidSchedulers.mainThread()).subscribe(
                     object : CompletableObserver {
                         override fun onComplete() {
-                            presenter.stopUploadingAttachment()
+                            presenter.stopUploadingAttachmentProgress()
                             removeFromRecentlyViewed(attachment)
                             zoteroDB.updateAttachmentMetadata(
                                 attachment.itemKey,
@@ -1071,7 +1088,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                         }
 
                         override fun onSubscribe(d: Disposable) {
-                            presenter.startUploadingAttachment(attachment)
+                            presenter.startUploadingAttachmentProgress(attachment)
                         }
 
                         override fun onError(e: Throwable) {
@@ -1086,16 +1103,18 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                                 "error_uploading_attachments_webdav",
                                 bundle
                             )
-                            presenter.stopUploadingAttachment()
+                            presenter.stopUploadingAttachmentProgress()
                         }
                     })
             return
         } else {
-            zoteroAPI.updateAttachment(attachment).subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread()).subscribe(object :
+            zoteroAPI.updateAttachment(attachment)
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(object :
                     CompletableObserver {
                     override fun onComplete() {
-                        presenter.stopUploadingAttachment()
+                        presenter.stopUploadingAttachmentProgress()
                         removeFromRecentlyViewed(attachment)
                         zoteroDB.updateAttachmentMetadata(
                             attachment.itemKey,
@@ -1106,11 +1125,11 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                     }
 
                     override fun onSubscribe(d: Disposable) {
-                        presenter.startUploadingAttachment(attachment)
+                        presenter.startUploadingAttachmentProgress(attachment)
                     }
 
                     override fun onError(e: Throwable) {
-                        if (e is com.mickstarify.zooforzotero.ZoteroAPI.AlreadyUploadedException) {
+                        if (e is AlreadyUploadedException) {
                             removeFromRecentlyViewed(attachment)
                             zoteroDB.updateAttachmentMetadata(
                                 attachment.itemKey,
@@ -1118,6 +1137,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                                 attachmentStorageManager.getMtime(attachment),
                                 AttachmentInfo.WEBDAV
                             ).subscribeOn(Schedulers.io()).subscribe()
+                            presenter.makeToastAlert("Attachment already up to date.")
                         } else if (e is PreconditionFailedException) {
                             presenter.createErrorAlert(
                                 "Error uploading Attachment",
@@ -1140,7 +1160,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                                 Bundle().apply { putString("error_message", e.toString()) }
                             firebaseAnalytics.logEvent("error_uploading_attachments", bundle)
                         }
-                        presenter.stopUploadingAttachment()
+                        presenter.stopUploadingAttachmentProgress()
                     }
 
                 })
@@ -1471,27 +1491,6 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
         }
 
         checkAttachmentStorageAccess()
-
-        /*Do to a change in implementation this code will transition webdav configs.*/
-        if (preferences.firstRunForVersion25()) {
-            if (preferences.isWebDAVEnabled()) {
-                val address = preferences.getWebDAVAddress()
-                val newAddress = if (address.endsWith("/zotero")) {
-                    address
-                } else {
-                    if (address.endsWith("/")) { // so we don't get server.com//zotero
-                        address + "zotero"
-                    } else {
-                        address + "/zotero"
-                    }
-                }
-                preferences.setWebDAVAuthentication(
-                    newAddress,
-                    preferences.getWebDAVUsername(),
-                    preferences.getWebDAVPassword()
-                )
-            }
-        }
     }
 
 
@@ -1501,5 +1500,10 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
 
     fun getCollectionFromKey(collectionKey: String): Collection? {
         return zoteroDB.getCollectionById(collectionKey)
+    }
+
+    fun destroyLibrary() {
+        zoteroDB.clearItemsVersion()
+        zoteroDatabase.deleteEverything()
     }
 }

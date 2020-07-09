@@ -46,7 +46,7 @@
         <SwitchPreference
             android:defaultValue="false"
             android:key="should_open_pdf_on_open"
-            android:title="Default to opening Attachments" />
+            android:title="Single press opens attachment" />
 
         <ListPreference
             app:defaultValue="TITLE"

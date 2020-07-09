@@ -563,7 +563,8 @@ class ZoteroAPI(
 
         val newMd5 = attachmentStorageManager.calculateMd5(attachment)
         if (oldMd5 == newMd5) {
-            throw AlreadyUploadedException("Local attachment version is the same as Zotero's.")
+
+            return Completable.error(AlreadyUploadedException("Local attachment version is the same as Zotero's."))
         }
         val mtime = attachmentStorageManager.getMtime(attachment)
         val filename = attachmentStorageManager.getFilenameForItem(attachment)

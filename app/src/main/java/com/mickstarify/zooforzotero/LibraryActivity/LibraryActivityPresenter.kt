@@ -14,8 +14,16 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
         when (model.preferences.getSortMethod()) {
             SortMethod.TITLE -> it.getTitle().toLowerCase(Locale.ROOT)
             SortMethod.DATE -> it.getSortableDateString()
-            SortMethod.AUTHOR -> it.getAuthor().toLowerCase(Locale.ROOT)
             SortMethod.DATE_ADDED -> it.getSortableDateAddedString()
+            SortMethod.AUTHOR -> {
+                val authorText = it.getAuthor().toLowerCase(Locale.ROOT)
+                // force empty authors to the bottom. Just like the zotero desktop client.
+                if (authorText == ""){
+                    "zzz"
+                } else {
+                    authorText
+                }
+            }
         }
     }.thenBy { it.getTitle().toLowerCase(Locale.ROOT) }
 
@@ -26,11 +34,11 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
 
     }
 
-    override fun startUploadingAttachment(attachment: Item) {
+    override fun startUploadingAttachmentProgress(attachment: Item) {
         view.showAttachmentUploadProgress(attachment)
     }
 
-    override fun stopUploadingAttachment() {
+    override fun stopUploadingAttachmentProgress() {
         view.hideAttachmentUploadProgress()
         view.makeToastAlert("Finished uploading attachment.")
     }
@@ -239,6 +247,14 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
         view.populateEntries(entries)
     }
 
+    override fun uploadAttachment(item: Item) {
+        model.uploadAttachment(item)
+    }
+
+    override fun requestForceResync() {
+        model.destroyLibrary()
+    }
+
     override fun setCollection(collectionKey: String, isSubCollection: Boolean) {
         /*SetCollection is the method used to display items on the listView. It
         * has to get the data, then sort it, then provide it to the view.*/
@@ -319,18 +335,12 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
         view.initUI()
         view.showLoadingAnimation(true)
         view.showLibraryContentDisplay("Loading your library content.")
-
-        //TODO i will delete this code next version. (just for version 2.2)
-        if (model.preferences.firstRunForVersion27() && model.hasOldStorage()) {
-            model.migrateFromOldStorage()
+        if (model.shouldIUpdateLibrary()) {
+            model.loadGroups()
+            model.downloadLibrary()
         } else {
-            if (model.shouldIUpdateLibrary()) {
-                model.loadGroups()
-                model.downloadLibrary()
-            } else {
-                model.loadLibraryLocally()
-                model.loadGroups()
-            }
+            model.loadLibraryLocally()
+            model.loadGroups()
         }
     }
 

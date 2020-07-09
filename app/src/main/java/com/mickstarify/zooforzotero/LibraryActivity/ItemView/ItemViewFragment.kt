@@ -117,10 +117,10 @@ class ItemViewFragment : BottomSheetDialogFragment(), NoteInteractionListener {
         addTextEntry("Item Type", item.data["itemType"] ?: "Unknown")
         addTextEntry("title", item.getTitle())
         if (item.creators.isNotEmpty()) {
-            this.addCreators(item.creators)
+            this.addCreators(item.getSortedCreators())
         } else {
             // empty creator.
-            this.addCreators(listOf(Creator("null", "", "", "")))
+            this.addCreators(listOf(Creator("null", "", "", "", -1)))
         }
         for ((key, value) in item.data) {
             if (value != "" && key != "itemType" && key != "title") {

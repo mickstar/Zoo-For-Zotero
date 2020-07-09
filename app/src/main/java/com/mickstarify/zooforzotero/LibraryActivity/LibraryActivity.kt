@@ -73,6 +73,7 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
 
     override fun initUI() {
         val navigationView = findViewById<NavigationView>(R.id.nav_view_library)
+        navigationView.setCheckedItem(R.id.my_library)
         collectionsMenu = navigationView.menu.addSubMenu(
             R.id.group_collections,
             Menu.NONE,
@@ -158,6 +159,9 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
             R.id.attachment_manager -> {
                 val intent = Intent(this, AttachmentManager::class.java)
                 startActivity(intent)
+            }
+            R.id.force_resync -> {
+                presenter.requestForceResync()
             }
 
         }
@@ -458,6 +462,14 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
 
     /* Is called by the fragment when an attachment is openned by the user. */
     override fun openAttachmentFileListener(item: Item) {
+        presenter.openAttachment(item)
+    }
+
+    override fun forceUploadAttachmentListener(item: Item) {
+        presenter.uploadAttachment(item)
+    }
+
+    override fun openLinkedAttachmentListener(item: Item) {
         presenter.openAttachment(item)
     }
 
