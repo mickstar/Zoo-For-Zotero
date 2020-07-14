@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.os.Handler
 import android.util.Log
 import com.google.firebase.analytics.FirebaseAnalytics
 import com.google.gson.JsonObject
@@ -38,6 +39,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
     Contract.Model {
 
     private var collectionsByMenuId: HashMap<Int, String>? = null
+
     // stores the current item being viewed by the user. (useful for refreshing the view)
     var selectedItem: Item? = null
     var isDisplayingItems = false
@@ -45,8 +47,10 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
     private var firebaseAnalytics: FirebaseAnalytics
 
     private lateinit var zoteroAPI: ZoteroAPI
+
     @Inject
     lateinit var zoteroDatabase: ZoteroDatabase
+
     @Inject
     lateinit var attachmentStorageManager: AttachmentStorageManager
     private val zoteroGroupDB =
@@ -65,8 +69,11 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
     @Inject
     lateinit var preferences: PreferenceManager
 
-    val state = LibraryModelState()
-
+    val states = Stack<LibraryModelState>()
+    val state: LibraryModelState
+        get() {
+            return states.peek()
+        }
     private var zoteroDB: ZoteroDB by zoteroDBPicker
 
     // these three variables keep track of our download progress and are used to make sure
@@ -76,10 +83,10 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
     var loadingTrash = false
 
     override fun refreshLibrary(useSmallLoadingAnimation: Boolean) {
-        if (!state.usingGroup) {
+        if (!state.isUsingGroup()) {
             downloadLibrary(doRefresh = true, useSmallLoadingAnimation = useSmallLoadingAnimation)
         } else {
-            this.loadGroup(state.currentGroup!!, refresh = true)
+            this.loadGroup(state.currentGroup, refresh = true)
         }
     }
 
@@ -240,20 +247,21 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
         db: ZoteroDB
     ) {
         loadingTrash = true
-        val observable = zoteroAPI.getTrashedItems(db.groupID, db.getTrashVersion()).map{response ->
-            for (itemPojo in response.items) {
-                if (zoteroDatabase.containsItem(db.groupID, itemPojo.ItemKey).blockingGet()) {
-                    // there is a subtle flaw here.
-                    // If the item has changed since last sync, those changes won't be reflected in
-                    // zoo. I will ignore this error for the sake of simplicity.
-                    zoteroDatabase.moveItemToTrash(db.groupID, itemPojo.ItemKey).blockingAwait()
-                } else {
-                    zoteroDatabase.writeItem(db.groupID, itemPojo).blockingAwait()
-                    zoteroDatabase.moveItemToTrash(db.groupID, itemPojo.ItemKey).blockingAwait()
+        val observable =
+            zoteroAPI.getTrashedItems(db.groupID, db.getTrashVersion()).map { response ->
+                for (itemPojo in response.items) {
+                    if (zoteroDatabase.containsItem(db.groupID, itemPojo.ItemKey).blockingGet()) {
+                        // there is a subtle flaw here.
+                        // If the item has changed since last sync, those changes won't be reflected in
+                        // zoo. I will ignore this error for the sake of simplicity.
+                        zoteroDatabase.moveItemToTrash(db.groupID, itemPojo.ItemKey).blockingAwait()
+                    } else {
+                        zoteroDatabase.writeItem(db.groupID, itemPojo).blockingAwait()
+                        zoteroDatabase.moveItemToTrash(db.groupID, itemPojo.ItemKey).blockingAwait()
+                    }
                 }
+                response
             }
-            response
-        }
         observable.subscribeOn(Schedulers.io()).observeOn(AndroidSchedulers.mainThread())
             .subscribe(object : Observer<ZoteroAPIItemsResponse> {
                 var received = 0
@@ -551,9 +559,9 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
         *  We must decide whether we want to intitiate a download or just open a local copy. */
 
         // first check to see if we are opening a linked attachment
-        if (item.data["linkMode"] == "linked_file"){
+        if (item.data["linkMode"] == "linked_file") {
             val intent = attachmentStorageManager.openLinkedAttachment(item)
-            if (intent != null){
+            if (intent != null) {
                 context.startActivity(intent)
             } else {
                 presenter.makeToastAlert("Error, could not find linked attachment ${item.data["path"]}")
@@ -622,7 +630,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
         }
         isDownloading = true
 
-        zoteroAPI.downloadItemRx(item, state.currentGroup?.id ?: GroupInfo.NO_GROUP_ID, context)
+        zoteroAPI.downloadItemRx(item, state.currentGroup.id, context)
             .subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())
             .subscribe(object : Observer<DownloadProgress> {
@@ -716,7 +724,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
 
     override fun createNote(note: Note) {
         firebaseAnalytics.logEvent("create_note", Bundle())
-        if (state.usingGroup) {
+        if (state.isUsingGroup()) {
             presenter.makeToastAlert("Sorry, this isn't supported in shared collections.")
             return
         }
@@ -750,7 +758,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
 
     override fun modifyNote(note: Note) {
         firebaseAnalytics.logEvent("modify_note", Bundle())
-        if (state.usingGroup) {
+        if (state.isUsingGroup()) {
             presenter.makeToastAlert("Sorry, this isn't supported in shared collections.")
             return
         }
@@ -796,7 +804,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
 
     override fun deleteNote(note: Note) {
         firebaseAnalytics.logEvent("delete_note", Bundle())
-        if (state.usingGroup) {
+        if (state.isUsingGroup()) {
             presenter.makeToastAlert("Sorry, this isn't supported in shared collections.")
             return
         }
@@ -917,7 +925,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
     }
 
     fun checkAllAttachmentsForModification() {
-        if (isUsingGroups()) {
+        if (state.isUsingGroup()) {
             Log.d(
                 "zotero",
                 "not checking attachments because we do not support groups"
@@ -1047,8 +1055,8 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
     override fun uploadAttachment(attachment: Item) {
         val md5Key: String
         try {
-             md5Key = attachmentStorageManager.calculateMd5(attachment)
-        } catch (e: FileNotFoundException){
+            md5Key = attachmentStorageManager.calculateMd5(attachment)
+        } catch (e: FileNotFoundException) {
             presenter.makeToastAlert("Cannot upload attachment. File does not exist.")
             return
         }
@@ -1346,16 +1354,17 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
         loadingItems = false
         loadingCollections = false
         presenter.hideLibraryLoadingAnimation()
-        state.usingGroup = true
-        state.currentGroup = group
-        zoteroDBPicker.groupId = group.id
-        state.currentCollection = "group_all"
+        // add to our states stack so we can use back button functionality.
+        val newState = LibraryModelState().apply {
+            this.currentCollection = "group_all"
+            this.currentGroup = group
+        }
+        this.states.add(newState)
+
         presenter.redisplayItems()
     }
 
     override fun usePersonalLibrary() {
-        state.usingGroup = false
-        state.currentGroup = null
         this.zoteroDBPicker.stopGroup()
     }
 
@@ -1363,16 +1372,19 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
         return state.currentCollection
     }
 
-    fun setCurrentCollection(collectionName: String) {
-        state.currentCollection = collectionName
-    }
+    fun setCurrentCollection(collectionName: String, usePersonalLibrary: Boolean = true) {
+        // check to see if we're in a new state first.
+        if (state.currentCollection == collectionName) {
+            return
+        }
 
-    fun isUsingGroups(): Boolean {
-        return state.usingGroup
-    }
-
-    fun getCurrentGroup(): GroupInfo {
-        return state.currentGroup ?: throw Exception("Error there is no current Group.")
+        val newState = LibraryModelState()
+        if (!usePersonalLibrary){
+            newState.currentGroup = state.currentGroup
+        }
+        newState.currentCollection = collectionName
+        newState.filterText = state.filterText
+        states.push(newState)
     }
 
     fun checkAttachmentStorageAccess() {
@@ -1472,6 +1484,8 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
         ((context as Activity).application as ZooForZoteroApplication).component.inject(this)
         firebaseAnalytics = FirebaseAnalytics.getInstance(context)
         val auth = AuthenticationStorage(context)
+        // add the first library state.
+        states.push(LibraryModelState())
 
         if (auth.hasCredentials()) {
             zoteroAPI = ZoteroAPI(
@@ -1505,5 +1519,51 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
     fun destroyLibrary() {
         zoteroDB.clearItemsVersion()
         zoteroDatabase.deleteEverything()
+    }
+
+    fun isUsingGroups(): Boolean {
+        return state.isUsingGroup()
+    }
+
+    fun getCurrentGroup(): GroupInfo? {
+        return state.currentGroup
+    }
+
+    private var doubleBackToExitPressedOnce = false
+    override fun loadPriorState() {
+        // check to see if we're at the root level, the first state is a junk state, so we
+        // check at 2.
+        if (states.size <= 2) {
+            if (doubleBackToExitPressedOnce) {
+                (this.context as Activity).finish()
+                return
+            }
+
+            this.doubleBackToExitPressedOnce = true
+            presenter.makeToastAlert("Please press BACK again to exit")
+            Handler().postDelayed(Runnable { doubleBackToExitPressedOnce = false }, 2000)
+            return
+        }
+        val oldState = states.peek()
+        states.pop()
+        if (oldState.currentGroup != state.currentGroup) {
+            if (state.isUsingGroup()) {
+                presenter.openGroup(state.currentGroup.name)
+            } else {
+                // we are returning to the user's collection.
+                this.usePersonalLibrary()
+                presenter.setCollection(state.currentCollection)
+            }
+        } else if (oldState.currentCollection != state.currentCollection) {
+            presenter.setCollection(state.currentCollection)
+        } else if (oldState.filterText != state.filterText) {
+            if(state.filterText == "") {
+                presenter.closeQuery()
+            } else {
+                presenter.filterEntries(state.filterText)
+            }
+        } else {
+            Log.e("zotero", "error unable to determine state differences!!")
+        }
     }
 }

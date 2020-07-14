@@ -20,6 +20,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SearchView
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.view.GravityCompat
+import androidx.core.view.iterator
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.google.android.material.navigation.NavigationView
@@ -55,6 +56,8 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
     private lateinit var firebaseAnalytics: FirebaseAnalytics
     private var itemView: ItemViewFragment? = null
 
+    // used to "uncheck" the last pressed menu item if we change via code.
+    private var currentPressedMenuItem: MenuItem? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -109,6 +112,51 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
 
         collectionsMenu.add(R.id.group_collections, menuId, Menu.NONE, collection.name)
             .setIcon(R.drawable.ic_folder_black_24dp).isCheckable = true
+    }
+
+    override fun highlightMenuItem(state: LibraryModelState){
+        /* Given some collection name / group name, highlight that corresponding item.
+        * Needed for back button, whereby the app loads a prior state and needs the UI
+        * to reflect this change with respect to the item selected.  */
+
+        currentPressedMenuItem?.let {
+            it.isChecked = false
+        }
+
+        if (state.isUsingGroup()){
+            for (menuItem: MenuItem in sharedCollections){
+                if (menuItem.title.toString() == state.currentGroup.name){
+                    menuItem.isChecked = true
+                    currentPressedMenuItem = menuItem
+                    break
+                }
+            }
+            return
+        }
+
+        val menuItem: MenuItem? = if (state.currentCollection == "all"){
+            val navigationView = findViewById<NavigationView>(R.id.nav_view_library)
+            navigationView.menu.findItem(R.id.my_library)
+        } else if (state.currentCollection == "unfiled_items"){
+            val navigationView = findViewById<NavigationView>(R.id.nav_view_library)
+            navigationView.menu.findItem(MENU_ID_UNFILED_ITEMS)
+        } else if (state.currentCollection == "zooforzotero_Trash"){
+            val navigationView = findViewById<NavigationView>(R.id.nav_view_library)
+            navigationView.menu.findItem(MENU_ID_TRASH)
+        } else {
+            // if it reaches here that means it's a collection.
+            val index = collectionKeyByMenuId.indexOfValue(state.currentCollection)
+            if (index >= 0){
+                val menuId = collectionKeyByMenuId.keyAt(index)
+                collectionsMenu.findItem(menuId)
+            } else {
+                null
+            }
+        }
+        menuItem?.isChecked = true
+        menuItem?.let {
+            currentPressedMenuItem = it
+        }
     }
 
     /* Shows a shared Collection (group) on the sidebar. */
@@ -195,9 +243,9 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
                     // we will only search on submit for android 7<=
                     if (android.os.Build.VERSION.SDK_INT <= 24){
                         presenter.filterEntries(query)
-                        return true
                     }
-                    return false
+                    presenter.addFilterState(query)
+                    return true
                 }
 
                 override fun onQueryTextChange(query: String): Boolean {
@@ -216,6 +264,11 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
 
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
         Log.d("zotero", "pressed ${item.groupId} - ${item.itemId}")
+        currentPressedMenuItem?.let {
+            it.isChecked = false
+        }
+
+        currentPressedMenuItem = item
         if (item.itemId == R.id.my_library) {
             presenter.setCollection("all")
         } else if (item.itemId == MENU_ID_UNFILED_ITEMS) {
@@ -232,6 +285,8 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
         }
         val drawer = findViewById<DrawerLayout>(R.id.drawerlayout_library)
         drawer.closeDrawer(GravityCompat.START)
+        // shouldnt be neccessary but there was a bug where android wouldn't highlight on certain occassions
+        item.isChecked =true
         return true
     }
 
@@ -583,14 +638,9 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
             searchView.isIconified = true
             presenter.closeQuery()
         }
-
-        if (doubleBackToExitPressedOnce) {
-            super.onBackPressed()
-            return
+        else {
+            presenter.backButtonPressed()
         }
-
-        this.doubleBackToExitPressedOnce = true
-        Toast.makeText(this, "Please click BACK again to exit", Toast.LENGTH_SHORT).show()
 
         Handler().postDelayed(Runnable { doubleBackToExitPressedOnce = false }, 2000)
     }

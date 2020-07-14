@@ -40,6 +40,7 @@ interface Contract {
 
         fun showBasicSyncAnimation()
         fun hideBasicSyncAnimation()
+        fun highlightMenuItem(state: LibraryModelState)
     }
 
     interface Presenter {
@@ -85,6 +86,8 @@ interface Contract {
         fun openTrash()
         fun uploadAttachment(item: Item)
         fun requestForceResync()
+        fun backButtonPressed()
+        fun addFilterState(query: String)
     }
 
     interface Model {
@@ -113,5 +116,6 @@ interface Contract {
         fun usePersonalLibrary()
         fun getGroupByTitle(groupTitle: String): GroupInfo?
         fun removeFromRecentlyViewed(attachment: Item)
+        fun loadPriorState()
     }
 }
