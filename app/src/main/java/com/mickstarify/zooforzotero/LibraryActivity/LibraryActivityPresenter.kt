@@ -100,6 +100,20 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
         this.setCollection(model.getCurrentCollection())
     }
 
+    override fun addFilterState(query: String) {
+        /* This method tells the model to add a filtered state to the the states stack
+        * This will allow a user to use the back button to return to the library before
+        * the filter was initiated. The need for this method is a little contrived but I had to hack
+        * the functionality in so forgive me. */
+
+        val oldState = model.state
+        model.states.add(LibraryModelState().apply {
+            this.currentGroup = oldState.currentGroup
+            this.currentCollection = oldState.currentCollection
+            this.filterText = query
+        })
+    }
+
     override fun filterEntries(query: String) {
         if (query == "" || !model.isLoaded()) {
             //not going to waste my time lol.
@@ -244,6 +258,7 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
         view.setTitle("Trash")
         val entries = model.getTrashedItems().map{ListEntry(it)}
         model.isDisplayingItems = entries.size > 0
+        model.setCurrentCollection("zooforzotero_Trash")
         view.populateEntries(entries)
     }
 
@@ -253,6 +268,11 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
 
     override fun requestForceResync() {
         model.destroyLibrary()
+    }
+
+    override fun backButtonPressed() {
+        model.loadPriorState()
+        view.highlightMenuItem(model.state)
     }
 
     override fun setCollection(collectionKey: String, isSubCollection: Boolean) {
@@ -268,7 +288,7 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
         }
 
         Log.d("zotero", "Got request to change collection to ${collectionKey}")
-        model.setCurrentCollection(collectionKey)
+        model.setCurrentCollection(collectionKey, !isSubCollection)
         if (collectionKey == "all" && !model.isUsingGroups()) {
             view.setTitle("My Library")
             val entries = model.getLibraryItems().sort().map { ListEntry(it) }
@@ -279,8 +299,10 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
             val entries = model.getUnfiledItems().sort().map { ListEntry(it) }
             model.isDisplayingItems = entries.size > 0
             view.populateEntries(entries)
+        } else if (collectionKey == "zooforzotero_Trash"){
+            this.openTrash()
         } else if (collectionKey == "group_all" && model.isUsingGroups()) {
-            view.setTitle(model.getCurrentGroup().name)
+            view.setTitle(model.getCurrentGroup()?.name ?: "ERROR")
             val entries = LinkedList<ListEntry>()
             entries.addAll(model.getCollections().filter {
                 !it.hasParent()
