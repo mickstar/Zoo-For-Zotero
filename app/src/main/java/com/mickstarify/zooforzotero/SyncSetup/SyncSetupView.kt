@@ -9,7 +9,6 @@ import android.widget.EditText
 import android.widget.RadioGroup
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import com.google.firebase.analytics.FirebaseAnalytics
 import com.mickstarify.zooforzotero.R
 import com.mickstarify.zooforzotero.SyncSetup.ZoteroAPISetup.ZoteroAPISetup
 
@@ -39,8 +38,6 @@ class SyncSetupView : AppCompatActivity(), SyncSetupContract.View {
         dialogBuilder.show()
         textBox.requestFocus()
     }
-
-    private lateinit var firebaseAnalytics: FirebaseAnalytics
 
     override fun showHowToZoteroSyncDialog(onProceed: () -> Unit) {
         val dialog = AlertDialog.Builder(this)
@@ -105,8 +102,6 @@ class SyncSetupView : AppCompatActivity(), SyncSetupContract.View {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_sync_setup)
-        firebaseAnalytics = FirebaseAnalytics.getInstance(this)
-
         presenter = SyncSetupPresenter(this, this)
     }
 

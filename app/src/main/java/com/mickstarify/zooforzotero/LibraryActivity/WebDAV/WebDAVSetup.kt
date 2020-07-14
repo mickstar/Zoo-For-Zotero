@@ -7,7 +7,6 @@ import android.widget.Button
 import android.widget.EditText
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import com.google.firebase.analytics.FirebaseAnalytics
 import com.mickstarify.zooforzotero.PreferenceManager
 import com.mickstarify.zooforzotero.R
 import com.mickstarify.zooforzotero.ZoteroAPI.Webdav
@@ -101,9 +100,6 @@ class WebDAVSetup : AppCompatActivity() {
                     hadAuthenticationError = true
                 } else {
                     // i dont want to log auth errors.
-                    bundle.putString("exception_message", e.message)
-                    FirebaseAnalytics.getInstance(this@WebDAVSetup)
-                        .logEvent("webdav_connection_exception", bundle)
                 }
             }
             Log.d("zotero", "testing webdav got ${status}")

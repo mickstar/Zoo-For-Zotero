@@ -24,7 +24,6 @@ import androidx.core.view.iterator
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.google.android.material.navigation.NavigationView
-import com.google.firebase.analytics.FirebaseAnalytics
 import com.mickstarify.zooforzotero.AttachmentManager.AttachmentManager
 import com.mickstarify.zooforzotero.LibraryActivity.ItemView.ItemAttachmentEntry
 import com.mickstarify.zooforzotero.LibraryActivity.ItemView.ItemViewFragment
@@ -53,7 +52,6 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
     private val MENU_ID_COLLECTIONS_OFFSET: Int = 10
 
     private lateinit var presenter: Contract.Presenter
-    private lateinit var firebaseAnalytics: FirebaseAnalytics
     private var itemView: ItemViewFragment? = null
 
     // used to "uncheck" the last pressed menu item if we change via code.
@@ -63,7 +61,6 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_library)
 
-        firebaseAnalytics = FirebaseAnalytics.getInstance(this)
         this.setupActionbar()
         val navigationView = findViewById<NavigationView>(R.id.nav_view_library)
         navigationView.setNavigationItemSelectedListener(this)
