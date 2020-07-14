@@ -547,9 +547,15 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
         }
     }
 
+    override fun onPause() {
+        Log.e("zotero", "paused")
+        super.onPause()
+    }
+
+    var listPosition: Int = 0
     override fun onPostResume() {
+        Log.e("zotero", "post-resumed")
         super.onPostResume()
-        Log.e("zotero", "resumed")
         presenter.onResume()
     }
 
@@ -617,7 +623,7 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
 
     override fun onResume() {
         super.onResume()
-        presenter.redisplayItems()
+        Log.d("zotero","onResume called.")
     }
 
     override fun onNoteCreate(note: Note) {
