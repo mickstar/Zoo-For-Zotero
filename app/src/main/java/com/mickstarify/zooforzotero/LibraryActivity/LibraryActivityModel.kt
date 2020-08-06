@@ -1354,6 +1354,8 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
         loadingItems = false
         loadingCollections = false
         presenter.hideLibraryLoadingAnimation()
+
+        zoteroDBPicker.groupId = group.id
         // add to our states stack so we can use back button functionality.
         val newState = LibraryModelState().apply {
             this.currentCollection = "group_all"
