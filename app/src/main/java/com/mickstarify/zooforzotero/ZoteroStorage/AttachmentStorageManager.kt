@@ -19,7 +19,7 @@ import java.security.MessageDigest
 import java.util.*
 import javax.inject.Inject
 import javax.inject.Singleton
-
+import java.io.File
 
 const val STORAGE_ACCESS_REQUEST = 1  // The request code
 
@@ -403,7 +403,9 @@ class AttachmentStorageManager @Inject constructor(
         var itemPath = item.data["path"] ?: ""
         // do some transformations for windows style paths
         // e.g C:\\Users\\michael\\file.txt -> C:/Users/michael/file.txt
-        itemPath = itemPath.replace("\\", "/")
+        itemPath = itemPath.replace("\\", File.separator)
+        //we get rid of zotero reserved expression on storaged path "attachemnts:"
+        itemPath = itemPath.replace("attachments:", "")
         val directories = itemPath.split("/")
         if (storageMode == StorageMode.CUSTOM) {
             for (index in directories.indices) {
