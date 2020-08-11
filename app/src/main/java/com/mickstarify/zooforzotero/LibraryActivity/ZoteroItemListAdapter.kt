@@ -1,15 +1,37 @@
 package com.mickstarify.zooforzotero.LibraryActivity
 
 import android.content.Context
+import android.os.Build
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.BaseAdapter
 import android.widget.ImageView
 import android.widget.TextView
+import androidx.annotation.RequiresApi
 import com.mickstarify.zooforzotero.R
 import com.mickstarify.zooforzotero.ZoteroStorage.Database.Collection
 import com.mickstarify.zooforzotero.ZoteroStorage.Database.Item
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+
+
+@RequiresApi(Build.VERSION_CODES.O)
+fun tryParse(dateString: String?): String? {
+    var formatStrings: Array<String> = arrayOf("M/y", "M/d/y", "M-d-y", "M/d/yyy", "M d, yyyy",
+        "yyyy-M-d", "M yyyy", "M/yyyy", "MMMM d, yyyy", "MMMM, yyyy", "yyyy/MM",
+        "MMMM yyyy", "yyyy, MMMM", "yyyy, MM")
+    for (formatString in formatStrings) {
+        try {
+            var formatter = DateTimeFormatter.ofPattern(formatString)
+            var date: LocalDate
+            date = LocalDate.parse(dateString, formatter)
+            return date.year.toString()
+        } catch (e: Exception) {
+        }
+    }
+    return dateString
+}
 
 class ZoteroItemListAdapter(val context: Context, var list: List<ListEntry>) : BaseAdapter() {
 
@@ -18,6 +40,7 @@ class ZoteroItemListAdapter(val context: Context, var list: List<ListEntry>) : B
         this.notifyDataSetChanged()
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     override fun getView(i: Int, _convertView: View?, parent: ViewGroup?): View {
         val entry = getItem(i)
         // Check if an existing view is being reused, otherwise inflate the view
@@ -36,6 +59,7 @@ class ZoteroItemListAdapter(val context: Context, var list: List<ListEntry>) : B
         return convertView
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     fun initItem(item: Item, view: View) {
         val lbl_title: TextView = view.findViewById(R.id.txt_title) as TextView
         val author = view.findViewById<TextView>(R.id.txt_author)
@@ -168,7 +192,14 @@ class ZoteroItemListAdapter(val context: Context, var list: List<ListEntry>) : B
 //            lbl_title.text = item.data["note"] ?: "Note"
 //        }
         lbl_title.text = item.getTitle()
-        author.text = item.getAuthor()
+        var date_value = item.getItemData("date")
+        var date = tryParse(date_value)
+        var journal_abbrev = if (item.getItemData("journalAbbreviation") == null) "" else
+            item.getItemData("journalAbbreviation")
+        var journal_title = if (item.getItemData("publicationTitle") == null) "" else
+            item.getItemData("publicationTitle")
+        var journal = if (journal_abbrev!!.isBlank()) journal_title else journal_abbrev
+        author.text = "%s %s %s".format(item.getAuthor(), date, journal!!.take(60))
     }
 
     fun initCollection(collection: Collection, view: View) {
