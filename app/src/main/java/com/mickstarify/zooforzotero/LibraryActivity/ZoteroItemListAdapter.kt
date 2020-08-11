@@ -14,10 +14,10 @@ import com.mickstarify.zooforzotero.ZoteroStorage.Database.Collection
 import com.mickstarify.zooforzotero.ZoteroStorage.Database.Item
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
-
+import java.time.format.DateTimeParseException
 
 @RequiresApi(Build.VERSION_CODES.O)
-fun tryParse(dateString: String?): String? {
+fun tryParse(dateString: String): String {
     var formatStrings: Array<String> = arrayOf("M/y", "M/d/y", "M-d-y", "M/d/yyy", "M d, yyyy",
         "yyyy-M-d", "M yyyy", "M/yyyy", "MMMM d, yyyy", "MMMM, yyyy", "yyyy/MM",
         "MMMM yyyy", "yyyy, MMMM", "yyyy, MM")
@@ -27,7 +27,8 @@ fun tryParse(dateString: String?): String? {
             var date: LocalDate
             date = LocalDate.parse(dateString, formatter)
             return date.year.toString()
-        } catch (e: Exception) {
+        } catch (e: DateTimeParseException) {
+            continue
         }
     }
     return dateString
@@ -192,14 +193,14 @@ class ZoteroItemListAdapter(val context: Context, var list: List<ListEntry>) : B
 //            lbl_title.text = item.data["note"] ?: "Note"
 //        }
         lbl_title.text = item.getTitle()
-        var date_value = item.getItemData("date")
+        var date_value = item.getItemData("date") ?: ""
         var date = tryParse(date_value)
         var journal_abbrev = if (item.getItemData("journalAbbreviation") == null) "" else
             item.getItemData("journalAbbreviation")
         var journal_title = if (item.getItemData("publicationTitle") == null) "" else
             item.getItemData("publicationTitle")
         var journal = if (journal_abbrev!!.isBlank()) journal_title else journal_abbrev
-        author.text = "%s %s %s".format(item.getAuthor(), date, journal!!.take(60))
+        author.text = "%s %s %s".format(item.getAuthor(), date, journal)
     }
 
     fun initCollection(collection: Collection, view: View) {
