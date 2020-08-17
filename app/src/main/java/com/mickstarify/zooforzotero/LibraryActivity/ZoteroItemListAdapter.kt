@@ -20,10 +20,12 @@ import java.time.temporal.ChronoField
 fun tryParse(dateString: String): String {
     //Here we try to extract the year from the dateString using several possible formats. This
     //could potentially be avoided if Zotero dates are parsed in an standarized way.
-    var formatStrings: Array<String> = arrayOf("yyyy", "M/y", "M/d/y", "M-d-y", "M/d/yyy", "M d, yyyy",
-        "yyyy-M-d", "M yyyy", "M/yyyy", "MMMM d, yyyy", "MMMM, yyyy", "yyyy/MM",
-        "MMMM yyyy", "yyyy, MMMM", "yyyy, MM", "dd/MMM/YYYY", "dd/MMMM/yyyy",
-        "dd MMM yyyy", "dd MMMM yyyy", "yyyy/MM/dd")
+    var formatStrings: Array<String> = arrayOf(
+            "yyyy", "yyyy/M", "yyyy-M", "yyyy-M-d", "yyyy/M/d", "yyyy/MM", "yyyy-M-d", "yyyy, M dd",
+            "M/y", "M/d/y", "M-d-y", "M/d/yyy", "M d, yyyy", "MMM d, yyyy", "M-d",
+            "M yyyy", "M/yyyy", "MMMM d, yyyy", "MMMM, yyyy",
+            "MMMM yyyy", "yyyy, MMMM", "yyyy, MM",
+            "dd/MMM/yyyy", "dd/MMMM/yyyy", "dd MMM yyyy", "dd MMMM yyyy")
     for (formatString in formatStrings) {
         try {
             var formatter = DateTimeFormatter.ofPattern(formatString)
@@ -31,6 +33,8 @@ fun tryParse(dateString: String): String {
             var year = ""
             if (date.isSupported(ChronoField.YEAR)) {
                 year = date.get(ChronoField.YEAR).toString()
+            }else{
+                year = dateString
             }
             return year
         } catch (e: DateTimeParseException) {
