@@ -12,21 +12,27 @@ import androidx.annotation.RequiresApi
 import com.mickstarify.zooforzotero.R
 import com.mickstarify.zooforzotero.ZoteroStorage.Database.Collection
 import com.mickstarify.zooforzotero.ZoteroStorage.Database.Item
-import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeParseException
+import java.time.temporal.ChronoField
 
 @RequiresApi(Build.VERSION_CODES.O)
 fun tryParse(dateString: String): String {
-    var formatStrings: Array<String> = arrayOf("M/y", "M/d/y", "M-d-y", "M/d/yyy", "M d, yyyy",
+    //Here we try to extract the year from the dateString using several possible formats. This
+    //could potentially be avoided if Zotero dates are parsed in an standarized way.
+    var formatStrings: Array<String> = arrayOf("yyyy", "M/y", "M/d/y", "M-d-y", "M/d/yyy", "M d, yyyy",
         "yyyy-M-d", "M yyyy", "M/yyyy", "MMMM d, yyyy", "MMMM, yyyy", "yyyy/MM",
-        "MMMM yyyy", "yyyy, MMMM", "yyyy, MM")
+        "MMMM yyyy", "yyyy, MMMM", "yyyy, MM", "dd/MMM/YYYY", "dd/MMMM/yyyy",
+        "dd MMM yyyy", "dd MMMM yyyy", "yyyy/MM/dd")
     for (formatString in formatStrings) {
         try {
             var formatter = DateTimeFormatter.ofPattern(formatString)
-            var date: LocalDate
-            date = LocalDate.parse(dateString, formatter)
-            return date.year.toString()
+            var date = formatter.parse(dateString)
+            var year = ""
+            if (date.isSupported(ChronoField.YEAR)) {
+                year = date.get(ChronoField.YEAR).toString()
+            }
+            return year
         } catch (e: DateTimeParseException) {
             continue
         }
