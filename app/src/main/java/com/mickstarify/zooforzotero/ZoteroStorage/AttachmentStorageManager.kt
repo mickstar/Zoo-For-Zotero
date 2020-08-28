@@ -405,7 +405,7 @@ class AttachmentStorageManager @Inject constructor(
         // e.g C:\\Users\\michael\\file.txt -> C:/Users/michael/file.txt
         itemPath = itemPath.replace("\\", File.separator)
         //we get rid of zotero reserved expression on storaged path "attachemnts:"
-        itemPath = itemPath.replace("attachments:", "")
+        itemPath = itemPath.replace(Regex("^attachments:"), "")
         val directories = itemPath.split("/")
         if (storageMode == StorageMode.CUSTOM) {
             for (index in directories.indices) {
