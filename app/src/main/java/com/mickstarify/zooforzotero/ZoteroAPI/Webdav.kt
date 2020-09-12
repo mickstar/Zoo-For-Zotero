@@ -176,7 +176,7 @@ class Webdav(
 
     init {
         sardine = OkHttpSardine()
-        sardine.allowForInsecureSSL()
+//        sardine.allowForInsecureSSL()
         if (username != "" && password != "") {
             sardine.setCredentials(username, password)
         }
