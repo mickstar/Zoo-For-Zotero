@@ -4,6 +4,7 @@ import android.app.ProgressDialog
 import android.os.Bundle
 import android.util.Log
 import android.widget.Button
+import android.widget.CheckBox
 import android.widget.EditText
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -33,10 +34,12 @@ class WebDAVSetup : AppCompatActivity() {
         val username_editText = findViewById<EditText>(R.id.editText_username)
         val password_editText = findViewById<EditText>(R.id.editText_password)
         val address_editText = findViewById<EditText>(R.id.editText_address)
+        val allowInsecureSSLCheckbox = findViewById<CheckBox>(R.id.checkBox_allow_insecure_ssl)
 
         username_editText.setText(preferenceManager.getWebDAVUsername())
         password_editText.setText(preferenceManager.getWebDAVPassword())
         address_editText.setText(preferenceManager.getWebDAVAddress())
+        allowInsecureSSLCheckbox.isChecked = preferenceManager.isInsecureSSLAllowed()
 
         val submitButton = findViewById<Button>(R.id.btn_submit)
         val cancelButton = findViewById<Button>(R.id.btn_cancel)
@@ -84,8 +87,12 @@ class WebDAVSetup : AppCompatActivity() {
         return mAddress
     }
 
+    fun allowInsecureSSL(): Boolean{
+        return findViewById<CheckBox>(R.id.checkBox_allow_insecure_ssl).isChecked
+    }
+
     fun makeConnection(address: String, username: String, password: String) {
-        val webDav = Webdav(address, username, password)
+        val webDav = Webdav(address, username, password, allowInsecureSSL())
         startProgressDialog()
         doAsync {
             var status = false // default to false incase we get an exception
@@ -154,7 +161,7 @@ class WebDAVSetup : AppCompatActivity() {
     }
 
     fun setWebDAVAuthentication(address: String, username: String, password: String) {
-        preferenceManager.setWebDAVAuthentication(address, username, password)
+        preferenceManager.setWebDAVAuthentication(address, username, password, allowInsecureSSL())
         toast("Successfully added WebDAV.")
         this.finish()
     }

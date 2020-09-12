@@ -118,7 +118,8 @@ class ZoteroAPI(
             val webdav = Webdav(
                 preferenceManager.getWebDAVAddress(),
                 preferenceManager.getWebDAVUsername(),
-                preferenceManager.getWebDAVPassword()
+                preferenceManager.getWebDAVPassword(),
+                preferenceManager.isInsecureSSLAllowed()
             )
 
             return webdav.downloadFileRx(item, context, attachmentStorageManager)
@@ -548,7 +549,8 @@ class ZoteroAPI(
         val webdav = Webdav(
             preferenceManager.getWebDAVAddress(),
             preferenceManager.getWebDAVUsername(),
-            preferenceManager.getWebDAVPassword()
+            preferenceManager.getWebDAVPassword(),
+            preferenceManager.isInsecureSSLAllowed()
         )
         return webdav.uploadAttachment(attachment, attachmentStorageManager)
     }

@@ -18,7 +18,8 @@ import java.util.*
 class Webdav(
     address: String,
     val username: String,
-    val password: String
+    val password: String,
+    val allowInsecureSSL: Boolean = false
 ) {
     var sardine: OkHttpSardine
     var address: String
@@ -153,6 +154,17 @@ class Webdav(
             // STEP 3 -- UPLOAD ZIP AND PROP
             val newZipPath = address + "/${attachment.itemKey.toUpperCase(Locale.ROOT)}_NEW.zip"
             val newPropPath = address + "/${attachment.itemKey.toUpperCase(Locale.ROOT)}_NEW.prop"
+
+            // mostly useless step, delete any old _NEW.zip files that shouldn't exist
+            // but might incase of a failed update earlier.
+            if (sardine.exists(newZipPath)) {
+                sardine.delete(newZipPath)
+            }
+            if(sardine.exists(newPropPath)){
+                sardine.delete(newPropPath)
+            }
+
+            // upload files
             sardine.put(newPropPath, propFile, "text/plain")
             sardine.put(newZipPath, zipFile, "application/zip")
 
@@ -176,7 +188,10 @@ class Webdav(
 
     init {
         sardine = OkHttpSardine()
-//        sardine.allowForInsecureSSL()
+        if (allowInsecureSSL){
+            sardine.allowForInsecureSSL()
+        }
+
         if (username != "" && password != "") {
             sardine.setCredentials(username, password)
         }

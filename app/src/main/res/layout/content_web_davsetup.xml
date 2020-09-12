@@ -89,6 +89,12 @@
                 app:layout_constraintTop_toTopOf="@+id/textView_password" />
     </androidx.constraintlayout.widget.ConstraintLayout>
 
+    <CheckBox
+        android:id="@+id/checkBox_allow_insecure_ssl"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Don't Verify SSL Certificates (Insecure)" />
+
     <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -110,4 +116,5 @@
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintTop_toTopOf="@+id/btn_cancel" />
     </androidx.constraintlayout.widget.ConstraintLayout>
+
 </LinearLayout>

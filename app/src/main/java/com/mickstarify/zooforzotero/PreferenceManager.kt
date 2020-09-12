@@ -109,12 +109,13 @@ class PreferenceManager @Inject constructor(context: Context) {
         editor.apply()
     }
 
-    fun setWebDAVAuthentication(address: String, username: String, password: String) {
+    fun setWebDAVAuthentication(address: String, username: String, password: String, allowInsecureSSL: Boolean) {
         val editor = sharedPreferences.edit()
         editor.putBoolean("use_webdav", true)
         editor.putString("webdav_address", address)
         editor.putString("webdav_username", username)
         editor.putString("webdav_password", password)
+        editor.putBoolean("webdav_allowInsecureSSL", allowInsecureSSL)
 
         editor.apply()
     }
@@ -125,6 +126,7 @@ class PreferenceManager @Inject constructor(context: Context) {
         editor.putString("webdav_address", "")
         editor.putString("webdav_username", "")
         editor.putString("webdav_password", "")
+        editor.putBoolean("webdav_allowInsecureSSL", false)
 
         editor.apply()
     }
@@ -143,6 +145,10 @@ class PreferenceManager @Inject constructor(context: Context) {
 
     fun isWebDAVEnabled(): Boolean {
         return sharedPreferences.getBoolean("use_webdav", false)
+    }
+
+    fun isInsecureSSLAllowed(): Boolean {
+        return sharedPreferences.getBoolean("webdav_allowInsecureSSL", false)
     }
 
     fun isWebDAVEnabledForGroups(): Boolean {

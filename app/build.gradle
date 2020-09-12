@@ -59,7 +59,7 @@ dependencies {
     implementation 'androidx.constraintlayout:constraintlayout:2.0.1'
     implementation "androidx.navigation:navigation-fragment-ktx:2.3.0"
     implementation "androidx.navigation:navigation-ui-ktx:2.3.0"
-    implementation 'com.google.android.material:material:1.2.0'
+    implementation 'com.google.android.material:material:1.2.1'
     implementation 'com.google.android.material:material:1.3.0-alpha02'
     api 'com.google.guava:guava:29.0-jre'
     implementation 'oauth.signpost:oauth-signpost:2.1.1'
@@ -87,7 +87,7 @@ dependencies {
     implementation 'net.lingala.zip4j:zip4j:2.6.2'
     releaseImplementation 'com.crashlytics.sdk.android:crashlytics:2.10.1'
 
-    implementation 'com.github.mickstar:sardine-android:v0.7a'
+    implementation 'com.github.mickstar:sardine-android:v0.7b'
 
     debugImplementation 'com.squareup.leakcanary:leakcanary-android:2.0'
 
