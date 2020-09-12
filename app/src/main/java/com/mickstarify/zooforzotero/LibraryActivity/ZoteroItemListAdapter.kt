@@ -16,34 +16,6 @@ import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeParseException
 import java.time.temporal.ChronoField
 
-@RequiresApi(Build.VERSION_CODES.O)
-fun tryParse(dateString: String): String {
-    //Here we try to extract the year from the dateString using several possible formats. This
-    //could potentially be avoided if Zotero dates are parsed in an standarized way.
-    var formatStrings: Array<String> = arrayOf(
-            "yyyy", "yyyy/M", "yyyy-M", "yyyy-M-d", "yyyy/M/d", "yyyy/MM", "yyyy-M-d", "yyyy, M dd",
-            "M/y", "M/d/y", "M-d-y", "M/d/yyy", "M d, yyyy", "MMM d, yyyy", "M-d",
-            "M yyyy", "M/yyyy", "MMMM d, yyyy", "MMMM, yyyy",
-            "MMMM yyyy", "yyyy, MMMM", "yyyy, MM",
-            "dd/MMM/yyyy", "dd/MMMM/yyyy", "dd MMM yyyy", "dd MMMM yyyy")
-    for (formatString in formatStrings) {
-        try {
-            var formatter = DateTimeFormatter.ofPattern(formatString)
-            var date = formatter.parse(dateString)
-            var year = ""
-            if (date.isSupported(ChronoField.YEAR)) {
-                year = date.get(ChronoField.YEAR).toString()
-            }else{
-                year = dateString
-            }
-            return year
-        } catch (e: DateTimeParseException) {
-            continue
-        }
-    }
-    return dateString
-}
-
 class ZoteroItemListAdapter(val context: Context, var list: List<ListEntry>) : BaseAdapter() {
 
     fun updateItems(newList: List<ListEntry>) {
@@ -51,7 +23,6 @@ class ZoteroItemListAdapter(val context: Context, var list: List<ListEntry>) : B
         this.notifyDataSetChanged()
     }
 
-    @RequiresApi(Build.VERSION_CODES.O)
     override fun getView(i: Int, _convertView: View?, parent: ViewGroup?): View {
         val entry = getItem(i)
         // Check if an existing view is being reused, otherwise inflate the view
@@ -70,7 +41,6 @@ class ZoteroItemListAdapter(val context: Context, var list: List<ListEntry>) : B
         return convertView
     }
 
-    @RequiresApi(Build.VERSION_CODES.O)
     fun initItem(item: Item, view: View) {
         val lbl_title: TextView = view.findViewById(R.id.txt_title) as TextView
         val author = view.findViewById<TextView>(R.id.txt_author)
@@ -203,13 +173,17 @@ class ZoteroItemListAdapter(val context: Context, var list: List<ListEntry>) : B
 //            lbl_title.text = item.data["note"] ?: "Note"
 //        }
         lbl_title.text = item.getTitle()
-        var date_value = item.getItemData("date") ?: ""
-        var date = tryParse(date_value)
-        var journal_abbrev = if (item.getItemData("journalAbbreviation") == null) "" else
+        val date_value = item.getItemData("date") ?: ""
+        val date = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            tryParse(date_value)
+        } else {
+            date_value
+        }
+        val journal_abbrev = if (item.getItemData("journalAbbreviation") == null) "" else
             item.getItemData("journalAbbreviation")
-        var journal_title = if (item.getItemData("publicationTitle") == null) "" else
+        val journal_title = if (item.getItemData("publicationTitle") == null) "" else
             item.getItemData("publicationTitle")
-        var journal = if (journal_abbrev!!.isBlank()) journal_title else journal_abbrev
+        val journal = if (journal_abbrev!!.isBlank()) journal_title else journal_abbrev
         author.text = "%s %s %s".format(item.getAuthor(), date, journal)
     }
 
@@ -235,4 +209,32 @@ class ZoteroItemListAdapter(val context: Context, var list: List<ListEntry>) : B
         return list.size
     }
 
+}
+
+@RequiresApi(Build.VERSION_CODES.O)
+fun tryParse(dateString: String): String {
+    //Here we try to extract the year from the dateString using several possible formats. This
+    //could potentially be avoided if Zotero dates are parsed in an standarized way.
+    val formatStrings: Array<String> = arrayOf(
+        "yyyy", "yyyy/M", "yyyy-M", "yyyy-M-d", "yyyy/M/d", "yyyy/MM", "yyyy-M-d", "yyyy, M dd",
+        "M/y", "M/d/y", "M-d-y", "M/d/yyy", "M d, yyyy", "MMM d, yyyy", "M-d",
+        "M yyyy", "M/yyyy", "MMMM d, yyyy", "MMMM, yyyy",
+        "MMMM yyyy", "yyyy, MMMM", "yyyy, MM",
+        "dd/MMM/yyyy", "dd/MMMM/yyyy", "dd MMM yyyy", "dd MMMM yyyy")
+    for (formatString in formatStrings) {
+        try {
+            val formatter = DateTimeFormatter.ofPattern(formatString)
+            val date = formatter.parse(dateString)
+            var year = ""
+            if (date.isSupported(ChronoField.YEAR)) {
+                year = date.get(ChronoField.YEAR).toString()
+            }else{
+                year = dateString
+            }
+            return year
+        } catch (e: DateTimeParseException) {
+            continue
+        }
+    }
+    return dateString
 }
