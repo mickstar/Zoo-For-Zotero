@@ -256,7 +256,7 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
         }
         model.usePersonalLibrary()
         view.setTitle("Trash")
-        val entries = model.getTrashedItems().map{ListEntry(it)}
+        val entries = model.getTrashedItems().sort().map{ListEntry(it)}
         model.isDisplayingItems = entries.size > 0
         model.setCurrentCollection("zooforzotero_Trash")
         view.populateEntries(entries)
