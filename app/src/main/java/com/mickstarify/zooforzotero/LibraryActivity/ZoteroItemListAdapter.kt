@@ -179,11 +179,9 @@ class ZoteroItemListAdapter(val context: Context, var list: List<ListEntry>) : B
         } else {
             date_value
         }
-        val journal_abbrev = if (item.getItemData("journalAbbreviation") == null) "" else
-            item.getItemData("journalAbbreviation")
-        val journal_title = if (item.getItemData("publicationTitle") == null) "" else
-            item.getItemData("publicationTitle")
-        val journal = if (journal_abbrev!!.isBlank()) journal_title else journal_abbrev
+        val journal_abbrev = item.data["journalAbbreviation"] ?: ""
+        val journal_title = item.data["publicationTitle"] ?: ""
+        val journal = if (journal_abbrev.isBlank()) journal_title else journal_abbrev
         author.text = "%s %s %s".format(item.getAuthor(), date, journal)
     }
 

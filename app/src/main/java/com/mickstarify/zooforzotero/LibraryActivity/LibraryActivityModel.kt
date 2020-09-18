@@ -23,11 +23,13 @@ import com.mickstarify.zooforzotero.ZoteroStorage.ZoteroDB.ItemsDownloadProgress
 import com.mickstarify.zooforzotero.ZoteroStorage.ZoteroDB.ZoteroDB
 import com.mickstarify.zooforzotero.ZoteroStorage.ZoteroDB.ZoteroDBPicker
 import com.mickstarify.zooforzotero.ZoteroStorage.ZoteroDB.ZoteroGroupDB
-import io.reactivex.*
+import io.reactivex.Completable
+import io.reactivex.CompletableObserver
+import io.reactivex.MaybeObserver
 import io.reactivex.Observer
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposable
-import io.reactivex.functions.Consumer
+import io.reactivex.functions.Action
 import io.reactivex.schedulers.Schedulers
 import java.io.FileNotFoundException
 import java.util.*
@@ -247,6 +249,15 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
         db: ZoteroDB
     ) {
         loadingTrash = true
+
+        //TODO Will remove in a future version
+        if (preferences.firstRunForVersion28()){
+            // I have recently fixed the deleted/trash syncing, so we will need a full resync from the beginning
+            // to properly have the changes reflected in Zoo.
+            db.setTrashVersion(0)
+            db.setLastDeletedItemsCheckVersion(0)
+        }
+
         val observable =
             zoteroAPI.getTrashedItems(db.groupID, db.getTrashVersion()).map { response ->
                 for (itemPojo in response.items) {
@@ -419,9 +430,28 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
         if (loadingTrash || loadingCollections || loadingItems) {
             throw Exception("Error cannot proceed to stage 2 if library still loading.")
         }
+
+        // trash will work as following,
+        //
+
+
         // todo implement deleted items here.
 
-        finishLoading(db)
+        updateDeletedEntries().subscribeOn(Schedulers.io()).subscribe(object: CompletableObserver {
+            override fun onSubscribe(d: Disposable) {
+                // nothing.
+            }
+
+            override fun onComplete() {
+                finishLoading(db)
+            }
+
+            override fun onError(e: Throwable) {
+                Log.e("zotero", "there was an error processing deleted Entries, ${e}")
+                throw(e)
+            }
+
+        })
 
 
     }
@@ -1381,7 +1411,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
         }
 
         val newState = LibraryModelState()
-        if (!usePersonalLibrary){
+        if (!usePersonalLibrary) {
             newState.currentGroup = state.currentGroup
         }
         newState.currentCollection = collectionName
@@ -1404,51 +1434,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
         }
     }
 
-    fun hasOldStorage(): Boolean {
-        return zoteroDB.hasLegacyStorage()
-    }
-
-    //TODO i will delete this code next version. (just for version 2.2)
-    fun migrateFromOldStorage() {
-        zoteroDB.migrateItemsFromOldStorage().subscribeOn(Schedulers.io())
-            .observeOn(AndroidSchedulers.mainThread()).subscribe(object : CompletableObserver {
-                override fun onComplete() {
-                    zoteroDB.scanAndIndexAttachments(attachmentStorageManager)
-                        .doOnError({ e ->
-                            Log.e("zotero", "migration error ${e}")
-                            firebaseAnalytics.logEvent(
-                                "migration_error_file_index",
-                                Bundle().apply { putString("error_message", "$e") })
-                            downloadLibrary()
-                        })
-                        .subscribeOn(Schedulers.io())
-                        .observeOn(AndroidSchedulers.mainThread()).subscribe(Consumer {
-                            downloadLibrary()
-                        })
-                }
-
-                override fun onSubscribe(d: Disposable) {
-                    Log.d("zotero", "Migrating storage from old database")
-                }
-
-                override fun onError(e: Throwable) {
-                    Log.e("zotero", "migration error ${e}")
-                    firebaseAnalytics.logEvent(
-                        "migration_error",
-                        Bundle().apply { putString("error_message", "$e") })
-                    presenter.createErrorAlert(
-                        "Error migrating data",
-                        "Sorry. There was an error migrating your items. You will need to do a full resync.",
-                        {}
-                    )
-                    zoteroDB.deleteLegacyStorage()
-                    zoteroDB.setItemsVersion(0)
-                    downloadLibrary()
-                }
-            })
-    }
-
-    fun updateDeletedEntries(): Single<Completable> {
+    fun updateDeletedEntries(): Completable {
         /* Checks for deleted entries on the zotero servers and mirrors those changes on the local database. */
         // we have to assume the library is loaded.
 
@@ -1459,27 +1445,26 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                 "zotero",
                 "not checking deleted items because library hasn't changed. ${libraryVersion}"
             )
-            return Single.just(Completable.complete()) // our job is done, there is nothing to check.
+            return Completable.complete() // our job is done, there is nothing to check.
         }
 
-        val single = zoteroAPI.getDeletedEntries(deletedItemsCheckVersion, zoteroDB.groupID)
-            .map {
-                val completable = Completable.complete()
-                if (it.items.size > 0) {
-                    completable.andThen(zoteroDB.deleteItems(it.items))
-                }
-                if (it.collections.size > 0) {
-                    completable.andThen(zoteroDB.deleteCollections(it.collections))
-                }
-                completable.doOnComplete {
-                    Log.d(
-                        "zotero",
-                        "Setting deletedLibraryVersion to $libraryVersion from $deletedItemsCheckVersion"
-                    )
-                    zoteroDB.setLastDeletedItemsCheckVersion(libraryVersion)
-                }
-            }.subscribeOn(Schedulers.io())
-        return single
+        val completable = Completable.fromAction(Action {
+            val deletedEntriesPojo = zoteroAPI.getDeletedEntries(deletedItemsCheckVersion, zoteroDB.groupID).blockingGet()
+            for (itemKey in deletedEntriesPojo.items){
+                zoteroDatabase.deleteItem(itemKey).blockingGet()
+            }
+            for (collectionKey in deletedEntriesPojo.collections){
+                zoteroDatabase.deleteCollection(collectionKey).blockingGet()
+            }
+
+            Log.d(
+                "zotero",
+                "Setting deletedLibraryVersion to $libraryVersion from $deletedItemsCheckVersion"
+            )
+            zoteroDB.setLastDeletedItemsCheckVersion(libraryVersion)
+        })
+
+        return completable
     }
 
     init {
@@ -1559,7 +1544,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
         } else if (oldState.currentCollection != state.currentCollection) {
             presenter.setCollection(state.currentCollection)
         } else if (oldState.filterText != state.filterText) {
-            if(state.filterText == "") {
+            if (state.filterText == "") {
                 presenter.closeQuery()
             } else {
                 presenter.filterEntries(state.filterText)

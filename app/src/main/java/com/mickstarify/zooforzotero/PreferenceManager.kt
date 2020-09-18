@@ -182,6 +182,17 @@ class PreferenceManager @Inject constructor(context: Context) {
         return sharedPreferences.getBoolean("attachments_uploading_enabled", true)
     }
 
+    fun firstRunForVersion28(): Boolean {
+        /*check to see if this is the first time the user is opening on version 2.1c (25)*/
+        val firstRun = sharedPreferences.getBoolean("firstrun_version28", true)
+        if (firstRun) {
+            val editor = sharedPreferences.edit()
+            editor.putBoolean("firstrun_version28", false)
+            editor.apply()
+        }
+        return firstRun
+
+    }
 
     fun shouldOpenPDFOnOpen(): Boolean {
         return sharedPreferences.getBoolean("should_open_pdf_on_open", false)

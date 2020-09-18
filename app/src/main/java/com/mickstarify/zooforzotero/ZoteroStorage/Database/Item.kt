@@ -75,7 +75,7 @@ class Item : Parcelable {
                 return itemData.value
             }
         }
-        Log.d("zotero", "ItemData with key $key not found in Item.")
+        Log.d("zotero", "ItemData with key $key not found in Item .")
         return null
     }
 
@@ -284,6 +284,15 @@ interface ItemDao {
     @Transaction
     @Query("SELECT * FROM itemInfo WHERE `group`=${GroupInfo.NO_GROUP_ID} and `deleted`=1")
     fun getTrashedItemsForUser(): Maybe<List<Item>>
+
+    @Transaction
+    @Query("UPDATE itemInfo SET deleted=1 WHERE `ItemKey`=:itemKey and `group`=:groupID")
+    fun moveToTrash(groupID: Int, itemKey: String): Completable
+
+    @Transaction
+    @Query("UPDATE itemInfo SET deleted=0 WHERE `ItemKey`=:itemKey and `group`=:groupID")
+    fun restoreFromTrash(groupID: Int, itemKey: String): Completable
+
 
     @Query("SELECT COUNT(*) != 0 FROM ItemInfo WHERE `itemKey`=:itemKey and `group`=:groupID")
     fun containsItem(groupID: Int, itemKey: String): Single<Boolean>
