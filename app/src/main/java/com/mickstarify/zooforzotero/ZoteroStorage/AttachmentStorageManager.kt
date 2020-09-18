@@ -19,7 +19,6 @@ import java.security.MessageDigest
 import java.util.*
 import javax.inject.Inject
 import javax.inject.Singleton
-import java.io.File
 
 const val STORAGE_ACCESS_REQUEST = 1  // The request code
 

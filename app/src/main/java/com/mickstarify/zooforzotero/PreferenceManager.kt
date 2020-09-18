@@ -21,12 +21,7 @@ class PreferenceManager @Inject constructor(context: Context) {
     }
 
     fun setSortMethod(method: SortMethod) {
-        val methodString = when (method) {
-            SortMethod.TITLE -> "TITLE"
-            SortMethod.DATE -> "DATE"
-            SortMethod.AUTHOR -> "AUTHOR"
-            SortMethod.DATE_ADDED -> "DATE_ADDED"
-        }
+        val methodString = sortMethodToString(method)
         val editor = sharedPreferences.edit()
         editor.putString("sort_method", methodString)
         editor.apply()
@@ -52,15 +47,9 @@ class PreferenceManager @Inject constructor(context: Context) {
     }
 
     fun getSortMethod(): SortMethod {
-        val methodString = sharedPreferences.getString("sort_method", "TITLE")
+        val methodString = sharedPreferences.getString("sort_method", "TITLE") ?: "TITLE"
 
-        return when (methodString) {
-            "TITLE" -> SortMethod.TITLE
-            "DATE" -> SortMethod.DATE
-            "AUTHOR" -> SortMethod.AUTHOR
-            "DATE_ADDED" -> SortMethod.DATE_ADDED
-            else -> SortMethod.TITLE
-        }
+        return stringToSortMethod(methodString)
     }
 
     fun isSortedAscendingly(): Boolean {
@@ -182,6 +171,17 @@ class PreferenceManager @Inject constructor(context: Context) {
         return sharedPreferences.getBoolean("attachments_uploading_enabled", true)
     }
 
+    fun firstRunForVersion28(): Boolean {
+        /*check to see if this is the first time the user is opening on version 2.1c (25)*/
+        val firstRun = sharedPreferences.getBoolean("firstrun_version28", true)
+        if (firstRun) {
+            val editor = sharedPreferences.edit()
+            editor.putBoolean("firstrun_version28", false)
+            editor.apply()
+        }
+        return firstRun
+
+    }
 
     fun shouldOpenPDFOnOpen(): Boolean {
         return sharedPreferences.getBoolean("should_open_pdf_on_open", false)

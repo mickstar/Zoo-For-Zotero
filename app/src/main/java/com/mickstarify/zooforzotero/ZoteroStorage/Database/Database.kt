@@ -190,13 +190,11 @@ class ZoteroDatabase @Inject constructor(val context: Context) {
     }
 
     fun moveItemToTrash(groupID: Int, itemKey: String): Completable {
-        //todo
-        return Completable.complete()
+        return db.itemDao().moveToTrash(groupID, itemKey)
     }
 
     fun restoreItemFromTrash(groupID: Int, itemKey: String): Completable {
-        //todo
-        return Completable.complete()
+        return db.itemDao().restoreFromTrash(groupID, itemKey)
     }
 
     fun deleteEverything() {
