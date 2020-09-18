@@ -48,112 +48,112 @@ class ZoteroItemListAdapter(val context: Context, var list: List<ListEntry>) : B
         var icon: Int = R.drawable.treeitem_2x
         when (item.itemType) {
             "note" -> {
-                icon = R.drawable.treeitem_note_2x
+                icon = R.drawable.note_24dp
             }
             "book" -> {
-                icon = R.drawable.treeitem_book_2x
+                icon = R.drawable.book_24dp
             }
             "bookSection" -> {
-                icon = R.drawable.treeitem_booksection_2x
+                icon = R.drawable.book_section_24dp
             }
             "journalArticle" -> {
-                icon = R.drawable.treeitem_journalarticle_2x
+                icon = R.drawable.journal_article_24dp
             }
             "magazineArticle" -> {
-                icon = R.drawable.treeitem_magazinearticle_2x
+                icon = R.drawable.magazine_article_24dp
             }
             "newspaperArticle" -> {
-                icon = R.drawable.treeitem_newspaperarticle_2x
+                icon = R.drawable.newspaper_article_24dp
             }
             "thesis" -> {
-                icon = R.drawable.treeitem_thesis
+                icon = R.drawable.thesis_24dp
             }
             "letter" -> {
-                icon = R.drawable.treeitem_letter_2x
+                icon = R.drawable.letter_24dp
             }
             "manuscript" -> {
-                icon = R.drawable.treeitem_manuscript
+                icon = R.drawable.manuscript_24dp
             }
             "interview" -> {
-                icon = R.drawable.treeitem_interview_2x
+                icon = R.drawable.interview_24dp
             }
             "film" -> {
-                icon = R.drawable.treeitem_film_2x
+                icon = R.drawable.film_24dp
             }
             "artwork" -> {
-                icon = R.drawable.treeitem_artwork_2x
+                icon = R.drawable.artwork_24dp
             }
             "webpage" -> {
-                icon = R.drawable.treeitem_webpage_48px
+                icon = R.drawable.web_page_24dp
             }
             "attachment" -> {
                 icon = R.drawable.treeitem_attachment_web_link_2x
             }
             "report" -> {
-                icon = R.drawable.treeitem_report_2x
+                icon = R.drawable.report_24dp
             }
             "bill" -> {
-                icon = R.drawable.treeitem_bill_2x
+                icon = R.drawable.bill_24dp
             }
             "case" -> {
-                icon = R.drawable.treeitem_case
+                icon = R.drawable.case_24dp
             }
             "hearing" -> {
-                icon = R.drawable.treeitem_hearing
+                icon = R.drawable.hearing_24dp
             }
             "patent" -> {
-                icon = R.drawable.treeitem_patent
+                icon = R.drawable.patent_24dp
             }
             "statute" -> {
-                icon = R.drawable.treeitem_statute
+                icon = R.drawable.statute_24dp
             }
             "email" -> {
-                icon = R.drawable.treeitem_email
+                icon = R.drawable.email_24dp
             }
             "map" -> {
-                icon = R.drawable.treeitem_map
+                icon = R.drawable.map_24dp
             }
             "blogPost" -> {
-                icon = R.drawable.treeitem_blogpost
+                icon = R.drawable.blog_post_24dp
             }
             "instantMessage" -> {
-                icon = R.drawable.treeitem_instantmessage_2x
+                icon = R.drawable.instant_message_24dp
             }
             "forumPost" -> {
-                icon = R.drawable.treeitem_forumpost_2x
+                icon = R.drawable.forum_post_24dp
             }
             "audioRecording" -> {
-                icon = R.drawable.treeitem_audiorecording_2x
+                icon = R.drawable.audio_recording_24dp
             }
             "presentation" -> {
-                icon = R.drawable.treeitem_presentation
+                icon = R.drawable.presentation_24dp
             }
             "videoRecording" -> {
-                icon = R.drawable.treeitem_videorecording
+                icon = R.drawable.video_recording_24dp
             }
             "tvBroadcast" -> {
-                icon = R.drawable.treeitem_tvbroadcast
+                icon = R.drawable.tv_broadcast_24dp
             }
             "radioBroadcast" -> {
-                icon = R.drawable.treeitem_radiobroadcast
+                icon = R.drawable.radio_broadcast_24dp
             }
             "podcast" -> {
-                icon = R.drawable.treeitem_podcast
+                icon = R.drawable.podcast_24dp
             }
             "computerProgram" -> {
-                icon = R.drawable.treeitem_computerprogram_2x
+                icon = R.drawable.computer_program_24dp
             }
             "conferencePaper" -> {
-                icon = R.drawable.treeitem_conferencepaper
+                icon = R.drawable.conference_paper_24dp
             }
             "document" -> {
-                icon = R.drawable.treeitem_webpage_gray_48px
+                icon = R.drawable.document_24dp
             }
             "encyclopediaArticle" -> {
-                icon = R.drawable.treeitem_encyclopediaarticle
+                icon = R.drawable.encyclopedia_article_24dp
             }
             "dictionaryEntry" -> {
-                icon = R.drawable.treeitem_dictionaryentry
+                icon = R.drawable.dictionary_entry_24dp
             }
         }
         img.setImageResource(icon)
