@@ -21,12 +21,7 @@ class PreferenceManager @Inject constructor(context: Context) {
     }
 
     fun setSortMethod(method: SortMethod) {
-        val methodString = when (method) {
-            SortMethod.TITLE -> "TITLE"
-            SortMethod.DATE -> "DATE"
-            SortMethod.AUTHOR -> "AUTHOR"
-            SortMethod.DATE_ADDED -> "DATE_ADDED"
-        }
+        val methodString = sortMethodToString(method)
         val editor = sharedPreferences.edit()
         editor.putString("sort_method", methodString)
         editor.apply()
@@ -52,15 +47,9 @@ class PreferenceManager @Inject constructor(context: Context) {
     }
 
     fun getSortMethod(): SortMethod {
-        val methodString = sharedPreferences.getString("sort_method", "TITLE")
+        val methodString = sharedPreferences.getString("sort_method", "TITLE") ?: "TITLE"
 
-        return when (methodString) {
-            "TITLE" -> SortMethod.TITLE
-            "DATE" -> SortMethod.DATE
-            "AUTHOR" -> SortMethod.AUTHOR
-            "DATE_ADDED" -> SortMethod.DATE_ADDED
-            else -> SortMethod.TITLE
-        }
+        return stringToSortMethod(methodString)
     }
 
     fun isSortedAscendingly(): Boolean {
