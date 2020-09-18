@@ -40,8 +40,6 @@ import javax.inject.Inject
 class LibraryActivityModel(private val presenter: Contract.Presenter, val context: Context) :
     Contract.Model {
 
-    private var collectionsByMenuId: HashMap<Int, String>? = null
-
     // stores the current item being viewed by the user. (useful for refreshing the view)
     var selectedItem: Item? = null
     var isDisplayingItems = false
