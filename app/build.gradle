@@ -3,7 +3,6 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 apply plugin: 'kotlin-android-extensions'
-apply plugin: 'io.fabric'
 
 def apikeyPropertiesFile = rootProject.file("apikeys.properties")
 def apikeyProperties = new Properties()
@@ -49,6 +48,8 @@ android {
 
 apply plugin: 'com.google.gms.google-services'
 apply plugin: 'kotlin-kapt'
+// Apply the Crashlytics Gradle plugin
+apply plugin: 'com.google.firebase.crashlytics'
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
@@ -85,7 +86,9 @@ dependencies {
     implementation 'androidx.gridlayout:gridlayout:1.0.0'
     implementation 'com.google.firebase:firebase-analytics:17.5.0'
     implementation 'net.lingala.zip4j:zip4j:2.6.2'
-    releaseImplementation 'com.crashlytics.sdk.android:crashlytics:2.10.1'
+
+    // used for notes editor.
+    implementation 'jp.wasabeef:richeditor-android:2.0.0'
 
     implementation 'com.github.mickstar:sardine-android:v0.7b'
 
