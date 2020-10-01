@@ -8,6 +8,7 @@ import android.view.inputmethod.InputMethodManager
 import android.widget.Button
 import android.widget.EditText
 import com.mickstarify.zooforzotero.R
+import jp.wasabeef.richeditor.RichEditor
 import org.jetbrains.anko.layoutInflater
 import org.jetbrains.anko.sdk27.coroutines.onClick
 
@@ -33,7 +34,6 @@ class EditNoteDialog {
         val editTextNote = dialogView.findViewById<EditText>(R.id.edit_note)
 
         editTextNote.setText(noteText)
-
         cancelButton.onClick {
             onEditNoteChangeListener.onCancel()
             imm.hideSoftInputFromWindow(editTextNote.windowToken, 0)

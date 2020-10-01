@@ -86,10 +86,6 @@ dependencies {
     implementation 'androidx.gridlayout:gridlayout:1.0.0'
     implementation 'com.google.firebase:firebase-analytics:17.5.0'
     implementation 'net.lingala.zip4j:zip4j:2.6.2'
-
-    // used for notes editor.
-    implementation 'jp.wasabeef:richeditor-android:2.0.0'
-
     implementation 'com.github.mickstar:sardine-android:v0.7b'
 
     debugImplementation 'com.squareup.leakcanary:leakcanary-android:2.0'
