@@ -29,7 +29,7 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
 
     override fun openGroup(groupTitle: String) {
         model.getGroupByTitle(groupTitle)?.also {
-            model.loadGroup(it)
+            model.startGroupSync(it)
         }
 
     }
@@ -185,10 +185,8 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
     }
 
     override fun hideLibraryLoadingAnimation() {
-        if (!model.loadingCollections && !model.loadingItems) {
-            view.hideLoadingAnimation()
-            view.hideLibraryContentDisplay()
-        }
+        view.hideLoadingAnimation()
+        view.hideLibraryContentDisplay()
     }
 
     override fun requestLibraryRefresh() {
