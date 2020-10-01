@@ -266,7 +266,7 @@ class ZoteroAPI(
                 service.getDeletedEntriesSince(userID, sinceVersion)
             }
             else -> {
-                throw NotImplementedError()
+                service.getDeletedEntriesForGroupSince(groupID, sinceVersion)
             }
         }
         return Single.fromObservable(observable.map { response ->

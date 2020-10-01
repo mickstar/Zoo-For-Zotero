@@ -78,6 +78,12 @@ interface ZoteroAPIService {
         @Query("since") since: Int
     ): Observable<Response<DeletedEntriesPojo>>
 
+    @GET("groups/{groupID}/deleted")
+    fun getDeletedEntriesForGroupSince(
+        @Path("groupID") user: Int,
+        @Query("since") since: Int
+    ): Observable<Response<DeletedEntriesPojo>>
+
     @GET("users/{user}/items/trash")
     fun getTrashedItemsForUser(
         @Header("If-Modified-Since-Version") ifModifiedSinceVersion: Int,
