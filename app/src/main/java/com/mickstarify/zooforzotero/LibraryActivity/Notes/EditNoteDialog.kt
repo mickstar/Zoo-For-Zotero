@@ -8,7 +8,6 @@ import android.view.inputmethod.InputMethodManager
 import android.widget.Button
 import android.widget.EditText
 import com.mickstarify.zooforzotero.R
-import jp.wasabeef.richeditor.RichEditor
 import org.jetbrains.anko.layoutInflater
 import org.jetbrains.anko.sdk27.coroutines.onClick
 
