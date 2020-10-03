@@ -193,7 +193,7 @@ class Webdav(
         }
 
         if (username != "" && password != "") {
-            sardine.setCredentials(username, password)
+            sardine.setCredentials(username, password, true)
         }
 
         this.address = if (address.endsWith("/zotero")) {
