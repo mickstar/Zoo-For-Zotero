@@ -25,7 +25,9 @@ import java.util.*
  * Activities containing this fragment MUST implement the
  * [ItemViewFragment.OnListFragmentInteractionListener] interface.
  */
-class ItemViewFragment : BottomSheetDialogFragment(), NoteInteractionListener {
+class ItemViewFragment : BottomSheetDialogFragment(),
+    NoteInteractionListener,
+    onShareItemListener {
     override fun deleteNote(note: Note) {
         listener?.onNoteDelete(note)
     }
@@ -77,12 +79,21 @@ class ItemViewFragment : BottomSheetDialogFragment(), NoteInteractionListener {
             R.id.add_note -> {
                 this.showCreateNoteDialog()
             }
+
+            R.id.share_item -> {
+                this.showShareItemDialog()
+            }
+
             else -> {
                 Log.d("zotero", "item fragmenmt menu item clicked")
             }
         }
 
         return super.onOptionsItemSelected(item)
+    }
+
+    private fun showShareItemDialog() {
+        ShareItemDialog(item).show(context, this)
     }
 
     private fun showCreateNoteDialog() {
@@ -219,6 +230,7 @@ class ItemViewFragment : BottomSheetDialogFragment(), NoteInteractionListener {
         fun onNoteCreate(note: Note)
         fun onNoteEdit(note: Note)
         fun onNoteDelete(note: Note)
+        fun shareText(shareText: String)
     }
 
     companion object {
@@ -235,5 +247,9 @@ class ItemViewFragment : BottomSheetDialogFragment(), NoteInteractionListener {
                     putParcelableArrayList(ARG_NOTES, ArrayList(notes))
                 }
             }
+    }
+
+    override fun shareItem(shareText: String) {
+        listener?.shareText(shareText)
     }
 }
