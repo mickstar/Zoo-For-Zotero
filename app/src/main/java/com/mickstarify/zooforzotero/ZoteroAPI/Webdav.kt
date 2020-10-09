@@ -8,12 +8,22 @@ import com.thegrizzlylabs.sardineandroid.impl.OkHttpSardine
 import io.reactivex.Completable
 import io.reactivex.Observable
 import net.lingala.zip4j.ZipFile
+import okhttp3.OkHttpClient
+import okhttp3.Protocol
 import okio.buffer
 import okio.sink
 import okio.source
 import java.io.File
 import java.io.InputStream
+import java.security.SecureRandom
+import java.security.cert.CertificateException
+import java.security.cert.X509Certificate
 import java.util.*
+import java.util.concurrent.TimeUnit
+import javax.net.ssl.HostnameVerifier
+import javax.net.ssl.SSLContext
+import javax.net.ssl.TrustManager
+import javax.net.ssl.X509TrustManager
 
 class Webdav(
     address: String,
@@ -83,9 +93,11 @@ class Webdav(
                 inputStream.close()
                 if (read > 0) {
                     throw RuntimeException(
-                        "Error did not finish downloading ${attachment.itemKey.toUpperCase(
-                            Locale.ROOT
-                        )}.zip"
+                        "Error did not finish downloading ${
+                            attachment.itemKey.toUpperCase(
+                                Locale.ROOT
+                            )
+                        }.zip"
                     )
                 }
                 val zipFile2 = ZipFile(zipFile)
@@ -160,7 +172,7 @@ class Webdav(
             if (sardine.exists(newZipPath)) {
                 sardine.delete(newZipPath)
             }
-            if(sardine.exists(newPropPath)){
+            if (sardine.exists(newPropPath)) {
                 sardine.delete(newPropPath)
             }
 
@@ -187,10 +199,44 @@ class Webdav(
     }
 
     init {
-        sardine = OkHttpSardine()
+        val clientBuillder = OkHttpClient.Builder()
+            .protocols(Collections.singletonList(Protocol.HTTP_1_1))
+            .callTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(30, TimeUnit.SECONDS)
+            .writeTimeout(30, TimeUnit.SECONDS);
+
         if (allowInsecureSSL){
-            sardine.allowForInsecureSSL()
+            val trustAllCerts = arrayOf<TrustManager>(
+                object : X509TrustManager {
+                    @Throws(CertificateException::class)
+                    override fun checkClientTrusted(
+                        chain: Array<X509Certificate>,
+                        authType: String
+                    ) {
+                    }
+
+                    @Throws(CertificateException::class)
+                    override fun checkServerTrusted(
+                        chain: Array<X509Certificate>,
+                        authType: String
+                    ) {
+                    }
+
+                    override fun getAcceptedIssuers(): Array<X509Certificate> {
+                        return arrayOf()
+                    }
+                }
+            )
+            val sslContext = SSLContext.getInstance("SSL")
+            sslContext.init(null, trustAllCerts, SecureRandom())
+            val sslSocketFactory = sslContext.socketFactory
+            clientBuillder.sslSocketFactory(sslSocketFactory, trustAllCerts[0] as X509TrustManager)
+            clientBuillder.hostnameVerifier(HostnameVerifier { hostname, session -> true })
         }
+
+        sardine = OkHttpSardine(
+            clientBuillder.build()
+        )
 
         if (username != "" && password != "") {
             sardine.setCredentials(username, password, true)
