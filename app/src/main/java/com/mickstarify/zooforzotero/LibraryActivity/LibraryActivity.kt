@@ -114,7 +114,7 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
             .setIcon(R.drawable.ic_folder_black_24dp).isCheckable = true
     }
 
-    override fun highlightMenuItem(state: LibraryModelState){
+    override fun highlightMenuItem(state: LibraryModelState) {
         /* Given some collection name / group name, highlight that corresponding item.
         * Needed for back button, whereby the app loads a prior state and needs the UI
         * to reflect this change with respect to the item selected.  */
@@ -123,9 +123,9 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
             it.isChecked = false
         }
 
-        if (state.isUsingGroup()){
-            for (menuItem: MenuItem in sharedCollections){
-                if (menuItem.title.toString() == state.currentGroup.name){
+        if (state.isUsingGroup()) {
+            for (menuItem: MenuItem in sharedCollections) {
+                if (menuItem.title.toString() == state.currentGroup.name) {
                     menuItem.isChecked = true
                     currentPressedMenuItem = menuItem
                     break
@@ -134,19 +134,19 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
             return
         }
 
-        val menuItem: MenuItem? = if (state.currentCollection == "all"){
+        val menuItem: MenuItem? = if (state.currentCollection == "all") {
             val navigationView = findViewById<NavigationView>(R.id.nav_view_library)
             navigationView.menu.findItem(R.id.my_library)
-        } else if (state.currentCollection == "unfiled_items"){
+        } else if (state.currentCollection == "unfiled_items") {
             val navigationView = findViewById<NavigationView>(R.id.nav_view_library)
             navigationView.menu.findItem(MENU_ID_UNFILED_ITEMS)
-        } else if (state.currentCollection == "zooforzotero_Trash"){
+        } else if (state.currentCollection == "zooforzotero_Trash") {
             val navigationView = findViewById<NavigationView>(R.id.nav_view_library)
             navigationView.menu.findItem(MENU_ID_TRASH)
         } else {
             // if it reaches here that means it's a collection.
             val index = collectionKeyByMenuId.indexOfValue(state.currentCollection)
-            if (index >= 0){
+            if (index >= 0) {
                 val menuId = collectionKeyByMenuId.keyAt(index)
                 collectionsMenu.findItem(menuId)
             } else {
@@ -241,7 +241,7 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
                 override fun onQueryTextSubmit(query: String): Boolean {
                     setTitle("Search results for $query")
                     // we will only search on submit for android 7<=
-                    if (android.os.Build.VERSION.SDK_INT <= 24){
+                    if (android.os.Build.VERSION.SDK_INT <= 24) {
                         presenter.filterEntries(query)
                     }
                     presenter.addFilterState(query)
@@ -249,7 +249,7 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
                 }
 
                 override fun onQueryTextChange(query: String): Boolean {
-                    if (android.os.Build.VERSION.SDK_INT <= 24){
+                    if (android.os.Build.VERSION.SDK_INT <= 24) {
                         return false
                     }
                     presenter.filterEntries(query)
@@ -275,8 +275,7 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
             presenter.setCollection("unfiled_items")
         } else if (item.itemId == MENU_ID_TRASH) {
             presenter.openTrash()
-        }
-        else if (item.groupId == R.id.group_shared_collections) {
+        } else if (item.groupId == R.id.group_shared_collections) {
             presenter.openGroup(item.title.toString())
         } else if (item.groupId == R.id.group_collections) {
             presenter.setCollection(collectionKeyByMenuId[item.itemId], isSubCollection = false)
@@ -286,7 +285,7 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
         val drawer = findViewById<DrawerLayout>(R.id.drawerlayout_library)
         drawer.closeDrawer(GravityCompat.START)
         // shouldnt be neccessary but there was a bug where android wouldn't highlight on certain occassions
-        item.isChecked =true
+        item.isChecked = true
         return true
     }
 
@@ -623,7 +622,7 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
 
     override fun onResume() {
         super.onResume()
-        Log.d("zotero","onResume called.")
+        Log.d("zotero", "onResume called.")
     }
 
     override fun onNoteCreate(note: Note) {
@@ -637,14 +636,12 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
     override fun onNoteDelete(note: Note) {
         presenter.deleteNote(note)
     }
-
     private var doubleBackToExitPressedOnce = false
     override fun onBackPressed() {
         if (!searchView.isIconified) {
             searchView.isIconified = true
             presenter.closeQuery()
-        }
-        else {
+        } else {
             presenter.backButtonPressed()
         }
 
@@ -663,5 +660,17 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
 
     override fun editNote(note: Note) {
         presenter.modifyNote(note)
+    }
+
+    override fun shareText(shareText: String) {
+        /* Used to share zotero items. */
+
+        val sendIntent: Intent = Intent().apply {
+            action = Intent.ACTION_SEND
+            putExtra(Intent.EXTRA_TEXT, shareText)
+            type = "text/plain"
+        }
+        val shareIntent = Intent.createChooser(sendIntent, null)
+        startActivity(shareIntent)
     }
 }
