@@ -24,7 +24,6 @@ import androidx.core.view.iterator
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.google.android.material.navigation.NavigationView
-import com.google.firebase.analytics.FirebaseAnalytics
 import com.mickstarify.zooforzotero.AttachmentManager.AttachmentManager
 import com.mickstarify.zooforzotero.LibraryActivity.ItemView.ItemAttachmentEntry
 import com.mickstarify.zooforzotero.LibraryActivity.ItemView.ItemViewFragment
@@ -49,11 +48,11 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
 
     private val MENU_ID_UNFILED_ITEMS: Int = 1
     private val MENU_ID_TRASH: Int = 2
+    private val MENU_ID_MY_PUBLICATIONS = 3
 
     private val MENU_ID_COLLECTIONS_OFFSET: Int = 10
 
     private lateinit var presenter: Contract.Presenter
-    private lateinit var firebaseAnalytics: FirebaseAnalytics
     private var itemView: ItemViewFragment? = null
 
     // used to "uncheck" the last pressed menu item if we change via code.
@@ -63,7 +62,6 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_library)
 
-        firebaseAnalytics = FirebaseAnalytics.getInstance(this)
         this.setupActionbar()
         val navigationView = findViewById<NavigationView>(R.id.nav_view_library)
         navigationView.setNavigationItemSelectedListener(this)
@@ -88,9 +86,15 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
         navigationView.menu.add(R.id.group_other, MENU_ID_UNFILED_ITEMS, Menu.NONE, "Unfiled Items")
             .setIcon(R.drawable.baseline_description_24).isCheckable = true
 
+        // add our "My Publications" entry
+        navigationView.menu.add(R.id.group_other, MENU_ID_MY_PUBLICATIONS, Menu.NONE, "My Publications")
+            .setIcon(R.drawable.baseline_book_24).isCheckable = true
+
         // add our "Trash" entry
         navigationView.menu.add(R.id.group_other, MENU_ID_TRASH, Menu.NONE, "Trash")
             .setIcon(R.drawable.baseline_delete_24).isCheckable = true
+
+
 
         sharedCollections = navigationView.menu.addSubMenu(
             R.id.group_shared_collections,
@@ -140,6 +144,9 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
         } else if (state.currentCollection == "unfiled_items") {
             val navigationView = findViewById<NavigationView>(R.id.nav_view_library)
             navigationView.menu.findItem(MENU_ID_UNFILED_ITEMS)
+        } else if (state.currentCollection == "zooforzotero_my_publications") {
+            val navigationView = findViewById<NavigationView>(R.id.nav_view_library)
+            navigationView.menu.findItem(MENU_ID_MY_PUBLICATIONS)
         } else if (state.currentCollection == "zooforzotero_Trash") {
             val navigationView = findViewById<NavigationView>(R.id.nav_view_library)
             navigationView.menu.findItem(MENU_ID_TRASH)
@@ -273,6 +280,8 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
             presenter.setCollection("all")
         } else if (item.itemId == MENU_ID_UNFILED_ITEMS) {
             presenter.setCollection("unfiled_items")
+        } else if (item.itemId == MENU_ID_MY_PUBLICATIONS) {
+            presenter.openMyPublications()
         } else if (item.itemId == MENU_ID_TRASH) {
             presenter.openTrash()
         } else if (item.groupId == R.id.group_shared_collections) {

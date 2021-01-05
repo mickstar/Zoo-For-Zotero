@@ -251,6 +251,19 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
 //
 //    }
 
+    override fun openMyPublications() {
+        if (!model.isLoaded()) {
+            Log.e("zotero", "tried to change collection before fully loaded!")
+            return
+        }
+        model.usePersonalLibrary()
+        view.setTitle("My Publications")
+        val entries = model.getMyPublications().sort().map{ListEntry(it)}
+        model.isDisplayingItems = entries.isNotEmpty()
+        model.setCurrentCollection("zooforzotero_my_publications")
+        view.populateEntries(entries)
+    }
+
     override fun openTrash() {
         if (!model.isLoaded()) {
             Log.e("zotero", "tried to change collection before fully loaded!")
@@ -259,7 +272,7 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
         model.usePersonalLibrary()
         view.setTitle("Trash")
         val entries = model.getTrashedItems().sort().map{ListEntry(it)}
-        model.isDisplayingItems = entries.size > 0
+        model.isDisplayingItems = entries.isNotEmpty()
         model.setCurrentCollection("zooforzotero_Trash")
         view.populateEntries(entries)
     }
@@ -303,7 +316,9 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
             view.populateEntries(entries)
         } else if (collectionKey == "zooforzotero_Trash"){
             this.openTrash()
-        } else if (collectionKey == "group_all" && model.isUsingGroups()) {
+        } else if (collectionKey == "zooforzotero_my_publications"){
+            this.openMyPublications()
+        }else if (collectionKey == "group_all" && model.isUsingGroups()) {
             view.setTitle(model.getCurrentGroup()?.name ?: "ERROR")
             val entries = LinkedList<ListEntry>()
             entries.addAll(model.getCollections().filter {

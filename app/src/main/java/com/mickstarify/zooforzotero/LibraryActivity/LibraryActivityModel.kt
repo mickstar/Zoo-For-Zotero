@@ -19,7 +19,6 @@ import com.mickstarify.zooforzotero.ZoteroAPI.Syncing.OnSyncChangeListener
 import com.mickstarify.zooforzotero.ZoteroAPI.Syncing.SyncManager
 import com.mickstarify.zooforzotero.ZoteroStorage.AttachmentStorageManager
 import com.mickstarify.zooforzotero.ZoteroStorage.Database.*
-import com.mickstarify.zooforzotero.ZoteroStorage.Database.Collection
 import com.mickstarify.zooforzotero.ZoteroStorage.ZoteroDB.ZoteroDB
 import com.mickstarify.zooforzotero.ZoteroStorage.ZoteroDB.ZoteroDBPicker
 import com.mickstarify.zooforzotero.ZoteroStorage.ZoteroDB.ZoteroGroupDB
@@ -159,6 +158,10 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
 
     override fun getAttachments(itemKey: String): List<Item> {
         return zoteroDB.getAttachments(itemKey)
+    }
+
+    override fun getMyPublications(): List<Item> {
+        return zoteroDB.myPublications ?: LinkedList()
     }
 
     override fun getNotes(itemKey: String): List<Note> {

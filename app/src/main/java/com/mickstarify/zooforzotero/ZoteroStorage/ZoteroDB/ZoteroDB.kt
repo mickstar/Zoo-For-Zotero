@@ -54,8 +54,11 @@ class ZoteroDB constructor(
             field = value
             this.createAttachmentsMap()
             this.createCollectionItemMap()
-            this.createNotesMap()
+            this.processItems()
         }
+
+    // list of items that are in the "my publications"
+    var myPublications: MutableList<Item>? = null
 
     // map that stores attachmentItem classes by ItemKey
     var attachments: MutableMap<String, MutableList<Item>>? = null
@@ -198,12 +201,14 @@ class ZoteroDB constructor(
         }
     }
 
-    fun createNotesMap() {
+    fun processItems() {
+        /* This method will populate the notes list and the my publications list. */
         if (!isPopulated()) {
             return
         }
 
         this.notes = ArrayMap()
+        this.myPublications = LinkedList()
         items?.forEach { item: Item ->
             if (item.itemType == "note") {
                 try {
@@ -215,6 +220,9 @@ class ZoteroDB constructor(
                 } catch (e: ExceptionInInitializerError) {
                     Log.e("zotero", "error loading note ${item.itemKey} error:${e.message}")
                 }
+            }
+            if (item.data.containsKey("inPublications") && item.data["inPublications"] == "true"){
+                this.myPublications!!.add(item)
             }
         }
     }
@@ -543,6 +551,4 @@ class ZoteroDB constructor(
         }
         return null
     }
-
-
 }

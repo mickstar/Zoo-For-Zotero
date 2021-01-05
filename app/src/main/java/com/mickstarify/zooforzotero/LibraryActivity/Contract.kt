@@ -88,6 +88,7 @@ interface Contract {
         fun requestForceResync()
         fun backButtonPressed()
         fun addFilterState(query: String)
+        fun openMyPublications()
     }
 
     interface Model {
@@ -97,6 +98,7 @@ interface Contract {
         fun refreshLibrary(useSmallLoadingAnimation: Boolean = false)
         fun getCollections(): List<Collection>
         fun getAttachments(itemKey: String): List<Item>
+        fun getMyPublications() : List<Item>
         fun downloadAttachment(item: Item)
         fun cancelAttachmentDownload()
         fun getSubCollections(collectionName: String): List<Collection>
