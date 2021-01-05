@@ -180,7 +180,6 @@ class PreferenceManager @Inject constructor(context: Context) {
             editor.apply()
         }
         return firstRun
-
     }
 
     fun shouldLiveSearch(): Boolean {

@@ -27,7 +27,9 @@ import java.util.*
  */
 class ItemViewFragment : BottomSheetDialogFragment(),
     NoteInteractionListener,
-    onShareItemListener {
+    onShareItemListener,
+        ItemTagEntry.OnTagEntryInteractionListener
+{
     override fun deleteNote(note: Note) {
         listener?.onNoteDelete(note)
     }
@@ -148,8 +150,20 @@ class ItemViewFragment : BottomSheetDialogFragment(),
         })
         this.addAttachments(attachments)
         this.populateNotes(notes)
+        this.populateTags(item.tags.map { it.tag })
 
         return view
+    }
+
+    private fun populateTags(tags: List<String>) {
+        val fmt = this.childFragmentManager.beginTransaction()
+        for (tag in tags) {
+            fmt.add(
+                R.id.item_fragment_scrollview_ll_tags,
+                ItemTagEntry.newInstance(tag)
+            )
+        }
+        fmt.commit()
     }
 
     private fun populateNotes(notes: List<Note>) {
@@ -231,6 +245,7 @@ class ItemViewFragment : BottomSheetDialogFragment(),
         fun onNoteEdit(note: Note)
         fun onNoteDelete(note: Note)
         fun shareText(shareText: String)
+        fun onTagOpenListener(tag: String)
     }
 
     companion object {
@@ -251,5 +266,10 @@ class ItemViewFragment : BottomSheetDialogFragment(),
 
     override fun shareItem(shareText: String) {
         listener?.shareText(shareText)
+    }
+
+    override fun tagPressed(tag: String) {
+        listener?.onTagOpenListener(tag)
+        this.dismiss()
     }
 }

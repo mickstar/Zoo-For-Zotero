@@ -42,6 +42,7 @@ class ZoteroDatabase @Inject constructor(val context: Context) {
         context.applicationContext,
         ZoteroRoomDatabase::class.java, "zotero"
     )
+        .allowMainThreadQueries() // I promise I will use this wisely. So far it's only used for querying tags.
         .addMigrations(MIGRATION_1_2)
         .addMigrations(MIGRATION_2_3)
         .addMigrations(MIGRATION_3_4)
@@ -57,6 +58,10 @@ class ZoteroDatabase @Inject constructor(val context: Context) {
 
     fun getItemsForGroup(groupID: Int): Maybe<List<Item>> {
         return db.itemDao().getItemsForGroup(groupID)
+    }
+
+    fun getItemKeysWithTag(tag: String): Maybe<List<String>> {
+        return db.itemDao().getItemKeysWithTag(tag)
     }
 
     fun writeItemPOJOs(
@@ -115,7 +120,8 @@ class ZoteroDatabase @Inject constructor(val context: Context) {
         groupID: Int,
         itemPOJO: ItemPOJO
     ): Completable {
-        val itemInfo = ItemInfo(itemPOJO.ItemKey, groupID, itemPOJO.version, Boolean.fromInt(itemPOJO.deleted))
+        val itemInfo =
+            ItemInfo(itemPOJO.ItemKey, groupID, itemPOJO.version, Boolean.fromInt(itemPOJO.deleted))
         var itemDatas = LinkedList<ItemData>()
         var itemCreators = LinkedList<Creator>()
         for ((key, value) in itemPOJO.data) {
@@ -137,9 +143,11 @@ class ZoteroDatabase @Inject constructor(val context: Context) {
         }
         val itemTags = itemPOJO.tags.map { ItemTag(itemPOJO.ItemKey, it) }
         val collections = itemPOJO.collections.map { ItemCollection(it, itemPOJO.ItemKey) }
-        return Completable.fromAction {
+
+        val insertCompletable = Completable.fromAction {
             db.itemDao().insertItem(itemInfo, itemDatas, itemCreators, collections, itemTags)
         }
+        return insertCompletable
     }
 
 //    fun writeAttachment(item: Item, md5Key: String, downloadedFrom: String): Completable {
@@ -171,7 +179,7 @@ class ZoteroDatabase @Inject constructor(val context: Context) {
         return db.AttachmentInfoDao().getAttachmentsForGroup(groupID)
     }
 
-    fun getItemsFromUserTrash(): Maybe<List<Item>>{
+    fun getItemsFromUserTrash(): Maybe<List<Item>> {
         return db.itemDao().getTrashedItemsForUser()
     }
 

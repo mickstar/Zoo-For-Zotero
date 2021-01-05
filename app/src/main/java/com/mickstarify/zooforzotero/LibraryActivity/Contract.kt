@@ -88,6 +88,7 @@ interface Contract {
         fun requestForceResync()
         fun backButtonPressed()
         fun addFilterState(query: String)
+        fun onTagOpen(tagName: String)
     }
 
     interface Model {
@@ -117,5 +118,6 @@ interface Contract {
         fun getGroupByTitle(groupTitle: String): GroupInfo?
         fun removeFromRecentlyViewed(attachment: Item)
         fun loadPriorState()
+        fun getItemsForTag(tagName: String): List<Item>
     }
 }

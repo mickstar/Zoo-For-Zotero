@@ -285,6 +285,13 @@ interface ItemDao {
     @Query("SELECT * FROM itemInfo WHERE `group`=${GroupInfo.NO_GROUP_ID} and `deleted`=1")
     fun getTrashedItemsForUser(): Maybe<List<Item>>
 
+    @Query("SELECT parent from ItemTags where `tag`=:tag")
+    fun getItemKeysWithTag(tag: String): Maybe<List<String>>
+
+    @Transaction
+    @Query("DELETE FROM ItemTags WHERE `parent`=:itemKey")
+    fun deleteAllTagsForItemKey(itemKey: String): Completable
+
     @Transaction
     @Query("UPDATE itemInfo SET deleted=1 WHERE `ItemKey`=:itemKey and `group`=:groupID")
     fun moveToTrash(groupID: Int, itemKey: String): Completable

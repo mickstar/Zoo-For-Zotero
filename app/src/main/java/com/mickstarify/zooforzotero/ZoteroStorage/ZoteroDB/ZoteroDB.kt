@@ -544,5 +544,20 @@ class ZoteroDB constructor(
         return null
     }
 
+    fun getItemsForTag(tagName: String): List<Item> {
+        if (!this.isPopulated()){
+            return LinkedList()
+        }
+
+        val itemsWithTag = LinkedList<Item>()
+        
+        for (item in this.items!!){
+            if (item.tags.filter { it.tag == tagName }.any()){
+                itemsWithTag.add(item)
+            }
+        }
+        return itemsWithTag
+    }
+
 
 }

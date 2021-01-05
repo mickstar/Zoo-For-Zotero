@@ -19,7 +19,6 @@ import com.mickstarify.zooforzotero.ZoteroAPI.Syncing.OnSyncChangeListener
 import com.mickstarify.zooforzotero.ZoteroAPI.Syncing.SyncManager
 import com.mickstarify.zooforzotero.ZoteroStorage.AttachmentStorageManager
 import com.mickstarify.zooforzotero.ZoteroStorage.Database.*
-import com.mickstarify.zooforzotero.ZoteroStorage.Database.Collection
 import com.mickstarify.zooforzotero.ZoteroStorage.ZoteroDB.ZoteroDB
 import com.mickstarify.zooforzotero.ZoteroStorage.ZoteroDB.ZoteroDBPicker
 import com.mickstarify.zooforzotero.ZoteroStorage.ZoteroDB.ZoteroGroupDB
@@ -31,9 +30,12 @@ import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposable
 import io.reactivex.schedulers.Schedulers
 import java.io.FileNotFoundException
-import java.util.*
+import java.util.LinkedList
+import java.util.Locale
+import java.util.Stack
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
+import com.mickstarify.zooforzotero.ZoteroStorage.Database.Collection as ZoteroCollection
 
 
 class LibraryActivityModel(private val presenter: Contract.Presenter, val context: Context) :
@@ -147,13 +149,13 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
         return filterItems(items)
     }
 
-    override fun getSubCollections(collectionKey: String): List<Collection> {
+    override fun getSubCollections(collectionKey: String): List<ZoteroCollection> {
 //        val collectionKey = zoteroDB.getCollectionId(collectionName)
         return zoteroDB.getSubCollectionsFor(collectionKey)
     }
 
 
-    override fun getCollections(): List<Collection> {
+    override fun getCollections(): List<ZoteroCollection> {
         return zoteroDB.collections ?: LinkedList()
     }
 
@@ -165,7 +167,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
         return zoteroDB.getNotes(itemKey)
     }
 
-    override fun filterCollections(query: String): List<Collection> {
+    override fun filterCollections(query: String): List<ZoteroCollection> {
         val queryUpper = query.toUpperCase(Locale.ROOT)
         return zoteroDB.collections?.filter {
             it.name.toUpperCase(Locale.ROOT).contains(queryUpper)
@@ -928,7 +930,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
         return zoteroDB.getTrashItems()
     }
 
-    fun getCollectionFromKey(collectionKey: String): Collection? {
+    fun getCollectionFromKey(collectionKey: String): ZoteroCollection? {
         return zoteroDB.getCollectionById(collectionKey)
     }
 
@@ -1037,6 +1039,10 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
         } else {
             Log.e("zotero", "error unable to determine state differences!!")
         }
+    }
+
+    override fun getItemsForTag(tagName: String): List<Item> {
+        return zoteroDB.getItemsForTag(tagName)
     }
 
     init {
