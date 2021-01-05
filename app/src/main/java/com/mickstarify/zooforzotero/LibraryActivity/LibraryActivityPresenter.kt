@@ -96,6 +96,10 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
         view.updateLibraryLoadingProgress(progress, total, message)
     }
 
+    override fun isLiveSearchEnabled(): Boolean {
+        return model.preferences.shouldLiveSearch()
+    }
+
     override fun closeQuery() {
         this.setCollection(model.getCurrentCollection())
     }

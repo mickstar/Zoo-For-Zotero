@@ -48,6 +48,11 @@
             android:key="should_open_pdf_on_open"
             android:title="Single press opens attachment" />
 
+        <SwitchPreference
+            android:defaultValue="true"
+            android:key="should_live_search"
+            android:title="Search as you type"
+            android:summary="Turn off if your search is too slow"/>
         <ListPreference
             app:defaultValue="TITLE"
             app:entries="@array/sort_options_entries"
@@ -55,6 +60,7 @@
             app:key="sort_method"
             app:title="@string/sort_method_title"
             app:useSimpleSummaryProvider="true" />
+
     </PreferenceCategory>
 
     <PreferenceCategory android:title="Web DAV">

@@ -183,6 +183,12 @@ class PreferenceManager @Inject constructor(context: Context) {
 
     }
 
+    fun shouldLiveSearch(): Boolean {
+        /* This preference defines whether library search should update as the user types.
+        * This may be problematic for devices with a slow refresh rate or slow IO. */
+        return sharedPreferences.getBoolean("should_live_search", true)
+    }
+
     fun shouldOpenPDFOnOpen(): Boolean {
         return sharedPreferences.getBoolean("should_open_pdf_on_open", false)
     }

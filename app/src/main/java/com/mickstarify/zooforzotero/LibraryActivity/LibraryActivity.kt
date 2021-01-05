@@ -241,7 +241,7 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
                 override fun onQueryTextSubmit(query: String): Boolean {
                     setTitle("Search results for $query")
                     // we will only search on submit for android 7<=
-                    if (android.os.Build.VERSION.SDK_INT <= 24) {
+                    if (!presenter.isLiveSearchEnabled()) {
                         presenter.filterEntries(query)
                     }
                     presenter.addFilterState(query)
@@ -249,7 +249,7 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
                 }
 
                 override fun onQueryTextChange(query: String): Boolean {
-                    if (android.os.Build.VERSION.SDK_INT <= 24) {
+                    if (!presenter.isLiveSearchEnabled()) {
                         return false
                     }
                     presenter.filterEntries(query)
