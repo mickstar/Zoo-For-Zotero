@@ -16,12 +16,13 @@ import com.mickstarify.zooforzotero.ZoteroStorage.Database.ZoteroDatabase
 import com.mickstarify.zooforzotero.ZoteroStorage.ZoteroDB.ZoteroDB
 import io.reactivex.Completable
 import io.reactivex.CompletableObserver
+import io.reactivex.Observable
 import io.reactivex.Observer
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposable
 import io.reactivex.internal.operators.observable.ObservableFromIterable
 import io.reactivex.schedulers.Schedulers
-import java.util.*
+import java.util.LinkedList
 import javax.inject.Inject
 
 class AttachmentManagerModel(val presenter: Contract.Presenter, val context: Context) :
@@ -29,10 +30,13 @@ class AttachmentManagerModel(val presenter: Contract.Presenter, val context: Con
 
     lateinit var zoteroAPI: ZoteroAPI
     lateinit var zoteroDB: ZoteroDB
+
     @Inject
     lateinit var zoteroDatabase: ZoteroDatabase
+
     @Inject
     lateinit var attachmentStorageManager: AttachmentStorageManager
+
     @Inject
     lateinit var preferenceManager: PreferenceManager
 
@@ -56,6 +60,12 @@ class AttachmentManagerModel(val presenter: Contract.Presenter, val context: Con
             ) { (context.finish()) }
         }
 
+        if (!preferenceManager.hasShownCustomStorageWarning()){
+            preferenceManager.setShownCustomStorageWarning(true)
+            presenter.createErrorAlert("custom storage selected", "Android has imposed limitations on how the filesystem can be accessed. This will mean much slower file access compared to using the " +
+                    "external cache option."
+            ) {}
+        }
     }
 
     data class downloadAllProgress(
@@ -81,7 +91,7 @@ class AttachmentManagerModel(val presenter: Contract.Presenter, val context: Con
         isDownloading = true
         val toDownload = LinkedList<Item>()
 
-        Completable.fromAction({
+        Completable.fromAction {
             for (attachment in zoteroDB.items!!.filter { it.itemType == "attachment" && it.data["linkMode"] != "linked_file" }) {
                 val contentType = attachment.data["contentType"]
                 if (!attachment.isDownloadable()) {
@@ -95,8 +105,7 @@ class AttachmentManagerModel(val presenter: Contract.Presenter, val context: Con
                     toDownload.add(attachment)
                 }
             }
-        }
-        ).andThen(ObservableFromIterable(toDownload.withIndex()).map {
+        }.andThen(ObservableFromIterable(toDownload.withIndex()).map {
             val i = it.index
             val attachment = it.value
             var status = true
@@ -108,7 +117,6 @@ class AttachmentManagerModel(val presenter: Contract.Presenter, val context: Con
                     }
 
                     override fun onSubscribe(d: Disposable) {
-                        // do nothing.
                     }
 
                     override fun onNext(it: DownloadProgress) {
@@ -140,8 +148,10 @@ class AttachmentManagerModel(val presenter: Contract.Presenter, val context: Con
             downloadAllProgress(status, i, attachment)
         }.subscribeOn(Schedulers.io()).observeOn(AndroidSchedulers.mainThread()))
             .subscribe(object : Observer<downloadAllProgress> {
+                var localAttachmentSize = 0L
+                var nLocalAttachments = 0
                 override fun onComplete() {
-                    showMetaInformation()
+                    calculateMetaInformation()
                     isDownloading = false
                     presenter.finishLoadingAnimation()
                     presenter.createErrorAlert(
@@ -165,7 +175,7 @@ class AttachmentManagerModel(val presenter: Contract.Presenter, val context: Con
                         presenter.displayAttachmentInformation(
                             nLocalAttachments,
                             localAttachmentSize,
-                            nRemoteAttachments
+                            toDownload.size
                         )
 
                         presenter.updateProgress(
@@ -196,7 +206,7 @@ class AttachmentManagerModel(val presenter: Contract.Presenter, val context: Con
             .observeOn(AndroidSchedulers.mainThread())
             .subscribe(object : CompletableObserver {
                 override fun onComplete() {
-                    showMetaInformation()
+                    calculateMetaInformation()
                     presenter.finishLoadingAnimation()
                 }
 
@@ -216,44 +226,61 @@ class AttachmentManagerModel(val presenter: Contract.Presenter, val context: Con
             })
     }
 
+    data class FilesystemMetadataObject(
+        val exists: Boolean,
+        val size: Long
+    )
 
-    var localAttachmentSize: Long = 0L
-    var nLocalAttachments: Int = -1
-    var nRemoteAttachments = -1
-    private fun showMetaInformation() {
-//        /*Calculates the attachment size on disk as well as on remote server.*/
-        val attachmentKeys = zoteroDB.attachmentInfo!!.keys
+    fun calculateMetaInformation() {
+        /* This method scans the local storage and determines what has already been downloaded on the device. */
 
-        val localAttachments = LinkedList<Item>()
-        val allAttachments = LinkedList<Item>()
-        for (attachment in zoteroDB.items!!.filter { it.itemType == "attachment" }) {
-            if (!attachment.isDownloadable() || attachment.data["linkMode"] == "linked_file") {
-                continue
-            }
-            allAttachments.add(attachment)
-            Log.d("zotero", "checking if ${attachment.data["filename"]} exists")
-            if (attachmentStorageManager.checkIfAttachmentExists(attachment, checkMd5 = false)) {
-                localAttachments.add(attachment)
+        val attachmentItems = zoteroDB.items!!.filter { it.itemType == "attachment" && it.isDownloadable() }
+
+        val observable = Observable.fromIterable(attachmentItems).map {
+            Log.d("zotero", "checking if ${it.data["filename"]} exists")
+            if (!it.isDownloadable() || it.data["linkMode"] == "linked_file") {
+                FilesystemMetadataObject(false, -1)
+            } else {
+                val exists = attachmentStorageManager.checkIfAttachmentExists(it, false)
+                val size = if (exists) {
+                    attachmentStorageManager.getFileSize(it)
+                } else {
+                    -1
+                }
+                FilesystemMetadataObject(exists, size)
             }
         }
+        observable.subscribeOn(Schedulers.io()).observeOn(AndroidSchedulers.mainThread()).subscribe(object: Observer<FilesystemMetadataObject>{
+            var totalSize: Long = 0
+            var nAttachments = 0
 
-        nLocalAttachments = localAttachments.size
-        nRemoteAttachments = allAttachments.size
+            override fun onSubscribe(d: Disposable) {
+                presenter.displayLoadingAnimation()
+            }
 
-        localAttachmentSize = localAttachments.fold(
-            0L,
-            { acc, item ->
-                acc + 1L + attachmentStorageManager.getFileSize(
-                    item
+            override fun onNext(metadata: FilesystemMetadataObject) {
+                if (metadata.exists){
+                    nAttachments++
+                    totalSize += metadata.size
+                }
+                presenter.displayAttachmentInformation(nAttachments,
+                    totalSize,
+                    attachmentItems.size
                 )
-            })
+            }
 
-        presenter.displayAttachmentInformation(
-            localAttachments.size,
-            localAttachmentSize,
-            allAttachments.size
-        )
+            override fun onError(e: Throwable) {
+                presenter.createErrorAlert("Error reading filesystem", e.toString(), {})
+                Log.e("zotero", e.stackTraceToString())
+                presenter.finishLoadingAnimation()
+            }
+
+            override fun onComplete() {
+                presenter.finishLoadingAnimation()
+            }
+
+        })
+
+
     }
-
-
 }
