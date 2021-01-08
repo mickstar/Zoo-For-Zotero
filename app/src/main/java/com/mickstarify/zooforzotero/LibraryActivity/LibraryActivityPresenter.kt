@@ -118,11 +118,25 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
         })
     }
 
+    override fun onTagOpen(tagName: String) {
+        this.filterEntries("tag:${tagName}")
+        this.addFilterState("tag:${tagName}")
+        view.setTitle("Tag: $tagName")
+    }
+
     override fun filterEntries(query: String) {
         if (query == "" || !model.isLoaded()) {
             //not going to waste my time lol.
             return
         }
+
+        if (query.startsWith("tag:")) {
+            val tagName = query.substring(4) // remove tag:
+            val entries = model.getItemsForTag(tagName).map { ListEntry(it) }
+            view.populateEntries(entries)
+            return
+        }
+
         val collections = model.filterCollections(query)
         val items = model.filterItems(query).sort()
 
@@ -132,7 +146,6 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
         entries.addAll(
             items
                 .map { ListEntry(it) })
-
         view.populateEntries(entries)
     }
 

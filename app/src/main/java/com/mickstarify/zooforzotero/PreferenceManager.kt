@@ -180,7 +180,6 @@ class PreferenceManager @Inject constructor(context: Context) {
             editor.apply()
         }
         return firstRun
-
     }
 
     fun shouldLiveSearch(): Boolean {
@@ -191,6 +190,16 @@ class PreferenceManager @Inject constructor(context: Context) {
 
     fun shouldOpenPDFOnOpen(): Boolean {
         return sharedPreferences.getBoolean("should_open_pdf_on_open", false)
+    }
+
+    fun hasShownCustomStorageWarning(): Boolean {
+        return sharedPreferences.getBoolean("has_shown_custom_storage_warning", false)
+    }
+
+    fun setShownCustomStorageWarning(value: Boolean) {
+        val editor = sharedPreferences.edit()
+        editor.putBoolean("has_shown_custom_storage_warning", true)
+        editor.apply()
     }
 
     companion object {

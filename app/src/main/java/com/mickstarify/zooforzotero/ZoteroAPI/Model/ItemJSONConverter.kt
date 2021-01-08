@@ -35,7 +35,7 @@ class ItemJSONConverter {
                     when (key) {
                         "tags" -> {
                             for (tagItem: Map<String, String> in (value as List<Map<String, String>>)) {
-                                val tag = tagItem.get("tags")
+                                val tag = tagItem["tag"]
                                 if (tag != null) {
                                     tags.add(tag)
                                 }

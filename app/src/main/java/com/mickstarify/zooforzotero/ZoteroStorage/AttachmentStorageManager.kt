@@ -99,10 +99,17 @@ class AttachmentStorageManager @Inject constructor(
             val location = preferenceManager.getCustomAttachmentStorageLocation()
             val rootDocFile = DocumentFile.fromTreeUri(context, Uri.parse(location))
             var directory = rootDocFile?.findFile(item.itemKey.toUpperCase(Locale.ROOT))
+
             if (directory == null || directory.isDirectory == false) {
                 return false
             }
-            val file = directory.findFile(filename)
+            val file = directory?.findFile(filename)
+//            val helper = SAFHelper(location)
+//            val file = DocumentFile.fromSingleUri(context, helper.getUriForItem(item.itemKey.toUpperCase(Locale.ROOT), filename))
+
+//            Log.d("zotero", "actual URI: ${file?.uri}")
+//            Log.d("zotero", "my     URI: ${helper.getUriForItem(item.itemKey.toUpperCase(Locale.ROOT), filename)}")
+
             if (file == null) {
                 return false
             }

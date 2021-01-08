@@ -682,4 +682,8 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
         val shareIntent = Intent.createChooser(sendIntent, null)
         startActivity(shareIntent)
     }
+
+    override fun onTagOpenListener(tag: String) {
+        presenter.onTagOpen(tag)
+    }
 }
