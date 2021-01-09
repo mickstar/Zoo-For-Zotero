@@ -9,13 +9,13 @@ def apikeyProperties = new Properties()
 apikeyProperties.load(new FileInputStream(apikeyPropertiesFile))
 
 android {
-    compileSdkVersion 29
+    compileSdkVersion 30
     defaultConfig {
         applicationId "com.mickstarify.zooforzotero"
         minSdkVersion 21
-        targetSdkVersion 29
-        versionCode 41
-        versionName "2.8"
+        targetSdkVersion
+        versionCode 42
+        versionName "2.9"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "zotero_api_key", apikeyProperties['zotero_api_key'])
         buildConfigField("String", "zotero_api_secret", apikeyProperties['zotero_api_secret'])
