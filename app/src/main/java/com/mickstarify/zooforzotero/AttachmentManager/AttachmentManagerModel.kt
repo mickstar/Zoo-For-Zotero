@@ -60,10 +60,12 @@ class AttachmentManagerModel(val presenter: Contract.Presenter, val context: Con
             ) { (context.finish()) }
         }
 
-        if (!preferenceManager.hasShownCustomStorageWarning() && attachmentStorageManager.storageMode == AttachmentStorageManager.StorageMode.CUSTOM){
+        if (!preferenceManager.hasShownCustomStorageWarning() && attachmentStorageManager.storageMode == AttachmentStorageManager.StorageMode.CUSTOM) {
             preferenceManager.setShownCustomStorageWarning(true)
-            presenter.createErrorAlert("custom storage selected", "Android has imposed limitations on how the filesystem can be accessed. This will mean much slower file access compared to using the " +
-                    "external cache option."
+            presenter.createErrorAlert(
+                "custom storage selected",
+                "Android has imposed limitations on how the filesystem can be accessed. This will mean much slower file access compared to using the " +
+                        "external cache option."
             ) {}
         }
     }
@@ -91,62 +93,58 @@ class AttachmentManagerModel(val presenter: Contract.Presenter, val context: Con
         // just incase it's still running.
         this.stopCalculateMetaInformation()
         isDownloading = true
+
         val toDownload = LinkedList<Item>()
 
         Completable.fromAction {
             for (attachment in zoteroDB.items!!.filter { it.itemType == "attachment" && it.data["linkMode"] != "linked_file" }) {
-                val contentType = attachment.data["contentType"]
-                if (!attachment.isDownloadable()) {
-                    continue
-                }
-                if (!attachmentStorageManager.checkIfAttachmentExists(
-                        attachment,
-                        checkMd5 = false
-                    )
-                ) {
+                if (attachment.isDownloadable()) {
                     toDownload.add(attachment)
                 }
             }
-        }.andThen(ObservableFromIterable(toDownload.withIndex()).map {
+        }.subscribeOn(Schedulers.io()).andThen(ObservableFromIterable(toDownload.withIndex()).map {
             val i = it.index
             val attachment = it.value
             var status = true
-            zoteroAPI.downloadItemRx(attachment, zoteroDB.groupID, context)
-                .blockingSubscribe(object : Observer<DownloadProgress> {
-                    var setMetadata = false
-                    override fun onComplete() {
-                        // do nothing.
-                    }
 
-                    override fun onSubscribe(d: Disposable) {
-                    }
-
-                    override fun onNext(it: DownloadProgress) {
-                        if (setMetadata == false && it.metadataHash != "") {
-                            val err = zoteroDatabase.writeAttachmentInfo(
-                                AttachmentInfo(
-                                    attachment.itemKey,
-                                    zoteroDB.groupID,
-                                    it.metadataHash,
-                                    it.mtime,
-                                    if (preferenceManager.isWebDAVEnabled()) {
-                                        AttachmentInfo.WEBDAV
-                                    } else {
-                                        AttachmentInfo.ZOTEROAPI
-                                    }
-                                )
-                            ).blockingGet()
-                            err?.let { throw(err) }
+            if (!attachmentStorageManager.checkIfAttachmentExists(attachment, checkMd5 = false)) {
+                zoteroAPI.downloadItemRx(attachment, zoteroDB.groupID, context)
+                    .blockingSubscribe(object : Observer<DownloadProgress> {
+                        var setMetadata = false
+                        override fun onComplete() {
+                            // do nothing.
                         }
-                    }
 
-                    override fun onError(e: Throwable) {
-                        Log.d("zotero", "got error on api download, $e")
-                        status = false
-                    }
+                        override fun onSubscribe(d: Disposable) {
+                        }
 
-                }
-                )
+                        override fun onNext(it: DownloadProgress) {
+                            if (setMetadata == false && it.metadataHash != "") {
+                                val err = zoteroDatabase.writeAttachmentInfo(
+                                    AttachmentInfo(
+                                        attachment.itemKey,
+                                        zoteroDB.groupID,
+                                        it.metadataHash,
+                                        it.mtime,
+                                        if (preferenceManager.isWebDAVEnabled()) {
+                                            AttachmentInfo.WEBDAV
+                                        } else {
+                                            AttachmentInfo.ZOTEROAPI
+                                        }
+                                    )
+                                ).blockingGet()
+                                err?.let { throw(err) }
+                                setMetadata = true
+                            }
+                        }
+
+                        override fun onError(e: Throwable) {
+                            Log.d("zotero", "got error on api download, $e")
+                            status = false
+                        }
+
+                    })
+            }
             downloadAllProgress(status, i, attachment)
         }.subscribeOn(Schedulers.io()).observeOn(AndroidSchedulers.mainThread()))
             .subscribe(object : Observer<downloadAllProgress> {
@@ -169,7 +167,10 @@ class AttachmentManagerModel(val presenter: Contract.Presenter, val context: Con
                 }
 
                 override fun onNext(progress: downloadAllProgress) {
-                    Log.d("zotero", "got progress, disposeState= ${downloadDisposable?.isDisposed}")
+                    Log.d(
+                        "zotero",
+                        "got progress, status= ${progress.status} item=${progress.attachment.itemKey} disposeState= ${downloadDisposable?.isDisposed}"
+                    )
                     if (progress.status) {
                         localAttachmentSize += attachmentStorageManager.getFileSize(
                             progress.attachment
@@ -240,11 +241,11 @@ class AttachmentManagerModel(val presenter: Contract.Presenter, val context: Con
     }
 
     var calculateMetadataDisposable: Disposable? = null
-
     fun calculateMetaInformation() {
         /* This method scans the local storage and determines what has already been downloaded on the device. */
 
-        val attachmentItems = zoteroDB.items!!.filter { it.itemType == "attachment" && it.isDownloadable() }
+        val attachmentItems =
+            zoteroDB.items!!.filter { it.itemType == "attachment" && it.isDownloadable() }
 
         val observable = Observable.fromIterable(attachmentItems).map {
             Log.d("zotero", "checking if ${it.data["filename"]} exists")
@@ -260,37 +261,39 @@ class AttachmentManagerModel(val presenter: Contract.Presenter, val context: Con
                 FilesystemMetadataObject(exists, size)
             }
         }
-        observable.subscribeOn(Schedulers.io()).observeOn(AndroidSchedulers.mainThread()).subscribe(object: Observer<FilesystemMetadataObject>{
-            var totalSize: Long = 0
-            var nAttachments = 0
+        observable.subscribeOn(Schedulers.io()).observeOn(AndroidSchedulers.mainThread())
+            .subscribe(object : Observer<FilesystemMetadataObject> {
+                var totalSize: Long = 0
+                var nAttachments = 0
 
-            override fun onSubscribe(d: Disposable) {
-                presenter.displayLoadingAnimation()
-                calculateMetadataDisposable = d
-            }
-
-            override fun onNext(metadata: FilesystemMetadataObject) {
-                if (metadata.exists){
-                    nAttachments++
-                    totalSize += metadata.size
+                override fun onSubscribe(d: Disposable) {
+                    presenter.displayLoadingAnimation()
+                    calculateMetadataDisposable = d
                 }
-                presenter.displayAttachmentInformation(nAttachments,
-                    totalSize,
-                    attachmentItems.size
-                )
-            }
 
-            override fun onError(e: Throwable) {
-                presenter.createErrorAlert("Error reading filesystem", e.toString(), {})
-                Log.e("zotero", e.stackTraceToString())
-                presenter.finishLoadingAnimation()
-            }
+                override fun onNext(metadata: FilesystemMetadataObject) {
+                    if (metadata.exists) {
+                        nAttachments++
+                        totalSize += metadata.size
+                    }
+                    presenter.displayAttachmentInformation(
+                        nAttachments,
+                        totalSize,
+                        attachmentItems.size
+                    )
+                }
 
-            override fun onComplete() {
-                presenter.finishLoadingAnimation()
-            }
+                override fun onError(e: Throwable) {
+                    presenter.createErrorAlert("Error reading filesystem", e.toString(), {})
+                    Log.e("zotero", e.stackTraceToString())
+                    presenter.finishLoadingAnimation()
+                }
 
-        })
+                override fun onComplete() {
+                    presenter.finishLoadingAnimation()
+                }
+
+            })
 
 
     }
