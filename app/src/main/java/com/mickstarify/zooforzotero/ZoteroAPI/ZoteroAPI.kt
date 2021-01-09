@@ -7,14 +7,22 @@ import com.google.gson.Gson
 import com.google.gson.JsonObject
 import com.mickstarify.zooforzotero.BuildConfig
 import com.mickstarify.zooforzotero.PreferenceManager
-import com.mickstarify.zooforzotero.ZoteroAPI.Model.*
+import com.mickstarify.zooforzotero.ZoteroAPI.Model.CollectionPOJO
+import com.mickstarify.zooforzotero.ZoteroAPI.Model.DeletedEntriesPojo
+import com.mickstarify.zooforzotero.ZoteroAPI.Model.ItemJSONConverter
+import com.mickstarify.zooforzotero.ZoteroAPI.Model.KeyInfo
+import com.mickstarify.zooforzotero.ZoteroAPI.Model.Note
+import com.mickstarify.zooforzotero.ZoteroAPI.Model.ZoteroUploadAuthorizationPojo
 import com.mickstarify.zooforzotero.ZoteroStorage.AttachmentStorageManager
 import com.mickstarify.zooforzotero.ZoteroStorage.Database.GroupInfo
 import com.mickstarify.zooforzotero.ZoteroStorage.Database.Item
 import com.mickstarify.zooforzotero.ZoteroStorage.ZoteroDB.ItemsDownloadProgress
-import io.reactivex.*
+import io.reactivex.Completable
 import io.reactivex.Observable
+import io.reactivex.ObservableEmitter
+import io.reactivex.ObservableOnSubscribe
 import io.reactivex.Observer
+import io.reactivex.Single
 import io.reactivex.disposables.Disposable
 import okhttp3.Interceptor
 import okhttp3.MediaType.Companion.toMediaType
@@ -29,7 +37,7 @@ import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory
 import retrofit2.converter.gson.GsonConverterFactory
-import java.util.*
+import java.util.LinkedList
 import java.util.concurrent.TimeUnit
 
 
@@ -114,7 +122,7 @@ class ZoteroAPI(
 
         // we will delegate to a webdav download if the user has webdav enabled.
         // When the user has webdav enabled on personal account or for groups are the only two conditions.
-        if (!useGroup && preferenceManager.isWebDAVEnabled() || (useGroup && preferenceManager.isWebDAVEnabledForGroups())) {
+        if (!useGroup && preferenceManager.isWebDAVEnabled()) {
             val webdav = Webdav(
                 preferenceManager.getWebDAVAddress(),
                 preferenceManager.getWebDAVUsername(),

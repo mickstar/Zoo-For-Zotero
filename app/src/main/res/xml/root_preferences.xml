@@ -100,10 +100,5 @@
                 android:singleLine="true"
                 android:summary="Password for webDAV. Leave empty for no password."
                 android:title="WebDAV Password" />
-        <SwitchPreference
-                android:defaultValue="false"
-                android:dependency="use_webdav"
-                android:key="use_webdav_shared_libraries"
-                android:title="Use webdav for Group Libraries" />
     </PreferenceCategory>
 </PreferenceScreen>
