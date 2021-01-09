@@ -1,12 +1,9 @@
 package com.mickstarify.zooforzotero.LibraryActivity.ItemView
 
 import android.content.Context
-import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.view.*
-import android.widget.LinearLayout
-import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import androidx.fragment.app.Fragment
@@ -28,8 +25,7 @@ import java.util.*
 class ItemViewFragment : BottomSheetDialogFragment(),
     NoteInteractionListener,
     onShareItemListener,
-        ItemTagEntry.OnTagEntryInteractionListener
-{
+    ItemTagEntry.OnTagEntryInteractionListener {
     override fun deleteNote(note: Note) {
         listener?.onNoteDelete(note)
     }
@@ -140,14 +136,6 @@ class ItemViewFragment : BottomSheetDialogFragment(),
                 addTextEntry(key, value)
             }
         }
-        val attachmentsLayout =
-            view.findViewById<LinearLayout>(R.id.item_fragment_scrollview_ll_attachments)
-        attachmentsLayout.addView(TextView(context).apply {
-            this.text = "Attachments"
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                this.setTextAppearance(android.R.style.TextAppearance_DeviceDefault_Large)
-            }
-        })
         this.addAttachments(attachments)
         this.populateNotes(notes)
         this.populateTags(item.tags.map { it.tag })

@@ -251,7 +251,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
             }
             return
         }
-
+        presenter.showLoadingAlertDialog("Opening your attachment")
         // check to see if the attachment exists but is invalid
         val attachmentExists: Boolean
         try {
@@ -265,8 +265,8 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
         }
         if (attachmentExists) {
             // check the validity of the attachment before opening.
-            if (preferences.shouldCheckMd5SumBeforeOpening() &&
-                zoteroDB.hasMd5Key(
+            presenter.showLoadingAlertDialog("Verifying MD5 Checksum")
+            if (preferences.shouldCheckMd5SumBeforeOpening() && zoteroDB.hasMd5Key(
                     item,
                     onlyWebdav = preferences.isWebDAVEnabled()
                 ) && !attachmentStorageManager.validateMd5ForItem(
@@ -282,15 +282,18 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                         attachmentStorageManager.deleteAttachment(item)
                         downloadAttachment(item)
                     }, {
+                        presenter.hideLoadingAlertDialog()
                         openPDF(item)
                     }
                 )
                 return
             } else {
+                presenter.hideLoadingAlertDialog()
                 openPDF(item)
             }
 
         } else {
+            presenter.hideLoadingAlertDialog()
             presenter.updateAttachmentDownloadProgress(0, -1)
             downloadAttachment(item)
         }

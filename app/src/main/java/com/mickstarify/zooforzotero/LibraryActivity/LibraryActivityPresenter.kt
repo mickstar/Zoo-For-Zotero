@@ -7,7 +7,8 @@ import com.mickstarify.zooforzotero.ZoteroAPI.Model.Note
 import com.mickstarify.zooforzotero.ZoteroStorage.Database.Collection
 import com.mickstarify.zooforzotero.ZoteroStorage.Database.GroupInfo
 import com.mickstarify.zooforzotero.ZoteroStorage.Database.Item
-import java.util.*
+import java.util.LinkedList
+import java.util.Locale
 
 class LibraryActivityPresenter(val view: Contract.View, context: Context) : Contract.Presenter {
     val sortMethod = compareBy<Item> {
@@ -122,6 +123,14 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
         this.filterEntries("tag:${tagName}")
         this.addFilterState("tag:${tagName}")
         view.setTitle("Tag: $tagName")
+    }
+
+    override fun showLoadingAlertDialog(message: String) {
+        view.showLoadingAlertDialog(message)
+    }
+
+    override fun hideLoadingAlertDialog() {
+        view.hideLoadingAlertDialog()
     }
 
     override fun filterEntries(query: String) {

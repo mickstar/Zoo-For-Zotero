@@ -41,6 +41,8 @@ interface Contract {
         fun showBasicSyncAnimation()
         fun hideBasicSyncAnimation()
         fun highlightMenuItem(state: LibraryModelState)
+        fun showLoadingAlertDialog(message: String)
+        fun hideLoadingAlertDialog()
     }
 
     interface Presenter {
@@ -63,6 +65,7 @@ interface Contract {
             total: Int,
             message: String
         )
+
         fun isLiveSearchEnabled(): Boolean
         fun isShowingContent(): Boolean
         fun cancelAttachmentDownload()
@@ -89,7 +92,9 @@ interface Contract {
         fun backButtonPressed()
         fun addFilterState(query: String)
         fun openMyPublications()
-	fun onTagOpen(tagName: String)
+        fun onTagOpen(tagName: String)
+        fun showLoadingAlertDialog(message: String)
+        fun hideLoadingAlertDialog()
     }
 
     interface Model {
@@ -99,7 +104,7 @@ interface Contract {
         fun refreshLibrary(useSmallLoadingAnimation: Boolean = false)
         fun getCollections(): List<Collection>
         fun getAttachments(itemKey: String): List<Item>
-        fun getMyPublications() : List<Item>
+        fun getMyPublications(): List<Item>
         fun downloadAttachment(item: Item)
         fun cancelAttachmentDownload()
         fun getSubCollections(collectionName: String): List<Collection>

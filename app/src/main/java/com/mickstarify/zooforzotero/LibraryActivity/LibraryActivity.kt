@@ -13,7 +13,11 @@ import android.view.Menu
 import android.view.MenuItem
 import android.view.View
 import android.view.WindowManager
-import android.widget.*
+import android.widget.AbsListView
+import android.widget.ListView
+import android.widget.ProgressBar
+import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.ActionBarDrawerToggle
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -87,7 +91,12 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
             .setIcon(R.drawable.baseline_description_24).isCheckable = true
 
         // add our "My Publications" entry
-        navigationView.menu.add(R.id.group_other, MENU_ID_MY_PUBLICATIONS, Menu.NONE, "My Publications")
+        navigationView.menu.add(
+            R.id.group_other,
+            MENU_ID_MY_PUBLICATIONS,
+            Menu.NONE,
+            "My Publications"
+        )
             .setIcon(R.drawable.baseline_book_24).isCheckable = true
 
         // add our "Trash" entry
@@ -442,6 +451,21 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
         swipeRefresh.isRefreshing = false
     }
 
+    override fun showLoadingAlertDialog(message: String) {
+        if (progressDialog == null) {
+            progressDialog = ProgressDialog(this)
+        }
+        progressDialog?.isIndeterminate = true
+        progressDialog?.setMessage(message)
+        progressDialog?.show()
+
+    }
+
+    override fun hideLoadingAlertDialog() {
+        progressDialog?.hide()
+        progressDialog = null
+    }
+
     @Suppress("DEPRECATION")
     var progressDialog: ProgressDialog? = null
 
@@ -645,6 +669,7 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
     override fun onNoteDelete(note: Note) {
         presenter.deleteNote(note)
     }
+
     private var doubleBackToExitPressedOnce = false
     override fun onBackPressed() {
         if (!searchView.isIconified) {
