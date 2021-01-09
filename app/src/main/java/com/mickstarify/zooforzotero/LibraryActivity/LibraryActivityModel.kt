@@ -79,6 +79,8 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
         }
     private var zoteroDB: ZoteroDB by zoteroDBPicker
 
+    private var performedCleanSync: Boolean = false
+
     override fun refreshLibrary(useSmallLoadingAnimation: Boolean) {
         if (!state.isUsingGroup()) {
             downloadLibrary(doRefresh = true, useSmallLoadingAnimation = useSmallLoadingAnimation)
@@ -136,7 +138,9 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
             Log.d("zotero", "not resyncing library, already have a copy.")
             return
         }
-
+        if (zoteroDB.getLibraryVersion() <= 0) {
+            this.performedCleanSync = true
+        }
         syncManager.startCompleteSync(zoteroDB, useSmallLoadingAnimation)
     }
 
@@ -337,7 +341,6 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                             "MD5 Verification Error",
                             "The download process did not complete properly. Please retry",
                             {})
-                        firebaseAnalytics.logEvent("error_downloading_file_corrupted", Bundle())
                         attachmentStorageManager.deleteAttachment(item)
                         return
                     } else {
@@ -378,10 +381,6 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                             "The file does not exist on the Zotero server."
                         )
                     } else {
-
-                        firebaseAnalytics.logEvent(
-                            "error_downloading_attachment",
-                            Bundle().apply { putString("message", "${e.message}") })
                         presenter.attachmentDownloadError(
                             "Error Message: ${e.message}"
                         )
@@ -411,7 +410,6 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
     }
 
     override fun createNote(note: Note) {
-        firebaseAnalytics.logEvent("create_note", Bundle())
         if (state.isUsingGroup()) {
             presenter.makeToastAlert("Sorry, this isn't supported in shared collections.")
             return
@@ -431,9 +429,6 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                 }
 
                 override fun onError(e: Throwable) {
-                    firebaseAnalytics.logEvent(
-                        "create_note_error",
-                        Bundle().apply { putString("error_message", e.toString()) })
                     presenter.createErrorAlert(
                         "Error creating note",
                         "An error occurred while trying to create your note. Message: $e"
@@ -978,10 +973,10 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
         }
 
         loadCollections
-            .andThen(loadItems)
-            .andThen(db.loadTrashItemsFromDB())
             .subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())
+            .andThen(loadItems)
+            .andThen(db.loadTrashItemsFromDB())
             .doOnComplete {
                 presenter.hideBasicSyncAnimation()
                 if (db.groupID == GroupInfo.NO_GROUP_ID) {
@@ -1005,6 +1000,21 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                     db.setItemsVersion(0)
                 }
                 this.checkAllAttachmentsForModification()
+                // TODO Remove next release.
+                if (preferences.firstRunForVersion42() && !performedCleanSync) {
+                    presenter.createYesNoPrompt("Tags are now supported",
+                        "Zoo requires a full library resync if you want to access your tags. Would you like to resync your library?",
+                        "Resync",
+                        "No",
+                        {
+                            zoteroDatabase.deleteAllItems().blockingAwait()
+                            destroyLibrary()
+                            refreshLibrary()
+                        },
+                        {}
+                    )
+                }
+
             }.doOnError {
                 presenter.createErrorAlert("error loading library", "got error message ${it}", {})
             }.subscribe()

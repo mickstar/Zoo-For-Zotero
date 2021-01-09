@@ -9,8 +9,7 @@ import io.reactivex.Maybe
 import io.reactivex.Single
 import kotlinx.android.parcel.IgnoredOnParcel
 import kotlinx.android.parcel.Parcelize
-import java.util.*
-import kotlin.collections.HashMap
+import java.util.Locale
 
 /*this code is currently inactive. Just part of my project to migrate to sQL rather than using
 * json files for storage. */
@@ -348,4 +347,8 @@ interface ItemDao {
 
     @Query("DELETE FROM iteminfo WHERE `group`=:groupID")
     fun deleteAllForGroup(groupID: Int): Completable
+
+    @Transaction
+    @Query("DELETE FROM ItemInfo")
+    fun deleteAllItems(): Completable
 }

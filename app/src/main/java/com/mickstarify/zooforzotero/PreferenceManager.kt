@@ -182,6 +182,17 @@ class PreferenceManager @Inject constructor(context: Context) {
         return firstRun
     }
 
+    fun firstRunForVersion42(): Boolean {
+        /*check to see if this is the first time the user is opening on version 2.9 (42)*/
+        val firstRun = sharedPreferences.getBoolean("firstrun_version42", true)
+        if (firstRun) {
+            val editor = sharedPreferences.edit()
+            editor.putBoolean("firstrun_version42", false)
+            editor.apply()
+        }
+        return firstRun
+    }
+
     fun shouldLiveSearch(): Boolean {
         /* This preference defines whether library search should update as the user types.
         * This may be problematic for devices with a slow refresh rate or slow IO. */

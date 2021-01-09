@@ -8,7 +8,6 @@ import android.widget.CheckBox
 import android.widget.EditText
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import com.google.firebase.analytics.FirebaseAnalytics
 import com.mickstarify.zooforzotero.PreferenceManager
 import com.mickstarify.zooforzotero.R
 import com.mickstarify.zooforzotero.ZoteroAPI.Webdav
@@ -17,7 +16,7 @@ import org.jetbrains.anko.doAsync
 import org.jetbrains.anko.onComplete
 import org.jetbrains.anko.sdk27.coroutines.onClick
 import org.jetbrains.anko.toast
-import java.util.*
+import java.util.Locale
 
 class WebDAVSetup : AppCompatActivity() {
     lateinit var preferenceManager: PreferenceManager
@@ -109,8 +108,6 @@ class WebDAVSetup : AppCompatActivity() {
                 } else {
                     // i dont want to log auth errors.
                     bundle.putString("exception_message", e.message)
-                    FirebaseAnalytics.getInstance(this@WebDAVSetup)
-                        .logEvent("webdav_connection_exception", bundle)
                 }
             }
             Log.d("zotero", "testing webdav got ${status}")

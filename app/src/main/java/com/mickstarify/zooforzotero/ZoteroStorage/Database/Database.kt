@@ -9,7 +9,7 @@ import io.reactivex.Completable
 import io.reactivex.Maybe
 import io.reactivex.Single
 import io.reactivex.functions.Action
-import java.util.*
+import java.util.LinkedList
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -205,7 +205,12 @@ class ZoteroDatabase @Inject constructor(val context: Context) {
         return db.itemDao().restoreFromTrash(groupID, itemKey)
     }
 
+    fun deleteAllItems(): Completable {
+        return db.itemDao().deleteAllItems()
+    }
+
     fun deleteEverything() {
+        //todo implement.
     }
 }
 
