@@ -222,13 +222,11 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                             " If you are on a huawei device, this is a known error with their implementation of file" +
                             " access. Try changing the storage location to a custom path in settings.",
                     {})
-                firebaseAnalytics.logEvent("open_pdf_illegal_argument_exception", Bundle())
             } catch (e: FileNotFoundException) {
                 presenter.createErrorAlert("File not found",
                     "There was an error opening your PDF." +
                             "Please redownload your file.",
                     {})
-                firebaseAnalytics.logEvent("open_pdf_file_not_found", Bundle())
             }
         }.doOnError {
             if (it is FileNotFoundException) {
@@ -266,7 +264,9 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
             return
         }
         if (attachmentExists) {
-            if (zoteroDB.hasMd5Key(
+            // check the validity of the attachment before opening.
+            if (preferences.shouldCheckMd5SumBeforeOpening() &&
+                zoteroDB.hasMd5Key(
                     item,
                     onlyWebdav = preferences.isWebDAVEnabled()
                 ) && !attachmentStorageManager.validateMd5ForItem(

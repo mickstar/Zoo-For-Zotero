@@ -202,6 +202,10 @@ class PreferenceManager @Inject constructor(context: Context) {
         editor.apply()
     }
 
+    fun shouldCheckMd5SumBeforeOpening(): Boolean{
+        return sharedPreferences.getBoolean("check_md5sum_before_attachment_open", false)
+    }
+
     companion object {
         val SORT_METHOD_ASCENDING = "ASCENDING"
         val SORT_METHOD_DESCENDING = "DESCENDING"
