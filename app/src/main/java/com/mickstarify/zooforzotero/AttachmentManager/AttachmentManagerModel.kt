@@ -60,7 +60,7 @@ class AttachmentManagerModel(val presenter: Contract.Presenter, val context: Con
             ) { (context.finish()) }
         }
 
-        if (!preferenceManager.hasShownCustomStorageWarning()){
+        if (!preferenceManager.hasShownCustomStorageWarning() && attachmentStorageManager.storageMode == AttachmentStorageManager.StorageMode.CUSTOM){
             preferenceManager.setShownCustomStorageWarning(true)
             presenter.createErrorAlert("custom storage selected", "Android has imposed limitations on how the filesystem can be accessed. This will mean much slower file access compared to using the " +
                     "external cache option."
@@ -88,6 +88,8 @@ class AttachmentManagerModel(val presenter: Contract.Presenter, val context: Con
             Log.e("zotero", "Error already downloading")
             return
         }
+        // just incase it's still running.
+        this.stopCalculateMetaInformation()
         isDownloading = true
         val toDownload = LinkedList<Item>()
 
@@ -150,6 +152,7 @@ class AttachmentManagerModel(val presenter: Contract.Presenter, val context: Con
             .subscribe(object : Observer<downloadAllProgress> {
                 var localAttachmentSize = 0L
                 var nLocalAttachments = 0
+
                 override fun onComplete() {
                     calculateMetaInformation()
                     isDownloading = false
@@ -161,7 +164,7 @@ class AttachmentManagerModel(val presenter: Contract.Presenter, val context: Con
                 }
 
                 override fun onSubscribe(d: Disposable) {
-                    presenter.updateProgress("Loading", 0, toDownload.size)
+                    presenter.updateProgress("Starting Download", 0, toDownload.size)
                     downloadDisposable = d
                 }
 
@@ -231,6 +234,13 @@ class AttachmentManagerModel(val presenter: Contract.Presenter, val context: Con
         val size: Long
     )
 
+
+    fun stopCalculateMetaInformation() {
+        calculateMetadataDisposable?.dispose()
+    }
+
+    var calculateMetadataDisposable: Disposable? = null
+
     fun calculateMetaInformation() {
         /* This method scans the local storage and determines what has already been downloaded on the device. */
 
@@ -256,6 +266,7 @@ class AttachmentManagerModel(val presenter: Contract.Presenter, val context: Con
 
             override fun onSubscribe(d: Disposable) {
                 presenter.displayLoadingAnimation()
+                calculateMetadataDisposable = d
             }
 
             override fun onNext(metadata: FilesystemMetadataObject) {

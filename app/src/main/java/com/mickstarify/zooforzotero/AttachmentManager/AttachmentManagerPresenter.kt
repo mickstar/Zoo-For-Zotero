@@ -15,8 +15,8 @@ class AttachmentManagerPresenter(val view: Contract.View, context: Context) : Co
     override fun pressedDownloadAttachments() {
         if (model.isDownloading == true) {
             // this is a cancel request.
-            model.cancelDownload()
             view.setDownloadButtonState("Download All Attachments", true)
+            model.cancelDownload()
         } else {
             // download request.
             view.setDownloadButtonState("Cancel Download", true)
@@ -43,7 +43,9 @@ class AttachmentManagerPresenter(val view: Contract.View, context: Context) : Co
 
     override fun finishLoadingAnimation() {
         view.hideLibraryLoadingAnimation()
-        view.setDownloadButtonState("Download All Attachments", true)
+        if (model.isDownloading == false) {
+            view.setDownloadButtonState("Download All Attachments", true)
+        }
     }
 
     override fun makeToastAlert(message: String) {
