@@ -195,7 +195,7 @@ class AttachmentStorageManager @Inject constructor(
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                 return FileProvider.getUriForFile(
                     context,
-                    "${context.packageName}.fileprovider",
+                    "${context.packageName}.fileprovider.app",
                     file
                 )
             } else {
