@@ -1007,7 +1007,13 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                         "Resync",
                         "No",
                         {
-                            zoteroDatabase.deleteAllItems().blockingAwait()
+                            zoteroDatabase.deleteAllItemsForGroup(GroupInfo.NO_GROUP_ID).blockingAwait()
+                            groups?.forEach {
+                                val zDb = zoteroGroupDB.getGroup(it.id)
+                                zDb.destroyItemsDatabase()
+                                zoteroDatabase.deleteAllItemsForGroup(it.id).blockingAwait()
+                            }
+
                             destroyLibrary()
                             refreshLibrary()
                         },
