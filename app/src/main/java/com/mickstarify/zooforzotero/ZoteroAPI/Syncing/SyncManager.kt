@@ -3,8 +3,12 @@ package com.mickstarify.zooforzotero.ZoteroAPI.Syncing
 import android.os.Bundle
 import android.util.Log
 import com.mickstarify.zooforzotero.PreferenceManager
-import com.mickstarify.zooforzotero.ZoteroAPI.*
+import com.mickstarify.zooforzotero.ZoteroAPI.APIKeyRevokedException
+import com.mickstarify.zooforzotero.ZoteroAPI.LibraryVersionMisMatchException
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.CollectionPOJO
+import com.mickstarify.zooforzotero.ZoteroAPI.UpToDateException
+import com.mickstarify.zooforzotero.ZoteroAPI.ZoteroAPI
+import com.mickstarify.zooforzotero.ZoteroAPI.ZoteroAPIItemsResponse
 import com.mickstarify.zooforzotero.ZoteroStorage.Database.Collection
 import com.mickstarify.zooforzotero.ZoteroStorage.Database.ZoteroDatabase
 import com.mickstarify.zooforzotero.ZoteroStorage.ZoteroDB.ItemsDownloadProgress
@@ -297,7 +301,8 @@ class SyncManager (
             throw Exception("Error cannot proceed to stage 2 if library still loading.")
         }
 
-        updateDeletedEntries(db).subscribeOn(Schedulers.io()).subscribe(object: CompletableObserver {
+        updateDeletedEntries(db).subscribeOn(Schedulers.io()).subscribe(object :
+            CompletableObserver {
             override fun onSubscribe(d: Disposable) {
                 // nothing.
             }
@@ -308,9 +313,11 @@ class SyncManager (
 
             override fun onError(e: Throwable) {
                 Log.e("zotero", "there was an error processing deleted Entries, ${e}")
-                throw(e)
+                syncChangeListener.createErrorAlert(
+                    "Error Updating Deleted Items",
+                    "message: ${e}",
+                    {})
             }
-
         })
 
 
