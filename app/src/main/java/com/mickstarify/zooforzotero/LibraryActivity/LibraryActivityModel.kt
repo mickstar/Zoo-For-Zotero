@@ -339,7 +339,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                         Log.d("zotero", "md5 error on attachment ${zoteroDB.getMd5Key(item)}")
                         presenter.createErrorAlert(
                             "MD5 Verification Error",
-                            "The download process did not complete properly. Please retry",
+                            "The downloaded file does not match the accompanying md5 checksum.",
                             {})
                         attachmentStorageManager.deleteAttachment(item)
                         return
