@@ -21,9 +21,6 @@ open class ItemPOJO(
     var mtime: Double = 0.0,
     var deleted: Int
 ) : Parcelable {
-    @IgnoredOnParcel
-    var localMd5: String = ""
-
     fun getValue(key: String): Any? {
         when (key) {
             "key" -> return this.ItemKey
@@ -55,33 +52,6 @@ open class ItemPOJO(
         } else {
             "error"
         }
-    }
-
-
-    /* Matches the query text against the metadata stored in item,
-    * checks to see if we can find the text anywhere. Useful for search. */
-    fun query(queryText: String): Boolean {
-        val queryUpper = queryText.toUpperCase(Locale.ROOT)
-
-        return this.ItemKey.toUpperCase(Locale.ROOT).contains(queryUpper) ||
-                this.tags.joinToString("_").toUpperCase(Locale.ROOT).contains(queryUpper) ||
-                this.data.values.joinToString("_").toUpperCase(Locale.ROOT).contains(
-                    queryUpper
-                ) || this.creators.map {
-            it.makeString().toUpperCase(Locale.ROOT)
-        }.joinToString("_").contains(queryUpper)
-    }
-
-    fun getSortableDateString(): String {
-        val date = data["date"] ?: ""
-        if (date == "") {
-            return "ZZZZ"
-        }
-        return date
-    }
-
-    fun getSortableDateAddedString(): String {
-        return data["dateAdded"] ?: "XXXX-XX-XX"
     }
 }
 

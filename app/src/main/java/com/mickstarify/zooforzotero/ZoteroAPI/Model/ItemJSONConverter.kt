@@ -5,8 +5,7 @@ import com.google.gson.Gson
 import java.util.*
 import kotlin.collections.HashMap
 
-/* I had to write a custom json deserializer because the Zotero api has an inconsistent json output.
-* which is to say that return entries have varied parameters depending on the itemType or what info is available.*/
+/* parses the output of the zotero item json and creates a itemPOJO object. */
 class ItemJSONConverter {
     fun deserialize(jsonString: String): List<ItemPOJO> {
         if (jsonString == "[]") {
