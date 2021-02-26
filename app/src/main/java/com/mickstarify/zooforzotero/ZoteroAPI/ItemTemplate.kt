@@ -52,7 +52,9 @@ class ItemTemplate (val itemType: ItemType) {
         }
     }
 
-    fun addCreator()
+    fun addCreator() {
+
+    }
 
     fun addCreator(creator: Creator){
         val creatorObject = jsonObject.getJSONObject("creator")
