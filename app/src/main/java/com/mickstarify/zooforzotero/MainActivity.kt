@@ -20,11 +20,10 @@ class MainActivity : AppCompatActivity() {
             if (intent.action == Intent.ACTION_SEND){
                 if (intent.type == "text/plain"){
                     handleTextIntent(intent)
+                    finish()
+                    return
                 }
             }
-
-            finish()
-            return
         }
 
         val auth = AuthenticationStorage(this)
