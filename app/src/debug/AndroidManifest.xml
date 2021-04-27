@@ -22,7 +22,7 @@
             android:name=".AttachmentManager.AttachmentManager"
             android:label="@string/title_activity_attachment_manager"
             android:parentActivityName=".LibraryActivity.LibraryActivity"
-            android:theme="@style/AppTheme.NoActionBar">
+            android:theme="@style/AppTheme">
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value="com.mickstarify.zooforzotero.LibraryActivity.LibraryActivity" />
@@ -31,7 +31,7 @@
             android:name=".LibraryActivity.WebDAV.WebDAVSetup"
             android:label="@string/title_activity_web_davsetup"
             android:parentActivityName=".LibraryActivity.LibraryActivity"
-            android:theme="@style/AppTheme.NoActionBar">
+            android:theme="@style/AppTheme">
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value="com.mickstarify.zooforzotero.LibraryActivity.LibraryActivity" />
@@ -68,7 +68,7 @@
             android:name=".LibraryActivity.LibraryActivity"
             android:label="@string/title_activity_library"
             android:launchMode="singleInstance"
-            android:theme="@style/AppTheme.NoActionBar">
+            android:theme="@style/AppTheme">
             <meta-data
                 android:name="android.app.searchable"
                 android:resource="@xml/searchable" />

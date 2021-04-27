@@ -3,13 +3,12 @@ package com.mickstarify.zooforzotero.LibraryActivity.Notes
 import android.app.AlertDialog
 import android.content.Context
 import android.util.Log
+import android.view.LayoutInflater
 import android.view.View
 import android.view.inputmethod.InputMethodManager
 import android.widget.Button
 import android.widget.EditText
 import com.mickstarify.zooforzotero.R
-import org.jetbrains.anko.layoutInflater
-import org.jetbrains.anko.sdk27.coroutines.onClick
 
 
 class EditNoteDialog {
@@ -25,7 +24,7 @@ class EditNoteDialog {
         }
         val imm = context.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
         val dialogBuilder = AlertDialog.Builder(context).create()
-        val inflater = context.layoutInflater
+        val inflater = LayoutInflater.from(context)
         val dialogView: View = inflater.inflate(R.layout.dialog_add_note, null)
 
         val cancelButton = dialogView.findViewById<Button>(R.id.buttonCancel)
@@ -33,13 +32,13 @@ class EditNoteDialog {
         val editTextNote = dialogView.findViewById<EditText>(R.id.edit_note)
 
         editTextNote.setText(noteText)
-        cancelButton.onClick {
+        cancelButton.setOnClickListener {
             onEditNoteChangeListener.onCancel()
             imm.hideSoftInputFromWindow(editTextNote.windowToken, 0)
             dialogBuilder.dismiss()
         }
 
-        submitButton.onClick {
+        submitButton.setOnClickListener {
             onEditNoteChangeListener.onSubmit(editTextNote.text.toString())
             imm.hideSoftInputFromWindow(editTextNote.windowToken, 0)
             dialogBuilder.dismiss()

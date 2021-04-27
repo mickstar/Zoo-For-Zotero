@@ -2,20 +2,20 @@ package com.mickstarify.zooforzotero.LibraryActivity.WebDAV
 
 import android.app.ProgressDialog
 import android.os.Bundle
-import android.util.Log
 import android.widget.Button
 import android.widget.CheckBox
 import android.widget.EditText
+import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import com.mickstarify.zooforzotero.PreferenceManager
 import com.mickstarify.zooforzotero.R
 import com.mickstarify.zooforzotero.ZoteroAPI.Webdav
-import kotlinx.android.synthetic.main.activity_web_dav_setup.*
-import org.jetbrains.anko.doAsync
-import org.jetbrains.anko.onComplete
-import org.jetbrains.anko.sdk27.coroutines.onClick
-import org.jetbrains.anko.toast
+import io.reactivex.Completable
+import io.reactivex.CompletableObserver
+import io.reactivex.android.schedulers.AndroidSchedulers
+import io.reactivex.disposables.Disposable
+import io.reactivex.schedulers.Schedulers
 import java.util.Locale
 
 class WebDAVSetup : AppCompatActivity() {
@@ -25,7 +25,6 @@ class WebDAVSetup : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_web_dav_setup)
-        setSupportActionBar(toolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
         preferenceManager = PreferenceManager(this)
@@ -44,10 +43,10 @@ class WebDAVSetup : AppCompatActivity() {
         val cancelButton = findViewById<Button>(R.id.btn_cancel)
 
         if (address_editText.text.toString() != "") {
-            toast("WebDAV is already configured.")
+            Toast.makeText(this, "WebDAV is already configured.", Toast.LENGTH_SHORT).show()
         }
 
-        submitButton.onClick {
+        submitButton.setOnClickListener {
             val address = formatAddress(address_editText.text.toString())
             address_editText.setText(address) // update the address box with https:// if user forgot.
             val username = username_editText.text.toString()
@@ -59,7 +58,7 @@ class WebDAVSetup : AppCompatActivity() {
             }
         }
 
-        cancelButton.onClick {
+        cancelButton.setOnClickListener {
             finish()
         }
     }
@@ -86,44 +85,36 @@ class WebDAVSetup : AppCompatActivity() {
         return mAddress
     }
 
-    fun allowInsecureSSL(): Boolean{
+    fun allowInsecureSSL(): Boolean {
         return findViewById<CheckBox>(R.id.checkBox_allow_insecure_ssl).isChecked
     }
 
     fun makeConnection(address: String, username: String, password: String) {
         val webDav = Webdav(address, username, password, allowInsecureSSL())
         startProgressDialog()
-        doAsync {
+        Completable.fromAction {
             var status = false // default to false incase we get an exception
             var hadAuthenticationError = false
             var errorMessage = "unset"
-            try {
-                status = webDav.testConnection()
-            } catch (e: Exception) {
-                errorMessage = e.message!!
-                val bundle = Bundle()
-                Log.e("zotero", "got exception ${e}")
-                if (e.message?.contains("401 Unauthorized") == true) {
-                    hadAuthenticationError = true
-                } else {
-                    // i dont want to log auth errors.
-                    bundle.putString("exception_message", e.message)
-                }
+            status = webDav.testConnection()
+            if (status == false) {
+                throw Exception("Unspecified error.")
             }
-            Log.d("zotero", "testing webdav got ${status}")
-            onComplete {
-                hideProgressDialog()
-                if (status) {
+        }.subscribeOn(Schedulers.io())
+            .observeOn(AndroidSchedulers.mainThread())
+            .subscribe(object : CompletableObserver {
+                override fun onSubscribe(d: Disposable) {
+                }
+
+                override fun onComplete() {
                     setWebDAVAuthentication(address, username, password)
-                } else {
-                    if (hadAuthenticationError) {
-                        notifyFailed("Authentication Error. Message: ${errorMessage}")
-                    } else {
-                        notifyFailed("Error setting up webdav, message: $errorMessage")
-                    }
                 }
-            }
-        }
+
+                override fun onError(e: Throwable) {
+                    notifyFailed("Error setting up webdav, message: $e")
+                }
+
+            })
     }
 
     var progressDialog: ProgressDialog? = null
@@ -159,7 +150,7 @@ class WebDAVSetup : AppCompatActivity() {
 
     fun setWebDAVAuthentication(address: String, username: String, password: String) {
         preferenceManager.setWebDAVAuthentication(address, username, password, allowInsecureSSL())
-        toast("Successfully added WebDAV.")
+        Toast.makeText(this, "Successfully added WebDAV.", Toast.LENGTH_SHORT).show()
         this.finish()
     }
 
