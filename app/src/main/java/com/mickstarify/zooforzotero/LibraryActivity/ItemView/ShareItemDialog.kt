@@ -3,6 +3,7 @@ package com.mickstarify.zooforzotero.LibraryActivity.ItemView
 import android.app.AlertDialog
 import android.content.Context
 import android.util.Log
+import android.view.LayoutInflater
 import android.view.View
 import android.widget.Button
 import android.widget.CheckBox
@@ -10,9 +11,8 @@ import android.widget.EditText
 import android.widget.LinearLayout
 import com.mickstarify.zooforzotero.R
 import com.mickstarify.zooforzotero.ZoteroStorage.Database.Item
-import org.jetbrains.anko.layoutInflater
-import org.jetbrains.anko.sdk27.coroutines.onClick
-import java.util.*
+import java.util.HashMap
+import java.util.LinkedList
 
 class ShareItemDialog(item: Item) {
 
@@ -42,7 +42,7 @@ class ShareItemDialog(item: Item) {
         }
 
         val dialogBuilder = AlertDialog.Builder(context).create()
-        val inflater = context.layoutInflater
+        val inflater = LayoutInflater.from(context)
         val dialogView: View = inflater.inflate(R.layout.dialog_share_item, null)
 
         val previewTextView = dialogView.findViewById<EditText>(R.id.edittext_share_preview)
@@ -65,12 +65,12 @@ class ShareItemDialog(item: Item) {
         }
 
         val cancelButton = dialogView.findViewById<Button>(R.id.button_cancel)
-        cancelButton.onClick {
+        cancelButton.setOnClickListener {
             dialogBuilder.dismiss()
         }
 
         val submitButton = dialogView.findViewById<Button>(R.id.button_share)
-        submitButton.onClick {
+        submitButton.setOnClickListener {
             shareItemListener?.shareItem(previewTextView.text.toString())
         }
         

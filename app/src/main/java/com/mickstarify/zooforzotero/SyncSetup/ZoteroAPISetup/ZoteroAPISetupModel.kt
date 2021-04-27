@@ -1,12 +1,15 @@
 package com.mickstarify.zooforzotero.SyncSetup.ZoteroAPISetup
 
+import android.annotation.SuppressLint
 import android.util.Log
 import com.mickstarify.zooforzotero.BuildConfig
 import com.mickstarify.zooforzotero.SyncSetup.AuthenticationStorage
+import io.reactivex.Completable
+import io.reactivex.Observable
+import io.reactivex.android.schedulers.AndroidSchedulers
+import io.reactivex.schedulers.Schedulers
 import oauth.signpost.commonshttp.CommonsHttpOAuthConsumer
 import oauth.signpost.commonshttp.CommonsHttpOAuthProvider
-import org.jetbrains.anko.doAsync
-import org.jetbrains.anko.onComplete
 
 class ZoteroAPISetupModel(val presenter: Contract.Presenter) : Contract.Model {
     private val API_URL = "https://api.zotero.org"
@@ -50,25 +53,29 @@ class ZoteroAPISetupModel(val presenter: Contract.Presenter) : Contract.Model {
     )
 
     override fun establishAPIConnection() {
-        doAsync {
-            val requestURL =
-                OAuthProvider.retrieveRequestToken(OAuthConsumer, "zooforzotero://oauth_callback")
-
-            onComplete {
+        val d = Observable.fromCallable {
+            OAuthProvider.retrieveRequestToken(OAuthConsumer, "zooforzotero://oauth_callback")
+        }.subscribeOn(Schedulers.io())
+            .observeOn(AndroidSchedulers.mainThread())
+            .subscribe { requestURL ->
                 Log.d("zotero", "loading URL $requestURL")
                 presenter.loadAuthorizationURL(requestURL)
             }
-        }
     }
 
+
+    @SuppressLint("CheckResult")
     override fun handleOAuthCallback(
         oauth_token: String,
         oauth_verifier: String,
         authenticationStorage: AuthenticationStorage
     ) {
-        doAsync {
+        Completable.fromAction {
             OAuthProvider.retrieveAccessToken(OAuthConsumer, oauth_verifier)
-            onComplete {
+        }
+            .subscribeOn(Schedulers.io())
+            .observeOn(AndroidSchedulers.mainThread())
+            .subscribe {
                 val params = OAuthProvider.responseParameters
                 Log.d("zotero", "userID ${params.getFirst("userID")}")
                 val username = params.getFirst("username")
@@ -84,6 +91,5 @@ class ZoteroAPISetupModel(val presenter: Contract.Presenter) : Contract.Model {
                 presenter.openLibraryView()
             }
 
-        }
     }
 }

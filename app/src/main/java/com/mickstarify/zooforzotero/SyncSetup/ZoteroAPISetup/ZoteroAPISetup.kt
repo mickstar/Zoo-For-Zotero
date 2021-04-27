@@ -17,7 +17,6 @@ import com.google.firebase.analytics.FirebaseAnalytics
 import com.mickstarify.zooforzotero.LibraryActivity.LibraryActivity
 import com.mickstarify.zooforzotero.R
 import com.mickstarify.zooforzotero.SyncSetup.AuthenticationStorage
-import kotlinx.android.synthetic.main.activity_zotero_api_setup.*
 
 
 class ZoteroAPISetup : AppCompatActivity(), Contract.View {
@@ -87,7 +86,6 @@ class ZoteroAPISetup : AppCompatActivity(), Contract.View {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_zotero_api_setup)
-        setSupportActionBar(toolbar)
         firebaseAnalytics = FirebaseAnalytics.getInstance(this)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 

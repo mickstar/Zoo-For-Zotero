@@ -16,7 +16,6 @@ import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.fragment.app.Fragment
 import com.mickstarify.zooforzotero.R
 import com.mickstarify.zooforzotero.ZoteroStorage.Database.Item
-import org.jetbrains.anko.sdk27.coroutines.onLongClick
 
 private const val ARG_ATTACHMENT = "attachment"
 
@@ -86,7 +85,7 @@ class ItemAttachmentEntry : Fragment() {
                 }
             }
 
-            layout.onLongClick {
+            layout.setOnLongClickListener {
                 AlertDialog.Builder(context)
                     .setTitle("Attachment")
                     .setItems(
@@ -104,6 +103,7 @@ class ItemAttachmentEntry : Fragment() {
                             }
 
                         }).show()
+                true
             }
         }
         return view

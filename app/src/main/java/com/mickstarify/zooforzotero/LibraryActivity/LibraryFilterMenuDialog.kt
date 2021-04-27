@@ -5,14 +5,13 @@ import android.content.Context
 import android.content.DialogInterface
 import android.os.Bundle
 import android.util.Log
+import android.view.LayoutInflater
 import android.view.View
 import android.widget.Button
 import android.widget.CheckBox
 import com.google.firebase.analytics.FirebaseAnalytics
 import com.mickstarify.zooforzotero.PreferenceManager
 import com.mickstarify.zooforzotero.R
-import org.jetbrains.anko.layoutInflater
-import org.jetbrains.anko.sdk27.coroutines.onClick
 
 class LibraryFilterMenuDialog(val context: Context, val onFilterChange: (() -> (Unit))) {
     lateinit var preferences: PreferenceManager
@@ -85,7 +84,7 @@ class LibraryFilterMenuDialog(val context: Context, val onFilterChange: (() -> (
 
     fun show() {
         val dialogBuilder = AlertDialog.Builder(context).create()
-        val inflater = context.layoutInflater
+        val inflater = LayoutInflater.from(context)
         val dialogView: View = inflater.inflate(R.layout.dialog_filter_menu, null)
 
         val sortingMethodButton = dialogView.findViewById<Button>(R.id.button_sort_by)
@@ -108,16 +107,16 @@ class LibraryFilterMenuDialog(val context: Context, val onFilterChange: (() -> (
 
             })
 
-        sortingMethodButton.onClick { builder.show() }
+        sortingMethodButton.setOnClickListener { builder.show() }
 
         val cancelButton = dialogView.findViewById<Button>(R.id.btn_cancel)
         val submitButton = dialogView.findViewById<Button>(R.id.btn_submit)
 
-        cancelButton.onClick {
+        cancelButton.setOnClickListener {
             dialogBuilder.dismiss()
         }
 
-        submitButton.onClick {
+        submitButton.setOnClickListener {
             saveSettings(checkbox_show_only_notes.isChecked, checkbox_show_only_pdf.isChecked)
             dialogBuilder.dismiss()
         }
@@ -129,7 +128,7 @@ class LibraryFilterMenuDialog(val context: Context, val onFilterChange: (() -> (
             setSortButtonDescending()
         }
 
-        sortingOrderButton?.onClick {
+        sortingOrderButton?.setOnClickListener {
             if (preferences.isSortedAscendingly()) {
                 setSortButtonDescending()
                 preferences.setSortDirection(PreferenceManager.SORT_METHOD_DESCENDING)

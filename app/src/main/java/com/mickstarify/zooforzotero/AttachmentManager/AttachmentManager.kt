@@ -12,15 +12,12 @@ import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import com.mickstarify.zooforzotero.R
-import kotlinx.android.synthetic.main.activity_attachment_manager.*
-import org.jetbrains.anko.sdk27.coroutines.onClick
 
 class AttachmentManager : AppCompatActivity(), Contract.View {
     lateinit var presenter: Contract.Presenter
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_attachment_manager)
-        setSupportActionBar(toolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
         presenter = AttachmentManagerPresenter(this, this)
@@ -28,7 +25,7 @@ class AttachmentManager : AppCompatActivity(), Contract.View {
 
     override fun initUI() {
         findViewById<LinearLayout>(R.id.ll_meta_information).visibility = View.INVISIBLE
-        findViewById<Button>(R.id.button_download).onClick {
+        findViewById<Button>(R.id.button_download).setOnClickListener {
             presenter.pressedDownloadAttachments()
         }
         setDownloadButtonState("Loading Library", false)

@@ -4,9 +4,11 @@ import android.app.ProgressDialog
 import android.app.SearchManager
 import android.content.Context
 import android.content.Intent
+import android.content.res.Configuration
 import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
+import android.os.PersistableBundle
 import android.util.Log
 import android.util.SparseArray
 import android.view.Menu
@@ -40,7 +42,6 @@ import com.mickstarify.zooforzotero.ZoteroAPI.Model.Note
 import com.mickstarify.zooforzotero.ZoteroStorage.Database.Collection
 import com.mickstarify.zooforzotero.ZoteroStorage.Database.GroupInfo
 import com.mickstarify.zooforzotero.ZoteroStorage.Database.Item
-import kotlinx.android.synthetic.main.activity_library.*
 
 
 class LibraryActivity : AppCompatActivity(), Contract.View,
@@ -77,6 +78,7 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
     lateinit var sharedCollections: Menu
 
     override fun initUI() {
+        setupActionbar()
         val navigationView = findViewById<NavigationView>(R.id.nav_view_library)
         navigationView.setCheckedItem(R.id.my_library)
         collectionsMenu = navigationView.menu.addSubMenu(
@@ -202,6 +204,10 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
 
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        if (mDrawerToggle.onOptionsItemSelected(item)) {
+            return true
+        }
+
         when (item.itemId) {
             R.id.filter_menu -> {
                 showFilterMenu()
@@ -234,6 +240,8 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
 
     lateinit var searchView: SearchView
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
+        super.onCreateOptionsMenu(menu)
+
         menuInflater.inflate(R.menu.activity_library_actionbar, menu)
 
         val menuItem = menu.findItem(R.id.search)
@@ -246,7 +254,6 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
                 presenter.closeQuery()
                 return true
             }
-
         })
 
         val searchManager = getSystemService(Context.SEARCH_SERVICE) as SearchManager
@@ -274,7 +281,6 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
 
             })
         }
-
         return true
     }
 
@@ -399,25 +405,39 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
         }
     }
 
+    lateinit var mDrawerToggle: ActionBarDrawerToggle
     private fun setupActionbar() {
-        setSupportActionBar(toolbar)
-        supportActionBar?.setDisplayShowHomeEnabled(false)
-        supportActionBar?.setHomeButtonEnabled(false)
         val drawer = findViewById<DrawerLayout>(R.id.drawerlayout_library)
-        val toggle = ActionBarDrawerToggle(
+        mDrawerToggle = ActionBarDrawerToggle(
             this,
             drawer,
-            toolbar,
             R.string.navigation_drawer_open,
             R.string.navigation_drawer_close
         )
-        drawer.addDrawerListener(toggle)
-        toggle.syncState()
+
+        mDrawerToggle.isDrawerIndicatorEnabled = true
+        mDrawerToggle.isDrawerSlideAnimationEnabled = true
+
+        drawer.addDrawerListener(mDrawerToggle)
+        mDrawerToggle.syncState()
+
+        supportActionBar?.setDisplayShowHomeEnabled(true)
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
+        supportActionBar?.show()
+    }
+
+    override fun onPostCreate(savedInstanceState: Bundle?, persistentState: PersistableBundle?) {
+        super.onPostCreate(savedInstanceState, persistentState)
+        mDrawerToggle.syncState()
+    }
+
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        mDrawerToggle.syncState()
     }
 
     override fun setTitle(title: String) {
-        this.setupActionbar()
-        this.supportActionBar?.title = title
+        supportActionBar?.title = title
     }
 
     override fun showItemDialog(

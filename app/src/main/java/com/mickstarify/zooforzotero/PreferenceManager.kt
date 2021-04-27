@@ -2,7 +2,7 @@ package com.mickstarify.zooforzotero
 
 import android.content.Context
 import android.util.Log
-import org.jetbrains.anko.defaultSharedPreferences
+import androidx.preference.PreferenceManager
 import javax.inject.Inject
 
 enum class SortMethod {
@@ -13,7 +13,7 @@ enum class SortMethod {
 }
 
 class PreferenceManager @Inject constructor(context: Context) {
-    val sharedPreferences = context.defaultSharedPreferences
+    val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
 
     fun setSortMethod(method: String) {
         val sortMethod = stringToSortMethod(method)
