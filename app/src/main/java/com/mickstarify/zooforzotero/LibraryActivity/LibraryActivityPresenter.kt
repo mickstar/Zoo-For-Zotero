@@ -2,6 +2,8 @@ package com.mickstarify.zooforzotero.LibraryActivity
 
 import android.content.Context
 import android.util.Log
+import androidx.lifecycle.ViewModelProvider
+import com.mickstarify.zooforzotero.LibraryActivity.ViewModels.LibraryListViewModel
 import com.mickstarify.zooforzotero.SortMethod
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Note
 import com.mickstarify.zooforzotero.ZoteroStorage.Database.Collection
@@ -11,6 +13,8 @@ import java.util.LinkedList
 import java.util.Locale
 
 class LibraryActivityPresenter(val view: Contract.View, context: Context) : Contract.Presenter {
+    override lateinit var libraryListViewModel: LibraryListViewModel
+
     val sortMethod = compareBy<Item> {
         when (model.preferences.getSortMethod()) {
             SortMethod.TITLE -> it.getTitle().toLowerCase(Locale.ROOT)
@@ -19,7 +23,7 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
             SortMethod.AUTHOR -> {
                 val authorText = it.getAuthor().toLowerCase(Locale.ROOT)
                 // force empty authors to the bottom. Just like the zotero desktop client.
-                if (authorText == ""){
+                if (authorText == "") {
                     "zzz"
                 } else {
                     authorText
@@ -393,6 +397,9 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
     private val model = LibraryActivityModel(this, context)
 
     init {
+        libraryListViewModel =
+            ViewModelProvider(view as LibraryActivity).get(LibraryListViewModel::class.java)
+
         view.initUI()
         view.showLoadingAnimation(true)
         view.showLibraryContentDisplay("Loading your library content.")

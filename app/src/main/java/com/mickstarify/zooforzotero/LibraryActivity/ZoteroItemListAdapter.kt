@@ -42,9 +42,9 @@ class ZoteroItemListAdapter(val context: Context, var list: List<ListEntry>) : B
     }
 
     fun initItem(item: Item, view: View) {
-        val lbl_title: TextView = view.findViewById(R.id.txt_title) as TextView
-        val author = view.findViewById<TextView>(R.id.txt_author)
-        val img: ImageView = view.findViewById(R.id.imageView) as ImageView
+        val lbl_title: TextView = view.findViewById(R.id.TextView_library_list_title) as TextView
+        val author = view.findViewById<TextView>(R.id.TextView_library_list_author)
+        val img: ImageView = view.findViewById(R.id.imageView_library_list_image) as ImageView
         var icon: Int = R.drawable.treeitem_2x
         when (item.itemType) {
             "note" -> {
@@ -186,9 +186,9 @@ class ZoteroItemListAdapter(val context: Context, var list: List<ListEntry>) : B
     }
 
     fun initCollection(collection: Collection, view: View) {
-        val lbl_title: TextView = view.findViewById(R.id.txt_title) as TextView
-        val author = view.findViewById<TextView>(R.id.txt_author)
-        val img: ImageView = view.findViewById(R.id.imageView) as ImageView
+        val lbl_title: TextView = view.findViewById(R.id.TextView_library_list_title) as TextView
+        val author = view.findViewById<TextView>(R.id.TextView_library_list_author)
+        val img: ImageView = view.findViewById(R.id.imageView_library_list_image) as ImageView
         img.setImageResource(R.drawable.treesource_collection_2x)
         lbl_title.text = collection.name
         author.text = "Subcollection"

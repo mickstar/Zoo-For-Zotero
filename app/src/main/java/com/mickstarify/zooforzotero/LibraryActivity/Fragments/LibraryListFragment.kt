@@ -6,8 +6,11 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.mickstarify.zooforzotero.LibraryActivity.ViewModels.LibraryListViewModel
 import com.mickstarify.zooforzotero.R
+import com.mickstarify.zooforzotero.adapters.LibraryListRecyclerViewAdapter
 
 class LibraryListFragment : Fragment() {
 
@@ -27,6 +30,13 @@ class LibraryListFragment : Fragment() {
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
         viewModel = ViewModelProvider(requireActivity()).get(LibraryListViewModel::class.java)
+
+        val recyclerView = requireView().findViewById<RecyclerView>(R.id.recyclerView)
+
+        viewModel.getItems().observe(viewLifecycleOwner) { entries ->
+            recyclerView.adapter = LibraryListRecyclerViewAdapter(entries)
+            recyclerView.layoutManager = LinearLayoutManager(requireContext())
+        }
     }
 
 }
