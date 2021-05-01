@@ -318,6 +318,11 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
             this.showEmptyList()
             return
         }
+        /*
+        * TODO THIS WILL NEED TO BE REPLACED VERY SOON JUST FGOR DEBUG.
+        * */
+        presenter.libraryListViewModel.setItems(entries)
+        return
         this.hideLibraryContentDisplay()
         val listView: ListView = findViewById(R.id.library_listview)
         listView.adapter = ZoteroItemListAdapter(this, entries)
@@ -361,7 +366,6 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
 
             override fun onScrollStateChanged(p0: AbsListView?, p1: Int) {
             }
-
         })
     }
 

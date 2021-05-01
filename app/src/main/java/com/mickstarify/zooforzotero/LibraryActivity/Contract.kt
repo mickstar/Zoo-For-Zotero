@@ -1,5 +1,6 @@
 package com.mickstarify.zooforzotero.LibraryActivity
 
+import com.mickstarify.zooforzotero.LibraryActivity.ViewModels.LibraryListViewModel
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Note
 import com.mickstarify.zooforzotero.ZoteroStorage.Database.Collection
 import com.mickstarify.zooforzotero.ZoteroStorage.Database.GroupInfo
@@ -95,6 +96,8 @@ interface Contract {
         fun onTagOpen(tagName: String)
         fun showLoadingAlertDialog(message: String)
         fun hideLoadingAlertDialog()
+
+        var libraryListViewModel: LibraryListViewModel
     }
 
     interface Model {
