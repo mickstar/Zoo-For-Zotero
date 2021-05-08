@@ -15,8 +15,6 @@ import android.view.Menu
 import android.view.MenuItem
 import android.view.View
 import android.view.WindowManager
-import android.widget.AbsListView
-import android.widget.ListView
 import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
@@ -31,6 +29,7 @@ import androidx.drawerlayout.widget.DrawerLayout
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.google.android.material.navigation.NavigationView
 import com.mickstarify.zooforzotero.AttachmentManager.AttachmentManager
+import com.mickstarify.zooforzotero.LibraryActivity.Fragments.LibraryListFragment
 import com.mickstarify.zooforzotero.LibraryActivity.ItemView.ItemAttachmentEntry
 import com.mickstarify.zooforzotero.LibraryActivity.ItemView.ItemViewFragment
 import com.mickstarify.zooforzotero.LibraryActivity.Notes.NoteInteractionListener
@@ -116,6 +115,9 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
 
         val swipeRefresh = findViewById<SwipeRefreshLayout>(R.id.library_swipe_refresh)
         swipeRefresh.setOnRefreshListener(this)
+
+        val fmt = supportFragmentManager.beginTransaction()
+        fmt.replace(R.id.fragment_library, LibraryListFragment())
     }
 
     val collectionKeyByMenuId = SparseArray<String>()
@@ -321,52 +323,52 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
         /*
         * TODO THIS WILL NEED TO BE REPLACED VERY SOON JUST FGOR DEBUG.
         * */
+        this.hideLibraryContentDisplay()
         presenter.libraryListViewModel.setItems(entries)
         return
-        this.hideLibraryContentDisplay()
-        val listView: ListView = findViewById(R.id.library_listview)
-        listView.adapter = ZoteroItemListAdapter(this, entries)
-
-
-        listView.setOnItemLongClickListener { _, _, position, _ ->
-            val entry = listView.adapter.getItem(position) as ListEntry
-            if (entry.isCollection()) {
-                presenter.setCollection(entry.getCollection().name, isSubCollection = true)
-            } else {
-                presenter.selectItem(entry.getItem(), longPress = true)
-            }
-            true
-        }
-
-        listView.setOnItemClickListener { _, _, position: Int, _ ->
-            val entry = listView.adapter.getItem(position) as ListEntry
-            if (entry.isCollection()) {
-                presenter.setCollection(entry.getCollection().key, isSubCollection = true)
-            } else {
-                presenter.selectItem(entry.getItem(), false)
-            }
-        }
-
-        val swipeRefreshLayout = findViewById<SwipeRefreshLayout>(R.id.library_swipe_refresh)
-
-        listView.setOnScrollListener(object : AbsListView.OnScrollListener {
-            override fun onScroll(
-                view: AbsListView,
-                firstVisibleItem: Int,
-                visibleItemCount: Int,
-                totalItemCount: Int
-            ) {
-                if (listView.getChildAt(0) != null) {
-                    swipeRefreshLayout.isEnabled =
-                        listView.firstVisiblePosition == 0 && listView.getChildAt(
-                            0
-                        ).top == 0
-                }
-            }
-
-            override fun onScrollStateChanged(p0: AbsListView?, p1: Int) {
-            }
-        })
+//        val listView: ListView = findViewById(R.id.library_listview)
+//        listView.adapter = ZoteroItemListAdapter(this, entries)
+//
+//
+//        listView.setOnItemLongClickListener { _, _, position, _ ->
+//            val entry = listView.adapter.getItem(position) as ListEntry
+//            if (entry.isCollection()) {
+//                presenter.setCollection(entry.getCollection().name, isSubCollection = true)
+//            } else {
+//                presenter.selectItem(entry.getItem(), longPress = true)
+//            }
+//            true
+//        }
+//
+//        listView.setOnItemClickListener { _, _, position: Int, _ ->
+//            val entry = listView.adapter.getItem(position) as ListEntry
+//            if (entry.isCollection()) {
+//                presenter.setCollection(entry.getCollection().key, isSubCollection = true)
+//            } else {
+//                presenter.selectItem(entry.getItem(), false)
+//            }
+//        }
+//
+//        val swipeRefreshLayout = findViewById<SwipeRefreshLayout>(R.id.library_swipe_refresh)
+//
+//        listView.setOnScrollListener(object : AbsListView.OnScrollListener {
+//            override fun onScroll(
+//                view: AbsListView,
+//                firstVisibleItem: Int,
+//                visibleItemCount: Int,
+//                totalItemCount: Int
+//            ) {
+//                if (listView.getChildAt(0) != null) {
+//                    swipeRefreshLayout.isEnabled =
+//                        listView.firstVisiblePosition == 0 && listView.getChildAt(
+//                            0
+//                        ).top == 0
+//                }
+//            }
+//
+//            override fun onScrollStateChanged(p0: AbsListView?, p1: Int) {
+//            }
+//        })
     }
 
     override fun onRefresh() {

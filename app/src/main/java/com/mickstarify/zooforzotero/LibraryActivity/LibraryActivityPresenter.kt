@@ -410,6 +410,18 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
             model.loadLibraryLocally()
             model.loadGroups()
         }
+
+        libraryListViewModel.getOnItemClicked().observe(view) { item ->
+            this.selectItem(item, longPress = false)
+        }
+
+        libraryListViewModel.getOnAttachmentClicked().observe(view) {
+            this.openAttachment(it)
+        }
+
+        libraryListViewModel.getOnCollectionClicked().observe(view) {
+            this.setCollection(it.key, isSubCollection = true)
+        }
     }
 
     // extension function to sort lists of items

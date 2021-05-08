@@ -9,6 +9,7 @@ import io.reactivex.Maybe
 import io.reactivex.Single
 import kotlinx.android.parcel.IgnoredOnParcel
 import kotlinx.android.parcel.Parcelize
+import java.util.LinkedList
 import java.util.Locale
 
 /*this code is currently inactive. Just part of my project to migrate to sQL rather than using
@@ -55,6 +56,10 @@ class Item : Parcelable {
         projection = arrayOf("collectionKey")
     )
     lateinit var collections: List<String>
+
+    @IgnoredOnParcel
+    @Ignore
+    var attachments = LinkedList<Item>()
 
     fun getGroup(): Int {
         return itemInfo.groupParent
@@ -200,7 +205,7 @@ class Item : Parcelable {
 
         // I probably should have just used file extensions from the beginning...
         if (extension == "UNKNOWN") {
-            val filename = if(this.data.containsKey("filename")){
+            val filename = if (this.data.containsKey("filename")) {
                 this.data["filename"]
             } else {
                 this.data["title"]
@@ -208,6 +213,20 @@ class Item : Parcelable {
             return filename?.split(".")?.last() ?: "UNKNOWN"
         }
         return extension
+    }
+
+    fun getPdfAttachment(): Item? {
+        /*
+        * If the item has a PDF attachment, this will return it.
+        * Otherwise it will return null
+        * */
+
+        for (item in attachments) {
+            if (item.isDownloadable() && item.getFileExtension() == "pdf") {
+                return item
+            }
+        }
+        return null
     }
 }
 

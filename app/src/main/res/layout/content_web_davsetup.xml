@@ -87,7 +87,6 @@
         android:id="@+id/btn_cancel"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginStart="12dp"
         android:layout_marginTop="12dp"
         android:text="@android:string/cancel"
         app:layout_constraintStart_toStartOf="parent"
@@ -97,7 +96,6 @@
         android:id="@+id/btn_submit"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginEnd="12dp"
         android:text="Login"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="@+id/btn_cancel" />
@@ -112,25 +110,5 @@
         android:textSize="18sp"
         app:layout_constraintStart_toStartOf="@+id/textView_username"
         app:layout_constraintTop_toBottomOf="@+id/textView_username" />
-
-    <LinearLayout
-        android:layout_width="359dp"
-        android:layout_height="420dp"
-        android:orientation="vertical"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/btn_cancel">
-
-        <ScrollView
-            android:layout_width="match_parent"
-            android:layout_height="match_parent">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical" />
-        </ScrollView>
-    </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

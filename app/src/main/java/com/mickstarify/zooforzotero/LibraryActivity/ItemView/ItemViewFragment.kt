@@ -4,8 +4,8 @@ import android.content.Context
 import android.os.Bundle
 import android.util.Log
 import android.view.*
-import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.widget.Toolbar
+import android.widget.ImageButton
+import android.widget.TextView
 import androidx.fragment.app.Fragment
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.mickstarify.zooforzotero.LibraryActivity.Notes.EditNoteDialog
@@ -58,37 +58,9 @@ class ItemViewFragment : BottomSheetDialogFragment(),
             attachments = it.getParcelableArrayList<Item>(ARG_ATTACHMENTS)!!
             notes = it.getParcelableArrayList<Note>(ARG_NOTES)!!
         }
-        setHasOptionsMenu(true) //so we can set custom menu options
     }
 
-    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
-        inflater.inflate(R.menu.fragment_library_item_actionbar, menu)
-        // idk why these library activity items are being inflated...
-        menu.removeItem(R.id.settings)
-        menu.removeItem(R.id.search)
-        menu.removeItem(R.id.webdav_setup)
-        menu.removeItem(R.id.filter_menu)
-        menu.removeItem(R.id.zotero_save)
-        menu.removeItem(R.id.attachment_manager)
-    }
-
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        when (item.itemId) {
-            R.id.add_note -> {
-                this.showCreateNoteDialog()
-            }
-
-            R.id.share_item -> {
-                this.showShareItemDialog()
-            }
-
-            else -> {
-                Log.d("zotero", "item fragmenmt menu item clicked")
-            }
-        }
-
-        return super.onOptionsItemSelected(item)
-    }
+    // todo add share button and add notes button.
 
     private fun showShareItemDialog() {
         ShareItemDialog(item).show(context, this)
@@ -110,18 +82,12 @@ class ItemViewFragment : BottomSheetDialogFragment(),
 
             })
     }
-
-    var toolbar: Toolbar? = null
-
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
         val view = inflater.inflate(R.layout.fragment_item_main, container, false)
 
-        toolbar = view.findViewById(R.id.item_fragment_toolbar)
-        (activity as AppCompatActivity).setSupportActionBar(toolbar)
-        (activity as AppCompatActivity).title = item.getTitle()
 
         addTextEntry("Item Type", item.data["itemType"] ?: "Unknown")
         addTextEntry("title", item.getTitle())
@@ -139,8 +105,24 @@ class ItemViewFragment : BottomSheetDialogFragment(),
         this.addAttachments(attachments)
         this.populateNotes(notes)
         this.populateTags(item.tags.map { it.tag })
-
         return view
+    }
+
+    override fun onAttachFragment(childFragment: Fragment) {
+        super.onAttachFragment(childFragment)
+
+        val addNotesButton = requireView().findViewById<ImageButton>(R.id.imageButton_add_notes)
+        val shareButton = requireView().findViewById<ImageButton>(R.id.imageButton_share_item)
+
+        addNotesButton.setOnClickListener {
+            showCreateNoteDialog()
+        }
+        shareButton.setOnClickListener {
+            showShareItemDialog()
+        }
+
+        val textViewTitle = requireView().findViewById<TextView>(R.id.textView_item_toolbar_title)
+        textViewTitle.text = item.getTitle()
     }
 
     private fun populateTags(tags: List<String>) {
@@ -213,7 +195,6 @@ class ItemViewFragment : BottomSheetDialogFragment(),
     override fun onDetach() {
         super.onDetach()
         listener = null
-        toolbar = null
     }
 
     /**
