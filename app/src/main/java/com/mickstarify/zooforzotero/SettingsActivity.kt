@@ -5,9 +5,9 @@ import android.content.SharedPreferences
 import android.os.Bundle
 import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
-import androidx.preference.EditTextPreference
+import androidx.preference.Preference
 import androidx.preference.PreferenceFragmentCompat
-import androidx.preference.SwitchPreference
+import com.mickstarify.zooforzotero.LibraryActivity.WebDAV.WebDAVSetup
 import com.mickstarify.zooforzotero.ZoteroStorage.AttachmentStorageManager
 import com.mickstarify.zooforzotero.ZoteroStorage.STORAGE_ACCESS_REQUEST
 import javax.inject.Inject
@@ -47,29 +47,6 @@ class SettingsActivity : AppCompatActivity() {
         SharedPreferences.OnSharedPreferenceChangeListener {
         override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
             setPreferencesFromResource(R.xml.root_preferences, rootKey)
-            val preferenceManager = PreferenceManager(context!!)
-            val username = findPreference<EditTextPreference>("webdav_username")
-            username?.summary = if (preferenceManager.getWebDAVUsername() == "") {
-                "No Username set."
-            } else {
-                preferenceManager.getWebDAVUsername()
-            }
-            val address = findPreference<EditTextPreference>("webdav_address")
-            address?.summary = preferenceManager.getWebDAVAddress()
-            val password = findPreference<EditTextPreference>("webdav_password")
-            password?.summary = if (preferenceManager.getWebDAVPassword() == "") {
-                "No password set."
-            } else {
-                "***********"
-            }
-
-            // check to see if user has ever setup webDAV before.
-            if (preferenceManager.getWebDAVAddress() == "") {
-                val pref = findPreference<SwitchPreference>("use_webdav")
-                pref?.isEnabled = false
-                pref?.summary = "Please use the Setup WebDAV option from the Library view."
-                // rather them do it in the activity as that will check the connection.
-            }
         }
 
         override fun onResume() {
@@ -83,6 +60,16 @@ class SettingsActivity : AppCompatActivity() {
             super.onPause()
             preferenceScreen.sharedPreferences
                 .unregisterOnSharedPreferenceChangeListener(this)
+        }
+
+        override fun onPreferenceTreeClick(preference: Preference?): Boolean {
+            if (preference?.key == "configure_webdav") {
+                val intent = Intent(requireContext(), WebDAVSetup::class.java)
+                startActivity(intent)
+                return true
+            } else {
+                return super.onPreferenceTreeClick(preference)
+            }
         }
 
         override fun onSharedPreferenceChanged(

@@ -10,9 +10,12 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.mickstarify.zooforzotero.LibraryActivity.ViewModels.LibraryListViewModel
 import com.mickstarify.zooforzotero.R
+import com.mickstarify.zooforzotero.ZoteroStorage.Database.Collection
+import com.mickstarify.zooforzotero.ZoteroStorage.Database.Item
+import com.mickstarify.zooforzotero.adapters.LibraryListInteractionListener
 import com.mickstarify.zooforzotero.adapters.LibraryListRecyclerViewAdapter
 
-class LibraryListFragment : Fragment() {
+class LibraryListFragment : Fragment(), LibraryListInteractionListener {
 
     companion object {
         fun newInstance() = LibraryListFragment()
@@ -34,9 +37,21 @@ class LibraryListFragment : Fragment() {
         val recyclerView = requireView().findViewById<RecyclerView>(R.id.recyclerView)
 
         viewModel.getItems().observe(viewLifecycleOwner) { entries ->
-            recyclerView.adapter = LibraryListRecyclerViewAdapter(entries)
+            recyclerView.adapter = LibraryListRecyclerViewAdapter(entries, this)
             recyclerView.layoutManager = LinearLayoutManager(requireContext())
         }
+    }
+
+    override fun onItemOpen(item: Item) {
+        viewModel.onItemClicked(item)
+    }
+
+    override fun onCollectionOpen(collection: Collection) {
+        viewModel.onCollectionClicked(collection)
+    }
+
+    override fun onItemAttachmentOpen(item: Item) {
+        viewModel.onAttachmentClicked(item)
     }
 
 }

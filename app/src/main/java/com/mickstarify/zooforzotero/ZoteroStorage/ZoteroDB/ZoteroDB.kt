@@ -10,7 +10,6 @@ import com.google.gson.reflect.TypeToken
 import com.mickstarify.zooforzotero.ZooForZoteroApplication
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.ItemPOJO
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Note
-import com.mickstarify.zooforzotero.ZoteroStorage.AttachmentStorageManager
 import com.mickstarify.zooforzotero.ZoteroStorage.Database.AttachmentInfo
 import com.mickstarify.zooforzotero.ZoteroStorage.Database.Collection
 import com.mickstarify.zooforzotero.ZoteroStorage.Database.Item
@@ -21,9 +20,8 @@ import io.reactivex.functions.Consumer
 import io.reactivex.schedulers.Schedulers
 import java.io.File
 import java.io.InputStreamReader
-import java.util.*
+import java.util.LinkedList
 import javax.inject.Inject
-import kotlin.collections.HashMap
 
 class ZoteroDB constructor(
     val context: Context,
@@ -52,7 +50,8 @@ class ZoteroDB constructor(
     var items: List<Item>? = null
         set(value) {
             field = value
-            this.createAttachmentsMap()
+//            this.createAttachmentsMap()
+            this.associateItemsWithAttachments()
             this.createCollectionItemMap()
             this.processItems()
         }
@@ -61,7 +60,7 @@ class ZoteroDB constructor(
     var myPublications: MutableList<Item>? = null
 
     // map that stores attachmentItem classes by ItemKey
-    var attachments: MutableMap<String, MutableList<Item>>? = null
+//    var attachments: MutableMap<String, MutableList<Item>>? = null
     // map that stores attachmentInfo classes by ItemKey.
     // This is used to store metadata related to items that don't go in the item database class
     // such a design was picked to seperate the data that is from the zotero api official server and
@@ -166,36 +165,47 @@ class ZoteroDB constructor(
         return (itemsFile.exists())
     }
 
-    fun getAttachments(itemID: String): List<Item> {
-        if (this.attachments == null) {
-            this.createAttachmentsMap()
-        }
-
-        return this.attachments?.get(itemID) ?: LinkedList()
+    fun getAttachments(itemKey: String): List<Item> {
+        return items!!.filter { it.itemKey == itemKey }.firstOrNull()?.attachments ?: emptyList()
     }
 
-    fun createAttachmentsMap() {
-        this.attachments = HashMap()
+//    fun createAttachmentsMap() {
+//        this.attachments = HashMap()
+//
+//        if (items == null) {
+//            Log.e("zotero", "items are null for some reason.")
+//            this.items = LinkedList()
+//        }
+//
+//        for (item in items!!) {
+//            if (!item.data.containsKey("itemType") && item.data.containsKey("parentItem")) {
+//                continue
+//            }
+//
+//            if ((item.data["itemType"] as String) == "attachment") {
+//                val parentItem = item.data["parentItem"]
+//                if (parentItem != null) {
+//                    if (!this.attachments!!.contains(parentItem)) {
+//                        this.attachments!![parentItem] = LinkedList()
+//                    }
+//                    this.attachments!![item.data["parentItem"]]!!.add(item)
+//                } else {
+//                    Log.d("zotero", "attachment ${item.getTitle()} has no parent")
+//                }
+//            }
+//        }
+//    }
 
-        if (items == null) {
-            Log.e("zotero", "items are null for some reason.")
-            this.items = LinkedList()
+    private fun associateItemsWithAttachments() {
+        val itemsByKey = HashMap<String, Item>()
+        items!!.forEach {
+            itemsByKey[it.itemKey] = it
         }
-
         for (item in items!!) {
-            if (!item.data.containsKey("itemType") && item.data.containsKey("parentItem")) {
-                continue
-            }
-
-            if ((item.data["itemType"] as String) == "attachment") {
-                val parentItem = item.data["parentItem"]
-                if (parentItem != null) {
-                    if (!this.attachments!!.contains(parentItem)) {
-                        this.attachments!![parentItem] = LinkedList()
-                    }
-                    this.attachments!![item.data["parentItem"]]!!.add(item)
-                } else {
-                    Log.d("zotero", "attachment ${item.getTitle()} has no parent")
+            if (item.isDownloadable()) {
+                val parentKey = item.data["parentItem"]
+                if (parentKey != null) {
+                    itemsByKey[parentKey]?.attachments?.add(item)
                 }
             }
         }
@@ -442,51 +452,51 @@ class ZoteroDB constructor(
         })
     }
 
-    fun scanAndIndexAttachments(attachmentStorageManager: AttachmentStorageManager): io.reactivex.Observable<IndexFilesProgress> {
-        /* Checks every attachment in the storage directory and creates metadata for the attachment. */
-
-        var toIndex = LinkedList<Item>()
-        Log.d("zotero", "items: ${items?.size} attachments: ${attachments?.size}")
-        for ((itemKey: String, items: List<Item>) in this.attachments!!) {
-            for (item in items) {
-                if (this.attachmentInfo!!.containsKey(item.itemKey)) {
-                    // we already have this metadata. skipping.
-                    continue
-                }
-                if (attachmentStorageManager.checkIfAttachmentExists(item)) {
-                    toIndex.add(item)
-                }
-            }
-        }
-        val observable = io.reactivex.Observable.create<IndexFilesProgress> { emitter ->
-            var index = 0
-            for (item in toIndex) {
-                index++
-                emitter.onNext(
-                    IndexFilesProgress(
-                        index,
-                        toIndex.size,
-                        item.data["filename"] ?: "unknown file"
-                    )
-                )
-                var md5Key = ""
-                try {
-                    md5Key = attachmentStorageManager.calculateMd5(item)
-                } catch (e: Exception) {
-                    Log.d("zotero", "error calculating md5 for $item")
-                }
-                if (md5Key == "") {
-                    continue
-                }
-                val mtime = (item.data["mtime"] ?: "0").toLong()
-
-                this.updateAttachmentMetadata(item.itemKey, md5Key, mtime, AttachmentInfo.LOCALSYNC)
-                    .blockingAwait()
-            }
-            emitter.onComplete()
-        }
-        return observable
-    }
+//    fun scanAndIndexAttachments(attachmentStorageManager: AttachmentStorageManager): io.reactivex.Observable<IndexFilesProgress> {
+//        /* Checks every attachment in the storage directory and creates metadata for the attachment. */
+//
+//        var toIndex = LinkedList<Item>()
+//        Log.d("zotero", "items: ${items?.size} attachments: ${attachments?.size}")
+//        for ((itemKey: String, items: List<Item>) in this.attachments!!) {
+//            for (item in items) {
+//                if (this.attachmentInfo!!.containsKey(item.itemKey)) {
+//                    // we already have this metadata. skipping.
+//                    continue
+//                }
+//                if (attachmentStorageManager.checkIfAttachmentExists(item)) {
+//                    toIndex.add(item)
+//                }
+//            }
+//        }
+//        val observable = io.reactivex.Observable.create<IndexFilesProgress> { emitter ->
+//            var index = 0
+//            for (item in toIndex) {
+//                index++
+//                emitter.onNext(
+//                    IndexFilesProgress(
+//                        index,
+//                        toIndex.size,
+//                        item.data["filename"] ?: "unknown file"
+//                    )
+//                )
+//                var md5Key = ""
+//                try {
+//                    md5Key = attachmentStorageManager.calculateMd5(item)
+//                } catch (e: Exception) {
+//                    Log.d("zotero", "error calculating md5 for $item")
+//                }
+//                if (md5Key == "") {
+//                    continue
+//                }
+//                val mtime = (item.data["mtime"] ?: "0").toLong()
+//
+//                this.updateAttachmentMetadata(item.itemKey, md5Key, mtime, AttachmentInfo.LOCALSYNC)
+//                    .blockingAwait()
+//            }
+//            emitter.onComplete()
+//        }
+//        return observable
+//    }
 
     fun updateAttachmentMetadata(
         itemKey: String,

@@ -15,30 +15,30 @@
   -->
 
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
-        xmlns:app="http://schemas.android.com/apk/res-auto">
+    xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <PreferenceCategory app:title="@string/syncing_header">
 
         <ListPreference
-                app:defaultValue="zoteroapi"
-                app:entries="@array/sync_options_entries"
-                app:entryValues="@array/sync_options_values"
-                app:key="sync_method"
-                app:title="@string/sync_method"
-                app:useSimpleSummaryProvider="true" />
+            app:defaultValue="zoteroapi"
+            app:entries="@array/sync_options_entries"
+            app:entryValues="@array/sync_options_values"
+            app:key="sync_method"
+            app:title="@string/sync_method"
+            app:useSimpleSummaryProvider="true" />
 
         <ListPreference
-                app:defaultValue="EXTERNAL_CACHE"
-                app:entries="@array/attachment_storage_location_entries"
-                app:entryValues="@array/attachment_storage_location_values"
-                app:key="attachment_sync_location"
-                app:title="@string/setting_sync_attachments_location"
-                app:useSimpleSummaryProvider="true" />
+            app:defaultValue="EXTERNAL_CACHE"
+            app:entries="@array/attachment_storage_location_entries"
+            app:entryValues="@array/attachment_storage_location_values"
+            app:key="attachment_sync_location"
+            app:title="@string/setting_sync_attachments_location"
+            app:useSimpleSummaryProvider="true" />
 
         <SwitchPreference
-                android:defaultValue="true"
-                android:key="attachments_uploading_enabled"
-                android:title="Offer to upload attachments" />
+            android:defaultValue="true"
+            android:key="attachments_uploading_enabled"
+            android:title="Offer to upload attachments" />
 
     </PreferenceCategory>
 
@@ -59,46 +59,27 @@
         <SwitchPreference
             android:defaultValue="true"
             android:key="should_live_search"
-            android:title="Search as you type"
-            android:summary="Turn off if your search is too slow"/>
+            android:summary="Turn off if your search is too slow"
+            android:title="Search as you type" />
         <SwitchPreference
             android:defaultValue="false"
             android:key="check_md5sum_before_attachment_open"
-            android:title="Verify attachment integrity before opening"
-            android:summary="Enabling this may slow down the opening of large attachments"/>
+            android:summary="Enabling this may slow down the opening of large attachments"
+            android:title="Verify attachment integrity before opening" />
 
     </PreferenceCategory>
 
     <PreferenceCategory android:title="Web DAV">
-
         <SwitchPreference
-                android:defaultValue="false"
-                android:key="use_webdav"
-                android:title="Use webdav to access attachments" />
-        <EditTextPreference
-                android:dependency="use_webdav"
-                android:enabled="false"
-                android:key="webdav_address"
-                android:selectAllOnFocus="true"
-                android:singleLine="true"
-                android:summary=""
-                android:title="Webdav Address"
-                app:enabled="false" />
-        <EditTextPreference
-                android:dependency="use_webdav"
-                android:enabled="false"
-                android:key="webdav_username"
-                android:selectAllOnFocus="true"
-                android:singleLine="true"
-                android:summary="Username for webDAV. Leave empty for no username."
-                android:title="WebDAV Username" />
-        <EditTextPreference
-                android:dependency="use_webdav"
-                android:enabled="false"
-                android:key="webdav_password"
-                android:selectAllOnFocus="true"
-                android:singleLine="true"
-                android:summary="Password for webDAV. Leave empty for no password."
-                android:title="WebDAV Password" />
+            android:defaultValue="false"
+            android:enabled="true"
+            app:enabled="true"
+            android:key="use_webdav"
+            android:title="Use webdav to access attachments" />
+
+        <Preference
+            android:enabled="true"
+            android:key="configure_webdav"
+            android:title="Configure Webdav" />
     </PreferenceCategory>
 </PreferenceScreen>
