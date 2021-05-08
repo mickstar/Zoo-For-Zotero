@@ -113,7 +113,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
         var newItems = items
         if (onlyNotes) {
             newItems =
-                newItems.filter { zoteroDB.getNotes(it.itemKey).isNotEmpty() }
+                newItems.filter { it.notes.size > 0 }
         }
         if (onlyPdfs) {
             newItems = newItems.filter {
@@ -169,10 +169,6 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
 
     override fun getMyPublications(): List<Item> {
         return zoteroDB.myPublications ?: LinkedList()
-    }
-
-    override fun getNotes(itemKey: String): List<Note> {
-        return zoteroDB.getNotes(itemKey)
     }
 
     override fun filterCollections(query: String): List<ZoteroCollection> {

@@ -248,11 +248,7 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
             }
 
             model.selectedItem = item
-            view.showItemDialog(
-                item,
-                itemAttachments,
-                model.getNotes(item.itemKey)
-            )
+            view.showItemDialog()
         }
     }
 
@@ -260,22 +256,9 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
         val item = model.selectedItem
         if (item != null) {
             view.closeItemView()
-            view.showItemDialog(
-                item,
-                model.getAttachments(item.itemKey),
-                model.getNotes(item.itemKey)
-            )
+            view.showItemDialog()
         }
     }
-
-//    override fun openSubcollection(collection: Collection){
-//        if (!model.isLoaded()){
-//            Log.e("zotero", "tried to change collection before fully loaded!")
-//            return
-//        }
-//        model.setCurrentCollection(collection.name)
-//
-//    }
 
     override fun openMyPublications() {
         if (!model.isLoaded()) {
