@@ -4,6 +4,7 @@ import android.os.Parcelable
 import android.text.Html
 import android.util.Log
 import androidx.room.*
+import com.mickstarify.zooforzotero.ZoteroAPI.Model.Note
 import io.reactivex.Completable
 import io.reactivex.Maybe
 import io.reactivex.Single
@@ -60,6 +61,10 @@ class Item : Parcelable {
     @IgnoredOnParcel
     @Ignore
     var attachments = LinkedList<Item>()
+
+    @IgnoredOnParcel
+    @Ignore
+    var notes = LinkedList<Note>()
 
     fun getGroup(): Int {
         return itemInfo.groupParent

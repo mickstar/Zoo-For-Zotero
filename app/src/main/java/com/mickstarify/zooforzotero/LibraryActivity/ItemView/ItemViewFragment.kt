@@ -7,10 +7,12 @@ import android.view.*
 import android.widget.ImageButton
 import android.widget.TextView
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.ViewModelProvider
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.mickstarify.zooforzotero.LibraryActivity.Notes.EditNoteDialog
 import com.mickstarify.zooforzotero.LibraryActivity.Notes.NoteInteractionListener
 import com.mickstarify.zooforzotero.LibraryActivity.Notes.onEditNoteChangeListener
+import com.mickstarify.zooforzotero.LibraryActivity.ViewModels.LibraryListViewModel
 import com.mickstarify.zooforzotero.R
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Note
 import com.mickstarify.zooforzotero.ZoteroStorage.Database.Creator
@@ -46,6 +48,8 @@ class ItemViewFragment : BottomSheetDialogFragment(),
             })
     }
 
+    lateinit var libraryViewModel: LibraryListViewModel
+
     private lateinit var item: Item
     private lateinit var attachments: List<Item>
     private lateinit var notes: List<Note>
@@ -53,14 +57,7 @@ class ItemViewFragment : BottomSheetDialogFragment(),
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        arguments?.let {
-            item = it.getParcelable<Item>(ARG_ITEM)!!
-            attachments = it.getParcelableArrayList<Item>(ARG_ATTACHMENTS)!!
-            notes = it.getParcelableArrayList<Note>(ARG_NOTES)!!
-        }
     }
-
-    // todo add share button and add notes button.
 
     private fun showShareItemDialog() {
         ShareItemDialog(item).show(context, this)
@@ -82,12 +79,29 @@ class ItemViewFragment : BottomSheetDialogFragment(),
 
             })
     }
+
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
         val view = inflater.inflate(R.layout.fragment_item_main, container, false)
+        return view
+    }
 
+
+    override fun onActivityCreated(savedInstanceState: Bundle?) {
+        super.onActivityCreated(savedInstanceState)
+
+        libraryViewModel =
+            ViewModelProvider(requireActivity()).get(LibraryListViewModel::class.java)
+
+        if (libraryViewModel.getOnItemClicked().value == null) {
+            Log.e("zotero", "error item in viewmodel is null!")
+            dismiss()
+        }
+        item = libraryViewModel.getOnItemClicked().value!!
+        attachments = item.attachments
+        notes = item.notes
 
         addTextEntry("Item Type", item.data["itemType"] ?: "Unknown")
         addTextEntry("title", item.getTitle())
@@ -105,11 +119,6 @@ class ItemViewFragment : BottomSheetDialogFragment(),
         this.addAttachments(attachments)
         this.populateNotes(notes)
         this.populateTags(item.tags.map { it.tag })
-        return view
-    }
-
-    override fun onAttachFragment(childFragment: Fragment) {
-        super.onAttachFragment(childFragment)
 
         val addNotesButton = requireView().findViewById<ImageButton>(R.id.imageButton_add_notes)
         val shareButton = requireView().findViewById<ImageButton>(R.id.imageButton_share_item)
@@ -218,19 +227,9 @@ class ItemViewFragment : BottomSheetDialogFragment(),
     }
 
     companion object {
-        const val ARG_ITEM = "item"
-        const val ARG_ATTACHMENTS = "attachments"
-        const val ARG_NOTES = "notes"
-
         @JvmStatic
-        fun newInstance(item: Item, attachments: List<Item>, notes: List<Note>) =
-            ItemViewFragment().apply {
-                arguments = Bundle().apply {
-                    putParcelable(ARG_ITEM, item)
-                    putParcelableArrayList(ARG_ATTACHMENTS, ArrayList(attachments))
-                    putParcelableArrayList(ARG_NOTES, ArrayList(notes))
-                }
-            }
+        fun newInstance() =
+            ItemViewFragment()
     }
 
     override fun shareItem(shareText: String) {

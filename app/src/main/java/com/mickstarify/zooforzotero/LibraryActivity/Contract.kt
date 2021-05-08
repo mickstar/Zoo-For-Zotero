@@ -22,7 +22,7 @@ interface Contract {
         fun setTitle(title: String)
         fun addNavigationEntry(collection: Collection, parent: String)
         fun populateEntries(entries: List<ListEntry>)
-        fun showItemDialog(item: Item, attachments: List<Item>, notes: List<Note>)
+        fun showItemDialog()
         fun updateAttachmentDownloadProgress(progress: Int, total: Int)
         fun hideAttachmentDownloadProgress()
         fun makeToastAlert(message: String)
@@ -114,7 +114,6 @@ interface Contract {
         fun filterCollections(query: String): List<Collection>
         fun filterItems(query: String): List<Item>
         fun isLoaded(): Boolean
-        fun getNotes(itemKey: String): List<Note>
         fun createNote(note: Note)
         fun modifyNote(note: Note)
         fun deleteNote(note: Note)

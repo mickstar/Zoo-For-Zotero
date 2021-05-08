@@ -447,13 +447,10 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
     }
 
     override fun showItemDialog(
-        item: Item,
-        attachments: List<Item>,
-        notes: List<Note>
     ) {
-        itemView = ItemViewFragment.newInstance(item, attachments, notes)
+        itemView = ItemViewFragment()
         val fm = supportFragmentManager
-        itemView?.show(fm, "hello world")
+        itemView?.show(fm, "ItemDialog")
 
     }
 
