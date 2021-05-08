@@ -29,12 +29,6 @@
         app:showAsAction="collapseActionView" />
 
     <item
-        android:id="@+id/webdav_setup"
-        android:icon="@drawable/baseline_settings_applications_white_24"
-        android:title="@string/setup_webdav"
-        app:showAsAction="collapseActionView" />
-
-    <item
         android:id="@+id/zotero_save"
         android:icon="@drawable/baseline_settings_applications_white_24"
         android:title="@string/zotero_save"

@@ -34,7 +34,6 @@ import com.mickstarify.zooforzotero.LibraryActivity.ItemView.ItemAttachmentEntry
 import com.mickstarify.zooforzotero.LibraryActivity.ItemView.ItemViewFragment
 import com.mickstarify.zooforzotero.LibraryActivity.Notes.NoteInteractionListener
 import com.mickstarify.zooforzotero.LibraryActivity.Notes.NoteView
-import com.mickstarify.zooforzotero.LibraryActivity.WebDAV.WebDAVSetup
 import com.mickstarify.zooforzotero.R
 import com.mickstarify.zooforzotero.SettingsActivity
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Note
@@ -199,12 +198,6 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
         LibraryFilterMenuDialog(this, { presenter.redisplayItems() }).show()
     }
 
-    private fun showWebDAVSetup() {
-        val intent = Intent(this, WebDAVSetup::class.java)
-        startActivity(intent)
-    }
-
-
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         if (mDrawerToggle.onOptionsItemSelected(item)) {
             return true
@@ -218,9 +211,6 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
             R.id.settings -> {
                 val intent = Intent(this, SettingsActivity::class.java)
                 startActivity(intent)
-            }
-            R.id.webdav_setup -> {
-                showWebDAVSetup()
             }
             R.id.zotero_save -> {
                 val url = "https://www.zotero.org/save"
