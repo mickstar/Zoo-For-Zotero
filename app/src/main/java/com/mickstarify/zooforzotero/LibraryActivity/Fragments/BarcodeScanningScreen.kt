@@ -198,8 +198,6 @@ class BarcodeScanningScreen : Fragment() {
                 return
             }
 
-            // TODO: - No available camera found case
-
         } catch (e: CameraAccessException) {
         } catch (e: SecurityException) {
         }
