@@ -9,6 +9,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.widget.Button
 import android.widget.CheckBox
+import android.widget.ImageButton
 import com.google.firebase.analytics.FirebaseAnalytics
 import com.mickstarify.zooforzotero.PreferenceManager
 import com.mickstarify.zooforzotero.R
@@ -56,29 +57,19 @@ class LibraryFilterMenuDialog(val context: Context, val onFilterChange: (() -> (
         return context.resources.getTextArray(R.array.sort_options_entries)[i].toString()
     }
 
-    var sortingOrderButton: Button? = null
+    var sortingOrderButton: ImageButton? = null
 
     fun setSortButtonAscending() {
         sortingOrderButton?.apply {
-            this.hint = "Sort ascendingly"
-            this.setCompoundDrawablesWithIntrinsicBounds(
-                context.getDrawable(R.drawable.ic_arrow_upward_24px),
-                null,
-                null,
-                null
-            )
+            this.contentDescription = "Sort Descendingly"
+            this.setImageResource(R.drawable.ic_arrow_upward_24px)
         }
     }
 
     fun setSortButtonDescending() {
         sortingOrderButton?.apply {
-            this.hint = "Sort descendingly"
-            this.setCompoundDrawablesWithIntrinsicBounds(
-                context.getDrawable(R.drawable.ic_arrow_downward_24px),
-                null,
-                null,
-                null
-            )
+            this.contentDescription = "Sort descendingly"
+            this.setImageResource(R.drawable.ic_arrow_downward_24px)
         }
     }
 
@@ -121,7 +112,7 @@ class LibraryFilterMenuDialog(val context: Context, val onFilterChange: (() -> (
             dialogBuilder.dismiss()
         }
 
-        sortingOrderButton = dialogView.findViewById<Button>(R.id.button_sort_order)
+        sortingOrderButton = dialogView.findViewById<ImageButton>(R.id.button_sort_order)
         if (preferences.isSortedAscendingly()) {
             setSortButtonAscending()
         } else {

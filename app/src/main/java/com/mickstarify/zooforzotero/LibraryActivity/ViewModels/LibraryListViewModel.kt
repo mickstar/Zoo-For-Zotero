@@ -32,4 +32,36 @@ class LibraryListViewModel : ViewModel() {
     fun onCollectionClicked(collection: Collection) {
         this.collectionClicked.value = collection
     }
+
+    private val scannedBarcode = MutableLiveData<String>()
+    fun scannedBarcodeNumber(barcodeNo: String) {
+        scannedBarcode.value = barcodeNo
+    }
+
+    fun getScannedBarcode(): LiveData<String> = scannedBarcode
+
+    private val isShowingLoadingAnimation = MutableLiveData<Boolean>(false)
+    fun setIsShowingLoadingAnimation(value: Boolean) {
+        if (isShowingLoadingAnimation.value != value) {
+            isShowingLoadingAnimation.value = value
+        }
+    }
+
+    fun getIsShowingLoadingAnimation(): LiveData<Boolean> = isShowingLoadingAnimation
+
+    private val onLibraryRefreshRequested = MutableLiveData<Int>()
+    fun onLibraryRefreshRequested() {
+        // changes the value so any listener will get pinged.
+        onLibraryRefreshRequested.value = (onLibraryRefreshRequested.value ?: 0) + 1
+    }
+
+    fun getOnLibraryRefreshRequested(): LiveData<Int> = onLibraryRefreshRequested
+
+    private val libraryFilterText = MutableLiveData<String>("")
+    fun getLibraryFilterText(): LiveData<String> = libraryFilterText
+    fun setLibraryFilterText(query: String) {
+        if (this.libraryFilterText.value != query) {
+            this.libraryFilterText.value = query
+        }
+    }
 }

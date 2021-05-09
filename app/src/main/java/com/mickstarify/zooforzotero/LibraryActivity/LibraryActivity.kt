@@ -1,8 +1,6 @@
 package com.mickstarify.zooforzotero.LibraryActivity
 
 import android.app.ProgressDialog
-import android.app.SearchManager
-import android.content.Context
 import android.content.Intent
 import android.content.res.Configuration
 import android.net.Uri
@@ -13,23 +11,19 @@ import android.util.Log
 import android.util.SparseArray
 import android.view.Menu
 import android.view.MenuItem
-import android.view.View
 import android.view.WindowManager
-import android.widget.ProgressBar
-import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.ActionBarDrawerToggle
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SearchView
-import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.view.GravityCompat
 import androidx.core.view.iterator
 import androidx.drawerlayout.widget.DrawerLayout
-import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+import androidx.navigation.NavController
+import androidx.navigation.fragment.NavHostFragment
 import com.google.android.material.navigation.NavigationView
 import com.mickstarify.zooforzotero.AttachmentManager.AttachmentManager
-import com.mickstarify.zooforzotero.LibraryActivity.Fragments.LibraryListFragment
 import com.mickstarify.zooforzotero.LibraryActivity.ItemView.ItemAttachmentEntry
 import com.mickstarify.zooforzotero.LibraryActivity.ItemView.ItemViewFragment
 import com.mickstarify.zooforzotero.LibraryActivity.Notes.NoteInteractionListener
@@ -42,9 +36,9 @@ import com.mickstarify.zooforzotero.ZoteroStorage.Database.GroupInfo
 import com.mickstarify.zooforzotero.ZoteroStorage.Database.Item
 
 
-class LibraryActivity : AppCompatActivity(), Contract.View,
+class LibraryActivity : AppCompatActivity(),
     NavigationView.OnNavigationItemSelectedListener,
-    SwipeRefreshLayout.OnRefreshListener,
+
     ItemViewFragment.OnItemFragmentInteractionListener,
     ItemAttachmentEntry.OnAttachmentFragmentInteractionListener,
     NoteInteractionListener {
@@ -55,8 +49,11 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
 
     private val MENU_ID_COLLECTIONS_OFFSET: Int = 10
 
-    private lateinit var presenter: Contract.Presenter
+    lateinit var presenter: LibraryActivityPresenter
     private var itemView: ItemViewFragment? = null
+
+    lateinit var navController: NavController
+    lateinit var navHostFragment: NavHostFragment
 
     // used to "uncheck" the last pressed menu item if we change via code.
     private var currentPressedMenuItem: MenuItem? = null
@@ -65,17 +62,57 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_library)
 
+        navHostFragment =
+            supportFragmentManager.findFragmentById(R.id.nav_host_fragment_container) as NavHostFragment
+        navController = navHostFragment.navController
+
         this.setupActionbar()
         val navigationView = findViewById<NavigationView>(R.id.nav_view_library)
         navigationView.setNavigationItemSelectedListener(this)
 
         presenter = LibraryActivityPresenter(this, this)
+
+        navController.addOnDestinationChangedListener { _, destination, _ ->
+            when (destination.id) {
+                R.id.libraryListFragment -> {
+                    libraryListScreenShown()
+                }
+                R.id.libraryLoadingScreen -> {
+                    libraryLoadingScreenShown()
+                }
+                R.id.barcodeScanningScreen -> {
+                    barcodeScanningScreenShown()
+                }
+                else -> {
+                    throw(NotImplementedError("Error screen $destination not handled."))
+                }
+            }
+
+        }
+    }
+
+    private fun barcodeScanningScreenShown() {
+        supportActionBar?.title = "Barcode Scanner"
+        mDrawerToggle.isDrawerIndicatorEnabled = false
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
+    }
+
+    private fun libraryLoadingScreenShown() {
+        supportActionBar?.title = "Loading"
+        mDrawerToggle.isDrawerIndicatorEnabled = true
+        supportActionBar?.setDisplayHomeAsUpEnabled(false)
+    }
+
+    private fun libraryListScreenShown() {
+        supportActionBar?.title = "Library"
+        mDrawerToggle.isDrawerIndicatorEnabled = true
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
     }
 
     lateinit var collectionsMenu: Menu
     lateinit var sharedCollections: Menu
 
-    override fun initUI() {
+    fun initUI() {
         setupActionbar()
         val navigationView = findViewById<NavigationView>(R.id.nav_view_library)
         navigationView.setCheckedItem(R.id.my_library)
@@ -112,16 +149,12 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
             "Group Libraries"
         )
 
-        val swipeRefresh = findViewById<SwipeRefreshLayout>(R.id.library_swipe_refresh)
-        swipeRefresh.setOnRefreshListener(this)
-
-        val fmt = supportFragmentManager.beginTransaction()
-        fmt.replace(R.id.fragment_library, LibraryListFragment())
+        navController.navigate(R.id.libraryListFragment)
     }
 
     val collectionKeyByMenuId = SparseArray<String>()
 
-    override fun addNavigationEntry(collection: Collection, parent: String) {
+    fun addNavigationEntry(collection: Collection, parent: String) {
         // we will add a collection to the menu, with the following menu ID.
         val menuId = MENU_ID_COLLECTIONS_OFFSET + collectionKeyByMenuId.size()
         collectionKeyByMenuId.put(menuId, collection.key)
@@ -130,7 +163,7 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
             .setIcon(R.drawable.ic_folder_black_24dp).isCheckable = true
     }
 
-    override fun highlightMenuItem(state: LibraryModelState) {
+    fun highlightMenuItem(state: LibraryModelState) {
         /* Given some collection name / group name, highlight that corresponding item.
         * Needed for back button, whereby the app loads a prior state and needs the UI
         * to reflect this change with respect to the item selected.  */
@@ -179,7 +212,7 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
     }
 
     /* Shows a shared Collection (group) on the sidebar. */
-    override fun addSharedCollection(groupInfo: GroupInfo) {
+    fun addSharedCollection(groupInfo: GroupInfo) {
         val navigationView = findViewById<NavigationView>(R.id.nav_view_library)
         sharedCollections.add(
             R.id.group_shared_collections,
@@ -190,7 +223,7 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
             .setIcon(R.drawable.ic_folder_black_24dp).isCheckable = true
     }
 
-    override fun clearSidebar() {
+    fun clearSidebar() {
         collectionsMenu.clear()
     }
 
@@ -212,18 +245,15 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
                 val intent = Intent(this, SettingsActivity::class.java)
                 startActivity(intent)
             }
-            R.id.zotero_save -> {
-                val url = "https://www.zotero.org/save"
-                val intent = Intent(Intent.ACTION_VIEW)
-                intent.data = Uri.parse(url)
-                startActivity(intent)
-            }
             R.id.attachment_manager -> {
                 val intent = Intent(this, AttachmentManager::class.java)
                 startActivity(intent)
             }
             R.id.force_resync -> {
                 presenter.requestForceResync()
+            }
+            android.R.id.home -> {
+                onBackPressed()
             }
 
         }
@@ -233,46 +263,7 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
     lateinit var searchView: SearchView
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         super.onCreateOptionsMenu(menu)
-
         menuInflater.inflate(R.menu.activity_library_actionbar, menu)
-
-        val menuItem = menu.findItem(R.id.search)
-        menuItem.setOnActionExpandListener(object : MenuItem.OnActionExpandListener {
-            override fun onMenuItemActionExpand(item: MenuItem): Boolean {
-                return true
-            }
-
-            override fun onMenuItemActionCollapse(item: MenuItem): Boolean {
-                presenter.closeQuery()
-                return true
-            }
-        })
-
-        val searchManager = getSystemService(Context.SEARCH_SERVICE) as SearchManager
-        searchView = menu.findItem(R.id.search).actionView as SearchView
-        searchView.apply {
-            setSearchableInfo(searchManager.getSearchableInfo(componentName))
-            setOnQueryTextListener(object : SearchView.OnQueryTextListener {
-                override fun onQueryTextSubmit(query: String): Boolean {
-                    setTitle("Search results for $query")
-                    // we will only search on submit for android 7<=
-                    if (!presenter.isLiveSearchEnabled()) {
-                        presenter.filterEntries(query)
-                    }
-                    presenter.addFilterState(query)
-                    return true
-                }
-
-                override fun onQueryTextChange(query: String): Boolean {
-                    if (!presenter.isLiveSearchEnabled()) {
-                        return false
-                    }
-                    presenter.filterEntries(query)
-                    return true
-                }
-
-            })
-        }
         return true
     }
 
@@ -284,17 +275,19 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
 
         currentPressedMenuItem = item
         if (item.itemId == R.id.my_library) {
-            presenter.setCollection("all")
+            presenter.setCollection("all", fromNavigationDrawer = true)
         } else if (item.itemId == MENU_ID_UNFILED_ITEMS) {
-            presenter.setCollection("unfiled_items")
+            presenter.setCollection("unfiled_items", fromNavigationDrawer = true)
         } else if (item.itemId == MENU_ID_MY_PUBLICATIONS) {
             presenter.openMyPublications()
         } else if (item.itemId == MENU_ID_TRASH) {
             presenter.openTrash()
         } else if (item.groupId == R.id.group_shared_collections) {
+            // this is the id that refers to group libraries
             presenter.openGroup(item.title.toString())
         } else if (item.groupId == R.id.group_collections) {
-            presenter.setCollection(collectionKeyByMenuId[item.itemId], isSubCollection = false)
+            // this is the id that refers to user collections. The term "group collections" is misleading.
+            presenter.setCollection(collectionKeyByMenuId[item.itemId], fromNavigationDrawer = true)
         } else {
             Log.e("zotero", "error unhandled menuitem. ${item.title}")
         }
@@ -305,69 +298,7 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
         return true
     }
 
-    override fun populateEntries(entries: List<ListEntry>) {
-        if (entries.size == 0) {
-            this.showEmptyList()
-            return
-        }
-        /*
-        * TODO THIS WILL NEED TO BE REPLACED VERY SOON JUST FGOR DEBUG.
-        * */
-        this.hideLibraryContentDisplay()
-        presenter.libraryListViewModel.setItems(entries)
-        return
-//        val listView: ListView = findViewById(R.id.library_listview)
-//        listView.adapter = ZoteroItemListAdapter(this, entries)
-//
-//
-//        listView.setOnItemLongClickListener { _, _, position, _ ->
-//            val entry = listView.adapter.getItem(position) as ListEntry
-//            if (entry.isCollection()) {
-//                presenter.setCollection(entry.getCollection().name, isSubCollection = true)
-//            } else {
-//                presenter.selectItem(entry.getItem(), longPress = true)
-//            }
-//            true
-//        }
-//
-//        listView.setOnItemClickListener { _, _, position: Int, _ ->
-//            val entry = listView.adapter.getItem(position) as ListEntry
-//            if (entry.isCollection()) {
-//                presenter.setCollection(entry.getCollection().key, isSubCollection = true)
-//            } else {
-//                presenter.selectItem(entry.getItem(), false)
-//            }
-//        }
-//
-//        val swipeRefreshLayout = findViewById<SwipeRefreshLayout>(R.id.library_swipe_refresh)
-//
-//        listView.setOnScrollListener(object : AbsListView.OnScrollListener {
-//            override fun onScroll(
-//                view: AbsListView,
-//                firstVisibleItem: Int,
-//                visibleItemCount: Int,
-//                totalItemCount: Int
-//            ) {
-//                if (listView.getChildAt(0) != null) {
-//                    swipeRefreshLayout.isEnabled =
-//                        listView.firstVisiblePosition == 0 && listView.getChildAt(
-//                            0
-//                        ).top == 0
-//                }
-//            }
-//
-//            override fun onScrollStateChanged(p0: AbsListView?, p1: Int) {
-//            }
-//        })
-    }
-
-    override fun onRefresh() {
-        Log.d("Zotero", "got request for refresh")
-        presenter.requestLibraryRefresh()
-
-    }
-
-    override fun createErrorAlert(title: String, message: String, onClick: () -> Unit) {
+    fun createErrorAlert(title: String, message: String, onClick: () -> Unit) {
         val alert = AlertDialog.Builder(this)
         alert.setIcon(R.drawable.ic_error_black_24dp)
         alert.setTitle(title)
@@ -377,27 +308,6 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
             alert.show()
         } catch (exception: WindowManager.BadTokenException) {
             Log.e("zotero", "error cannot show error dialog. ${message}")
-        }
-    }
-
-    override fun showLoadingAnimation(showScreen: Boolean) {
-        if (showScreen) {
-            this.showLibraryContentDisplay(message = "Downloading your library.")
-            this.updateLibraryLoadingProgress(0, message = "")
-        } else {
-            val swipeRefresh = findViewById<SwipeRefreshLayout>(R.id.library_swipe_refresh)
-            swipeRefresh.isRefreshing = true
-        }
-    }
-
-    override fun hideLoadingAnimation() {
-        val swipeRefresh = findViewById<SwipeRefreshLayout>(R.id.library_swipe_refresh)
-        swipeRefresh.isRefreshing = false
-        if (presenter.isShowingContent()) {
-            this.hideLibraryContentDisplay()
-        } else {
-            this.showLibraryContentDisplay(message = getString(R.string.library_content_empty_library))
-            progressBar?.visibility = View.INVISIBLE
         }
     }
 
@@ -432,11 +342,11 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
         mDrawerToggle.syncState()
     }
 
-    override fun setTitle(title: String) {
+    fun setTitle(title: String) {
         supportActionBar?.title = title
     }
 
-    override fun showItemDialog(
+    fun showItemDialog(
     ) {
         itemView = ItemViewFragment()
         val fm = supportFragmentManager
@@ -444,27 +354,17 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
 
     }
 
-    override fun showNote(note: Note) {
+    fun showNote(note: Note) {
         val noteView = NoteView(this, note, this)
         noteView.show()
     }
 
-    override fun closeItemView() {
+    fun closeItemView() {
         itemView?.dismiss()
         itemView = null
     }
 
-    override fun showBasicSyncAnimation() {
-        val swipeRefresh = findViewById<SwipeRefreshLayout>(R.id.library_swipe_refresh)
-        swipeRefresh.isRefreshing = true
-    }
-
-    override fun hideBasicSyncAnimation() {
-        val swipeRefresh = findViewById<SwipeRefreshLayout>(R.id.library_swipe_refresh)
-        swipeRefresh.isRefreshing = false
-    }
-
-    override fun showLoadingAlertDialog(message: String) {
+    fun showLoadingAlertDialog(message: String) {
         if (progressDialog == null) {
             progressDialog = ProgressDialog(this)
         }
@@ -474,7 +374,7 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
 
     }
 
-    override fun hideLoadingAlertDialog() {
+    fun hideLoadingAlertDialog() {
         progressDialog?.hide()
         progressDialog = null
     }
@@ -483,7 +383,7 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
     var progressDialog: ProgressDialog? = null
 
     @Suppress("DEPRECATION")
-    override fun updateAttachmentDownloadProgress(progress: Int, total: Int) {
+    fun updateAttachmentDownloadProgress(progress: Int, total: Int) {
         if (progressDialog == null) {
             progressDialog = ProgressDialog(this)
             progressDialog?.setTitle("Downloading File")
@@ -505,27 +405,16 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
 
             progressDialog?.setMessage("Downloading your Attachment. $progressString")
         }
-//        else {
-//            progressDialog?.isIndeterminate = false
-//            progressDialog?.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL)
-//            progressDialog?.setProgress(progress)
-//            if (total == -1) {
-//                progressDialog?.setMessage("We are connecting to the zotero servers and requesting the file.")
-//            } else {
-//                progressDialog?.max = total
-//                progressDialog?.setMessage("${progress}KB of ${total}KB")
-//            }
-//        }
         progressDialog?.show()
     }
 
-    override fun hideAttachmentDownloadProgress() {
+    fun hideAttachmentDownloadProgress() {
         progressDialog?.hide()
         progressDialog = null
     }
 
     var uploadProgressDialog: ProgressDialog? = null
-    override fun showAttachmentUploadProgress(attachment: Item) {
+    fun showAttachmentUploadProgress(attachment: Item) {
         uploadProgressDialog = ProgressDialog(this)
         uploadProgressDialog?.setTitle("Uploading Attachment")
         uploadProgressDialog?.setMessage(
@@ -536,12 +425,12 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
         uploadProgressDialog?.show()
     }
 
-    override fun hideAttachmentUploadProgress() {
+    fun hideAttachmentUploadProgress() {
         uploadProgressDialog?.hide()
         uploadProgressDialog = null
     }
 
-    override fun createYesNoPrompt(
+    fun createYesNoPrompt(
         title: String,
         message: String, yesText: String, noText: String,
         onYesClick: () -> Unit,
@@ -577,7 +466,7 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
         Log.d("zotero", "got onListFragmentInteraction from item ${item?.itemKey}")
     }
 
-    override fun makeToastAlert(message: String) {
+    fun makeToastAlert(message: String) {
         val toast = Toast.makeText(this, message, Toast.LENGTH_LONG)
         toast.show()
     }
@@ -597,7 +486,6 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
         super.onPause()
     }
 
-    var listPosition: Int = 0
     override fun onPostResume() {
         Log.e("zotero", "post-resumed")
         super.onPostResume()
@@ -607,63 +495,6 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
     override fun onRestoreInstanceState(savedInstanceState: Bundle) {
         super.onRestoreInstanceState(savedInstanceState)
         Log.e("zotero", "restored!")
-    }
-
-    var progressBar: ProgressBar? = null
-    override fun updateLibraryLoadingProgress(
-        progress: Int,
-        total: Int,
-        message: String
-    ) {
-        if (progressBar == null) {
-            progressBar = findViewById(R.id.progressBar_library)
-        }
-        if (progressBar?.visibility == View.INVISIBLE || progressBar?.visibility == View.GONE) {
-            progressBar?.visibility = View.VISIBLE
-        }
-        val textView = findViewById<TextView>(R.id.textView_Library_label)
-
-        progressBar?.progress = progress
-        if (total == -1) {
-            progressBar?.isIndeterminate = true
-            textView.text = getString(R.string.loading_library_text)
-        } else {
-            progressBar?.max = total
-            progressBar?.isIndeterminate = false
-            textView.text = if (message == "") {
-                "Downloading ${progress} of ${total} entries."
-            } else {
-                message
-            }
-        }
-        progressBar?.isActivated = true
-    }
-
-    fun showEmptyList() {
-        showLibraryContentDisplay(message = "This catalog is empty. If you believe this is an error please refresh your library.")
-    }
-
-    override fun showLibraryContentDisplay(message: String) {
-        val constraintLayout =
-            findViewById<ConstraintLayout>(R.id.constraintLayout_library_content)
-        constraintLayout.visibility = View.VISIBLE
-        val textView = findViewById<TextView>(R.id.textView_Library_label)
-        if (message == "") {
-            textView.setText(R.string.library_content_empty_library)
-        } else {
-            textView.text = message
-        }
-    }
-
-    override fun hideLibraryContentDisplay() {
-        val constraintLayout =
-            findViewById<ConstraintLayout>(R.id.constraintLayout_library_content)
-        constraintLayout.visibility = View.GONE
-        progressBar?.visibility = View.GONE
-        progressBar = null
-
-        val swipeRefresh = findViewById<SwipeRefreshLayout>(R.id.library_swipe_refresh)
-        swipeRefresh.isRefreshing = false
     }
 
     override fun onResume() {
@@ -685,9 +516,10 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
 
     private var doubleBackToExitPressedOnce = false
     override fun onBackPressed() {
-        if (!searchView.isIconified) {
-            searchView.isIconified = true
-            presenter.closeQuery()
+        // our list view has a custom back handler
+        // if we are on the barcode screen we will just want to return to the previous screen
+        if (getCurrentScreen() == AvailableScreens.BARCODE_SCANNING_SCREEN) {
+            navController.navigateUp()
         } else {
             presenter.backButtonPressed()
         }
@@ -724,4 +556,26 @@ class LibraryActivity : AppCompatActivity(), Contract.View,
     override fun onTagOpenListener(tag: String) {
         presenter.onTagOpen(tag)
     }
+
+    fun getCurrentScreen(): AvailableScreens {
+        return when (navController.currentDestination?.id) {
+            R.id.libraryListFragment -> AvailableScreens.LIBRARY_LISTVIEW_SCREEN
+            R.id.libraryLoadingScreen -> AvailableScreens.LIBRARY_LOADING_SCREEN
+            R.id.barcodeScanningScreen -> AvailableScreens.BARCODE_SCANNING_SCREEN
+            else -> throw (Exception("Unknown current screen ${navController.currentDestination}"))
+        }
+    }
+
+    fun openZoteroSaveForQuery(query: String) {
+        val url = "https://www.zotero.org/save?q=$query"
+        val intent = Intent(Intent.ACTION_VIEW)
+        intent.data = Uri.parse(url)
+        startActivity(intent)
+    }
+}
+
+enum class AvailableScreens {
+    LIBRARY_LOADING_SCREEN,
+    LIBRARY_LISTVIEW_SCREEN,
+    BARCODE_SCANNING_SCREEN
 }

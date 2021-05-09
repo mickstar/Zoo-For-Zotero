@@ -29,12 +29,6 @@
         app:showAsAction="collapseActionView" />
 
     <item
-        android:id="@+id/zotero_save"
-        android:icon="@drawable/baseline_settings_applications_white_24"
-        android:title="@string/zotero_save"
-        app:showAsAction="collapseActionView" />
-
-    <item
         android:id="@+id/force_resync"
         android:visible="false"
         android:title="@string/force_resync"

@@ -150,12 +150,14 @@ class WebDAVSetup : AppCompatActivity() {
 
     fun setWebDAVAuthentication(address: String, username: String, password: String) {
         preferenceManager.setWebDAVAuthentication(address, username, password, allowInsecureSSL())
+        preferenceManager.setWebDAVEnabled(true)
         Toast.makeText(this, "Successfully added WebDAV.", Toast.LENGTH_SHORT).show()
         this.finish()
     }
 
     fun destroyWebDAVAuthentication() {
         preferenceManager.destroyWebDAVAuthentication()
+        preferenceManager.setWebDAVEnabled(false)
         this.finish()
     }
 }

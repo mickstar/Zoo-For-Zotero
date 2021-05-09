@@ -183,8 +183,8 @@ class ZoteroDB constructor(
             if (item.itemType == "note") {
                 try {
                     val note = Note(item)
-                    if (notes?.containsKey(note.parent) == true) {
-                        item.notes.add(note)
+                    if (itemsByKey.containsKey(note.parent) == true) {
+                        itemsByKey[note.parent]?.notes?.add(note)
                     }
                 } catch (e: ExceptionInInitializerError) {
                     Log.e("zotero", "error loading note ${item.itemKey} error:${e.message}")
@@ -349,13 +349,6 @@ class ZoteroDB constructor(
     fun getSubCollectionsFor(collectionKey: String): List<Collection> {
         return collections?.filter { it.key == collectionKey }?.firstOrNull()?.getSubCollections()
             ?: LinkedList()
-    }
-
-    fun getNotes(itemKey: String): List<Note> {
-        if (notes?.containsKey(itemKey) == true) {
-            return notes!![itemKey] as List<Note>
-        }
-        return LinkedList()
     }
 
     fun deleteItem(key: String) {

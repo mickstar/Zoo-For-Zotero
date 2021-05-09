@@ -15,7 +15,7 @@ import com.mickstarify.zooforzotero.ZoteroStorage.Database.Collection
 import com.mickstarify.zooforzotero.ZoteroStorage.Database.Item
 
 class LibraryListRecyclerViewAdapter(
-    val items: List<ListEntry>,
+    var items: List<ListEntry>,
     val listener: LibraryListInteractionListener
 ) : RecyclerView.Adapter<LibraryListRecyclerViewAdapter.ListEntryViewHolder>() {
     class ListEntryViewHolder(view: View) : RecyclerView.ViewHolder(view) {
@@ -46,13 +46,14 @@ class LibraryListRecyclerViewAdapter(
         if (entry.isItem()) {
             val item = entry.getItem()
             holder.textView_title.text = item.getTitle()
+            holder.textView_author.visibility = View.VISIBLE
             holder.textView_author.text = item.getAuthor()
             val pdfAttachment = item.getPdfAttachment()
             if (pdfAttachment != null) {
                 holder.pdfImage.visibility = View.VISIBLE
                 holder.pdfImage.setOnClickListener {
                     Log.d("zotero", "Open Attachment ${item.getTitle()}")
-                    listener.onItemAttachmentOpen(item)
+                    listener.onItemAttachmentOpen(pdfAttachment)
                 }
             } else {
                 holder.pdfImage.visibility = View.GONE
@@ -179,6 +180,7 @@ class LibraryListRecyclerViewAdapter(
         } else {
             val collection = entry.getCollection()
             holder.textView_title.text = collection.name
+            holder.textView_author.visibility = View.GONE
             holder.pdfImage.visibility = View.GONE
             holder.imageView.setImageResource(R.drawable.treesource_collection_2x)
             holder.layout.setOnClickListener {

@@ -136,6 +136,13 @@ class PreferenceManager @Inject constructor(context: Context) {
         return sharedPreferences.getBoolean("use_webdav", false)
     }
 
+    fun setWebDAVEnabled(state: Boolean) {
+        sharedPreferences.edit().apply {
+            putBoolean("use_webdav", state)
+            commit()
+        }
+    }
+
     fun isInsecureSSLAllowed(): Boolean {
         return sharedPreferences.getBoolean("webdav_allowInsecureSSL", false)
     }
