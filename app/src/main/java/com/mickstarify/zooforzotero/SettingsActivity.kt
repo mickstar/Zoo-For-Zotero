@@ -7,6 +7,7 @@ import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import androidx.preference.Preference
 import androidx.preference.PreferenceFragmentCompat
+import androidx.preference.SwitchPreference
 import com.mickstarify.zooforzotero.LibraryActivity.WebDAV.WebDAVSetup
 import com.mickstarify.zooforzotero.ZoteroStorage.AttachmentStorageManager
 import com.mickstarify.zooforzotero.ZoteroStorage.STORAGE_ACCESS_REQUEST
@@ -54,6 +55,9 @@ class SettingsActivity : AppCompatActivity() {
             // Set up a listener whenever a key changes
             preferenceScreen.sharedPreferences
                 .registerOnSharedPreferenceChangeListener(this)
+
+            this.findPreference<SwitchPreference>("use_webdav")?.isChecked =
+                preferenceManager.sharedPreferences.getBoolean("use_webdav", false)
         }
 
         override fun onPause() {

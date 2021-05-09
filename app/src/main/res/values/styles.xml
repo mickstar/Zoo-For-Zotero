@@ -22,4 +22,8 @@
 
     <style name="AppTheme.PopupOverlay" parent="AppTheme" />
 
+    <style name="menu_labels_style">
+        <item name="android:textColor">#FFFFFF</item>
+        <item name="android:background">@drawable/fab_actiontext_background</item>
+    </style>
 </resources>

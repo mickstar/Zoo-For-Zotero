@@ -1,6 +1,7 @@
 package com.mickstarify.zooforzotero.LibraryActivity
 
 import com.mickstarify.zooforzotero.LibraryActivity.ViewModels.LibraryListViewModel
+import com.mickstarify.zooforzotero.LibraryActivity.ViewModels.LibraryLoadingScreenViewModel
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Note
 import com.mickstarify.zooforzotero.ZoteroStorage.Database.Collection
 import com.mickstarify.zooforzotero.ZoteroStorage.Database.GroupInfo
@@ -10,7 +11,8 @@ interface Contract {
     interface View {
         fun initUI()
         fun createErrorAlert(title: String, message: String, onClick: () -> Unit)
-        fun showLoadingAnimation(showScreen: Boolean)
+
+        //        fun showLoadingAnimation(showScreen: Boolean)
         fun updateLibraryLoadingProgress(
             progress: Int,
             total: Int = -1,
@@ -18,7 +20,8 @@ interface Contract {
         )
 
         fun addSharedCollection(groupInfo: GroupInfo)
-        fun hideLoadingAnimation()
+
+        //        fun hideLoadingAnimation()
         fun setTitle(title: String)
         fun addNavigationEntry(collection: Collection, parent: String)
         fun populateEntries(entries: List<ListEntry>)
@@ -38,9 +41,6 @@ interface Contract {
         )
 
         fun showNote(note: Note)
-
-        fun showBasicSyncAnimation()
-        fun hideBasicSyncAnimation()
         fun highlightMenuItem(state: LibraryModelState)
         fun showLoadingAlertDialog(message: String)
         fun hideLoadingAlertDialog()
@@ -49,7 +49,7 @@ interface Contract {
     interface Presenter {
         fun createErrorAlert(title: String, message: String, onClick: () -> Unit)
         fun receiveCollections(collections: List<Collection>)
-        fun setCollection(collectionName: String, isSubCollection: Boolean = false)
+        fun setCollection(collectionName: String, fromNavigationDrawer: Boolean = false)
         fun selectItem(item: Item, longPress: Boolean = false)
         fun requestLibraryRefresh()
         fun showLibraryLoadingAnimation()
@@ -98,6 +98,7 @@ interface Contract {
         fun hideLoadingAlertDialog()
 
         var libraryListViewModel: LibraryListViewModel
+        var libraryLoadingViewModel: LibraryLoadingScreenViewModel
     }
 
     interface Model {

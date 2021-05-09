@@ -1,88 +1,90 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-        xmlns:app="http://schemas.android.com/apk/res-auto"
-        xmlns:tools="http://schemas.android.com/tools"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="vertical"
-        android:padding="24dp">
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="24dp">
 
     <androidx.constraintlayout.widget.ConstraintLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            tools:layout_editor_absoluteX="24dp"
-            tools:layout_editor_absoluteY="24dp">
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        tools:layout_editor_absoluteX="24dp"
+        tools:layout_editor_absoluteY="24dp">
 
         <TextView
-                android:id="@+id/textView_label_sortingmethod"
-                android:layout_width="57dp"
-                android:layout_height="wrap_content"
-                android:text="Sort By"
-                android:textAppearance="@style/TextAppearance.AppCompat.Medium"
-                app:layout_constraintBottom_toBottomOf="@+id/button_sort_by"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="@+id/button_sort_by" />
+            android:id="@+id/textView_label_sortingmethod"
+            android:layout_width="57dp"
+            android:layout_height="wrap_content"
+            android:text="Sort By"
+            android:textAppearance="@style/TextAppearance.AppCompat.Medium"
+            android:textSize="16sp"
+            app:layout_constraintBottom_toBottomOf="@+id/button_sort_by"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="@+id/button_sort_by" />
 
-        <Button
-                android:id="@+id/button_sort_by"
-                style="@style/Widget.AppCompat.Button"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="2"
-                android:text="By Title"
-                android:textAppearance="@style/TextAppearance.AppCompat.Medium"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintEnd_toStartOf="@+id/button_sort_order"
-                app:layout_constraintStart_toEndOf="@+id/textView_label_sortingmethod"
-                app:layout_constraintTop_toTopOf="parent" />
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/button_sort_by"
+            android:layout_width="0dp"
+            android:layout_height="60dp"
+            android:layout_marginStart="8dp"
+            android:layout_marginEnd="8dp"
+            android:layout_weight="2"
+            android:text="By Title"
+            android:textAppearance="@style/TextAppearance.AppCompat.Medium"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toStartOf="@+id/button_sort_order"
+            app:layout_constraintStart_toEndOf="@+id/textView_label_sortingmethod"
+            app:layout_constraintTop_toTopOf="parent" />
 
-        <Button
-                android:id="@+id/button_sort_order"
-                style="@style/Widget.AppCompat.Button"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                android:layout_weight="0.1"
-                android:drawableStart="@drawable/ic_arrow_downward_24px"
-                android:textAppearance="@style/TextAppearance.AppCompat.Medium"
-                app:layout_constraintBottom_toBottomOf="@+id/button_sort_by"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintTop_toTopOf="@+id/button_sort_by" />
+        <ImageButton
+            android:id="@+id/button_sort_order"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_weight="0.1"
+            android:background="@color/colorPrimary"
+            android:src="@drawable/ic_arrow_downward_24px"
+            android:tint="@android:color/white"
+            app:layout_constraintBottom_toBottomOf="@+id/button_sort_by"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="@+id/button_sort_by" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
     <CheckBox
-            android:id="@+id/checkBox_show_only_pdf"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="12dp"
-            android:text="Only show items with PDF Attachments" />
+        android:id="@+id/checkBox_show_only_pdf"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="12dp"
+        android:text="Only show items with PDF Attachments" />
 
     <CheckBox
-            android:id="@+id/checkBox_show_only_notes"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="12dp"
-            android:text="Only show items with notes" />
+        android:id="@+id/checkBox_show_only_notes"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="12dp"
+        android:text="Only show items with notes" />
 
     <androidx.constraintlayout.widget.ConstraintLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content">
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
 
         <Button
-                android:id="@+id/btn_cancel"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:text="@android:string/cancel"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
+            android:id="@+id/btn_cancel"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:text="@android:string/cancel"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
 
         <Button
-                android:id="@+id/btn_submit"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Submit"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintTop_toTopOf="@+id/btn_cancel" />
+            android:id="@+id/btn_submit"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Submit"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="@+id/btn_cancel" />
     </androidx.constraintlayout.widget.ConstraintLayout>
 
 </LinearLayout>

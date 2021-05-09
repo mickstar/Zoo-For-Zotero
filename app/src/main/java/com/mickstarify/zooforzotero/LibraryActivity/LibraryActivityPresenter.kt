@@ -4,6 +4,8 @@ import android.content.Context
 import android.util.Log
 import androidx.lifecycle.ViewModelProvider
 import com.mickstarify.zooforzotero.LibraryActivity.ViewModels.LibraryListViewModel
+import com.mickstarify.zooforzotero.LibraryActivity.ViewModels.LibraryLoadingScreenViewModel
+import com.mickstarify.zooforzotero.R
 import com.mickstarify.zooforzotero.SortMethod
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Note
 import com.mickstarify.zooforzotero.ZoteroStorage.Database.Collection
@@ -12,8 +14,9 @@ import com.mickstarify.zooforzotero.ZoteroStorage.Database.Item
 import java.util.LinkedList
 import java.util.Locale
 
-class LibraryActivityPresenter(val view: Contract.View, context: Context) : Contract.Presenter {
+class LibraryActivityPresenter(val view: LibraryActivity, context: Context) : Contract.Presenter {
     override lateinit var libraryListViewModel: LibraryListViewModel
+    override lateinit var libraryLoadingViewModel: LibraryLoadingScreenViewModel
 
     val sortMethod = compareBy<Item> {
         when (model.preferences.getSortMethod()) {
@@ -79,7 +82,7 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
     override fun redisplayItems() {
         if (model.isLoaded()) {
             if (model.getCurrentCollection() != "unset") {
-                setCollection(model.getCurrentCollection(), isSubCollection = true)
+                setCollection(model.getCurrentCollection())
             }
         }
     }
@@ -98,7 +101,17 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
         total: Int,
         message: String
     ) {
-        view.updateLibraryLoadingProgress(progress, total, message)
+        Log.d("zotero", "Updating library loading progress.")
+
+        if (total > 25 && view.getCurrentScreen() != AvailableScreens.LIBRARY_LOADING_SCREEN) {
+            view.navController.navigate(R.id.libraryLoadingScreen)
+        }
+
+        libraryLoadingViewModel.setAmountOfDownloadedEntries(progress)
+        libraryLoadingViewModel.setTotalAmountOfEntries(total)
+        libraryLoadingViewModel.setLoadingMessage(message)
+
+//        view.updateLibraryLoadingProgress(progress, total, message)
     }
 
     override fun isLiveSearchEnabled(): Boolean {
@@ -138,6 +151,7 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
     }
 
     override fun filterEntries(query: String) {
+        Log.d("zotero", "filtering $query")
         if (query == "" || !model.isLoaded()) {
             //not going to waste my time lol.
             return
@@ -146,7 +160,7 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
         if (query.startsWith("tag:")) {
             val tagName = query.substring(4) // remove tag:
             val entries = model.getItemsForTag(tagName).map { ListEntry(it) }
-            view.populateEntries(entries)
+            libraryListViewModel.setItems(entries)
             return
         }
 
@@ -159,7 +173,9 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
         entries.addAll(
             items
                 .map { ListEntry(it) })
-        view.populateEntries(entries)
+
+        Log.d("zotero", "setting items ${entries.size}")
+        libraryListViewModel.setItems(entries)
     }
 
     override fun attachmentDownloadError(message: String) {
@@ -191,11 +207,13 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
     }
 
     override fun showBasicSyncAnimation() {
-        view.showBasicSyncAnimation()
+        libraryListViewModel.setIsShowingLoadingAnimation(true)
     }
 
     override fun hideBasicSyncAnimation() {
-        view.hideBasicSyncAnimation()
+        libraryListViewModel.setIsShowingLoadingAnimation(false)
+        // we are finished loading and should hide the loading screen.
+        view.navController.navigate(R.id.libraryListFragment)
     }
 
     override fun openAttachment(item: Item) {
@@ -210,18 +228,22 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
 
 
     override fun showLibraryLoadingAnimation() {
-        view.showLoadingAnimation(showScreen = true)
+//        view.showLoadingAnimation(showScreen = true)
         view.setTitle("Loading")
+
+        (view as LibraryActivity).navController.navigate(R.id.libraryLoadingScreen)
     }
 
     override fun hideLibraryLoadingAnimation() {
-        view.hideLoadingAnimation()
-        view.hideLibraryContentDisplay()
+//        view.hideLoadingAnimation()
+//        view.hideLibraryContentDisplay()
+        Log.d("zotero", "loading library list fragment")
+        (view as LibraryActivity).navController.navigate(R.id.libraryListFragment)
     }
 
     override fun requestLibraryRefresh() {
-        view.showLoadingAnimation(showScreen = false)
-        model.refreshLibrary()
+        libraryListViewModel.setIsShowingLoadingAnimation(true)
+        model.refreshLibrary(useSmallLoadingAnimation = true)
     }
 
     override fun selectItem(
@@ -270,7 +292,7 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
         val entries = model.getMyPublications().sort().map{ListEntry(it)}
         model.isDisplayingItems = entries.isNotEmpty()
         model.setCurrentCollection("zooforzotero_my_publications")
-        view.populateEntries(entries)
+        libraryListViewModel.setItems(entries)
     }
 
     override fun openTrash() {
@@ -283,7 +305,7 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
         val entries = model.getTrashedItems().sort().map{ListEntry(it)}
         model.isDisplayingItems = entries.isNotEmpty()
         model.setCurrentCollection("zooforzotero_Trash")
-        view.populateEntries(entries)
+        libraryListViewModel.setItems(entries)
     }
 
     override fun uploadAttachment(item: Item) {
@@ -299,7 +321,7 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
         view.highlightMenuItem(model.state)
     }
 
-    override fun setCollection(collectionKey: String, isSubCollection: Boolean) {
+    override fun setCollection(collectionKey: String, fromNavigationDrawer: Boolean) {
         /*SetCollection is the method used to display items on the listView. It
         * has to get the data, then sort it, then provide it to the view.*/
         if (!model.isLoaded()) {
@@ -307,22 +329,22 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
             return
         }
         // this check covers if the user has just left their group library from the sidemenu.
-        if (!isSubCollection) {
+        if (fromNavigationDrawer) {
             model.usePersonalLibrary()
         }
 
         Log.d("zotero", "Got request to change collection to ${collectionKey}")
-        model.setCurrentCollection(collectionKey, !isSubCollection)
+        model.setCurrentCollection(collectionKey, usePersonalLibrary = fromNavigationDrawer)
         if (collectionKey == "all" && !model.isUsingGroups()) {
             view.setTitle("My Library")
             val entries = model.getLibraryItems().sort().map { ListEntry(it) }
             model.isDisplayingItems = entries.size > 0
-            view.populateEntries(entries)
+            libraryListViewModel.setItems(entries)
         } else if (collectionKey == "unfiled_items") {
             view.setTitle("Unfiled Items")
             val entries = model.getUnfiledItems().sort().map { ListEntry(it) }
             model.isDisplayingItems = entries.size > 0
-            view.populateEntries(entries)
+            libraryListViewModel.setItems(entries)
         } else if (collectionKey == "zooforzotero_Trash"){
             this.openTrash()
         } else if (collectionKey == "zooforzotero_my_publications"){
@@ -337,7 +359,7 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
             }.map { ListEntry(it) })
             entries.addAll(model.getLibraryItems().sort().map { ListEntry(it) })
             model.isDisplayingItems = entries.size > 0
-            view.populateEntries(entries)
+            libraryListViewModel.setItems(entries)
         }
         // It is an actual collection on the user's private.
         else {
@@ -351,7 +373,7 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
 
             entries.addAll(model.getItemsFromCollection(collectionKey).sort().map { ListEntry(it) })
             model.isDisplayingItems = entries.size > 0
-            view.populateEntries(entries)
+            libraryListViewModel.setItems(entries)
         }
     }
 
@@ -382,10 +404,16 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
     init {
         libraryListViewModel =
             ViewModelProvider(view as LibraryActivity).get(LibraryListViewModel::class.java)
+        libraryLoadingViewModel =
+            ViewModelProvider(view as LibraryActivity).get(LibraryLoadingScreenViewModel::class.java)
 
         view.initUI()
-        view.showLoadingAnimation(true)
-        view.showLibraryContentDisplay("Loading your library content.")
+
+        // todo start loading screen.
+        view.navController.navigate(R.id.libraryLoadingScreen)
+
+        libraryLoadingViewModel.setLoadingMessage("Loading your library")
+
         if (model.shouldIUpdateLibrary()) {
             model.loadGroups()
             model.downloadLibrary()
@@ -403,7 +431,17 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
         }
 
         libraryListViewModel.getOnCollectionClicked().observe(view) {
-            this.setCollection(it.key, isSubCollection = true)
+            this.setCollection(it.key)
+        }
+        libraryListViewModel.getOnLibraryRefreshRequested().observe(view) {
+            this.requestLibraryRefresh()
+        }
+        libraryListViewModel.getScannedBarcode().observe(view) { barcodeNo ->
+            view.openZoteroSaveForQuery(barcodeNo)
+        }
+        libraryListViewModel.getLibraryFilterText().observe(view) {
+            Log.d("zotero", "got filter text $it")
+            filterEntries(it)
         }
     }
 
@@ -415,4 +453,3 @@ class LibraryActivityPresenter(val view: Contract.View, context: Context) : Cont
         return this.sortedWith(sortMethod).reversed()
     }
 }
-
