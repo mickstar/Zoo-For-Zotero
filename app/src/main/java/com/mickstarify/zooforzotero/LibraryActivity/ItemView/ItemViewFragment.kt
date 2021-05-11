@@ -99,39 +99,42 @@ class ItemViewFragment : BottomSheetDialogFragment(),
             Log.e("zotero", "error item in viewmodel is null!")
             dismiss()
         }
-        item = libraryViewModel.getOnItemClicked().value!!
-        attachments = item.attachments
-        notes = item.notes
-
-        addTextEntry("Item Type", item.data["itemType"] ?: "Unknown")
-        addTextEntry("title", item.getTitle())
-        if (item.creators.isNotEmpty()) {
-            this.addCreators(item.getSortedCreators())
-        } else {
-            // empty creator.
-            this.addCreators(listOf(Creator("null", "", "", "", -1)))
-        }
-        for ((key, value) in item.data) {
-            if (value != "" && key != "itemType" && key != "title") {
-                addTextEntry(key, value)
-            }
-        }
-        this.addAttachments(attachments)
-        this.populateNotes(notes)
-        this.populateTags(item.tags.map { it.tag })
 
         val addNotesButton = requireView().findViewById<ImageButton>(R.id.imageButton_add_notes)
         val shareButton = requireView().findViewById<ImageButton>(R.id.imageButton_share_item)
-
-        addNotesButton.setOnClickListener {
-            showCreateNoteDialog()
-        }
-        shareButton.setOnClickListener {
-            showShareItemDialog()
-        }
-
         val textViewTitle = requireView().findViewById<TextView>(R.id.textView_item_toolbar_title)
-        textViewTitle.text = item.getTitle()
+
+        libraryViewModel.getOnItemClicked().observe(viewLifecycleOwner) { item ->
+            attachments = item.attachments
+            notes = item.notes
+
+            addTextEntry("Item Type", item.data["itemType"] ?: "Unknown")
+            addTextEntry("title", item.getTitle())
+            if (item.creators.isNotEmpty()) {
+                this.addCreators(item.getSortedCreators())
+            } else {
+                // empty creator.
+                this.addCreators(listOf(Creator("null", "", "", "", -1)))
+            }
+            for ((key, value) in item.data) {
+                if (value != "" && key != "itemType" && key != "title") {
+                    addTextEntry(key, value)
+                }
+            }
+            this.addAttachments(attachments)
+            this.populateNotes(notes)
+            this.populateTags(item.tags.map { it.tag })
+
+            addNotesButton.setOnClickListener {
+                showCreateNoteDialog()
+            }
+            shareButton.setOnClickListener {
+                showShareItemDialog()
+            }
+
+
+            textViewTitle.text = item.getTitle()
+        }
     }
 
     private fun populateTags(tags: List<String>) {
@@ -166,7 +169,7 @@ class ItemViewFragment : BottomSheetDialogFragment(),
             Log.d("zotero", "adding ${attachment.getTitle()}")
             fmt.add(
                 R.id.item_fragment_scrollview_ll_attachments,
-                ItemAttachmentEntry.newInstance(attachment)
+                ItemAttachmentEntry.newInstance(attachment.itemKey)
             )
         }
         fmt.commit()

@@ -452,4 +452,8 @@ class LibraryActivityPresenter(val view: LibraryActivity, context: Context) : Co
         }
         return this.sortedWith(sortMethod).reversed()
     }
+
+    fun deleteLocalAttachment(attachment: Item) {
+        model.deleteLocalAttachment(attachment)
+    }
 }

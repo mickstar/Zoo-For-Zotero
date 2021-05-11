@@ -12,7 +12,7 @@ android {
         applicationId "com.mickstarify.zooforzotero"
         minSdkVersion 21
         targetSdkVersion 30
-        versionCode 44
+        versionCode 45
         versionName "3.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "zotero_api_key", apikeyProperties['zotero_api_key'])
@@ -58,10 +58,11 @@ dependencies {
     implementation "androidx.navigation:navigation-ui-ktx:2.3.5"
     implementation 'com.google.android.material:material:1.3.0'
     api 'com.google.guava:guava:29.0-jre'
-    implementation 'oauth.signpost:oauth-signpost:2.1.1'
+
     implementation('com.squareup.okhttp3:okhttp:4.9.0')
     implementation('com.squareup.okhttp3:logging-interceptor:4.9.0')
-    implementation('oauth.signpost:signpost-commonshttp4:2.0.0') {
+    implementation 'oauth.signpost:oauth-signpost:2.1.1'
+    implementation('oauth.signpost:signpost-commonshttp4:2.1.1') {
         exclude group: 'org.apache.httpcomponents'
     }
     implementation('com.squareup.retrofit2:retrofit:2.9.0')

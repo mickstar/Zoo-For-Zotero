@@ -129,5 +129,6 @@ interface Contract {
         fun removeFromRecentlyViewed(attachment: Item)
         fun loadPriorState()
         fun getItemsForTag(tagName: String): List<Item>
+        fun deleteLocalAttachment(attachment: Item)
     }
 }

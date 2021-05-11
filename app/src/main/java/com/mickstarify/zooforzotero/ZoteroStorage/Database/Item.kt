@@ -8,7 +8,6 @@ import com.mickstarify.zooforzotero.ZoteroAPI.Model.Note
 import io.reactivex.Completable
 import io.reactivex.Maybe
 import io.reactivex.Single
-import kotlinx.android.parcel.IgnoredOnParcel
 import kotlinx.android.parcel.Parcelize
 import java.util.LinkedList
 import java.util.Locale
@@ -32,8 +31,7 @@ class ItemInfo(
     //lateinit var itemData: List<ItemData>
 }
 
-@Parcelize
-class Item : Parcelable {
+class Item {
     companion object {
         val ATTACHMENT_TYPE = "attachment"
     }
@@ -58,11 +56,9 @@ class Item : Parcelable {
     )
     lateinit var collections: List<String>
 
-    @IgnoredOnParcel
     @Ignore
     var attachments = LinkedList<Item>()
 
-    @IgnoredOnParcel
     @Ignore
     var notes = LinkedList<Note>()
 
@@ -94,11 +90,9 @@ class Item : Parcelable {
     val itemType: String
         get() = data["itemType"] ?: "error"
 
-    @IgnoredOnParcel
     @Ignore
     var mappedData: MutableMap<String, String>? = null
 
-    @IgnoredOnParcel
     @delegate:Ignore
     val data: Map<String, String> by lazy {
         if (mappedData == null) {
@@ -244,13 +238,12 @@ class Item : Parcelable {
         onDelete = ForeignKey.CASCADE
     )]
 )
-@Parcelize
 class ItemData(
     @ColumnInfo(name = "parent") val parent: String, //itemKey of parent
     @ColumnInfo(name = "name") val name: String,
     @ColumnInfo(name = "value") val value: String,
     @ColumnInfo(name = "valueType") val valueType: String
-) : Parcelable
+)
 
 @Entity(
     tableName = "ItemCreator", primaryKeys = ["parent", "firstName", "lastName"],
