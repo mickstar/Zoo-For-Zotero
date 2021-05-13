@@ -6,6 +6,7 @@ import android.util.Log
 import android.view.*
 import android.widget.ImageButton
 import android.widget.TextView
+import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
@@ -42,15 +43,12 @@ class ItemViewFragment : BottomSheetDialogFragment(),
                 override fun onSubmit(noteText: String) {
                     note.note = noteText
                     listener?.onNoteEdit(note)
-
                 }
-
             })
     }
 
     lateinit var libraryViewModel: LibraryListViewModel
 
-    private lateinit var item: Item
     private lateinit var attachments: List<Item>
     private lateinit var notes: List<Note>
     private var listener: OnItemFragmentInteractionListener? = null
@@ -60,7 +58,14 @@ class ItemViewFragment : BottomSheetDialogFragment(),
     }
 
     private fun showShareItemDialog() {
-        ShareItemDialog(item).show(context, this)
+        val item = libraryViewModel.getOnItemClicked().value
+        if (item == null) {
+            Toast.makeText(requireContext(), "Item not loaded yet.", Toast.LENGTH_SHORT).show()
+        } else {
+            ShareItemDialog(item).show(context, this)
+        }
+
+
     }
 
     private fun showCreateNoteDialog() {
@@ -72,11 +77,18 @@ class ItemViewFragment : BottomSheetDialogFragment(),
 
                 override fun onSubmit(noteText: String) {
                     Log.d("zotero", "got note $noteText")
+                    val item = libraryViewModel.getOnItemClicked().value
+                    if (item == null) {
+                        Toast.makeText(
+                            requireContext(),
+                            "Error, item unloaded from memory, please backup text and reopen app.",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                        return
+                    }
                     val note = Note(noteText, item.itemKey)
                     listener?.onNoteCreate(note)
-
                 }
-
             })
     }
 
@@ -160,7 +172,6 @@ class ItemViewFragment : BottomSheetDialogFragment(),
             )
         }
         fmt.commit()
-
     }
 
     private fun addAttachments(attachments: List<Item>) {
