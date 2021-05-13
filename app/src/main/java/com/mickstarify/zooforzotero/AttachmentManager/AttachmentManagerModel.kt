@@ -206,7 +206,8 @@ class AttachmentManagerModel(val presenter: Contract.Presenter, val context: Con
     override fun loadLibrary() {
         zoteroDB = ZoteroDB(context, groupID = GroupInfo.NO_GROUP_ID)
         zoteroDB.collections = LinkedList()
-        zoteroDB.loadItemsFromDatabase().subscribeOn(Schedulers.io())
+        zoteroDB.loadItemsFromDatabase()
+            .subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())
             .subscribe(object : CompletableObserver {
                 override fun onComplete() {

@@ -26,6 +26,7 @@ private const val ARG_ATTACHMENT = "attachment"
 class ItemAttachmentEntry(
     val itemKey: String
 ) : Fragment() {
+
     private var attachment: Item? = null
     var fileOpenListener: OnAttachmentFragmentInteractionListener? = null
     lateinit var libraryViewModel: LibraryListViewModel

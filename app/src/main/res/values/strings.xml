@@ -46,4 +46,6 @@
     <string name="zotero_account_sync">Zotero Account Sync</string>
     <string name="pick_your_cloud_storage_provider">Pick your cloud storage provider</string>
     <string name="catalog_empty">This catalog is empty. If you believe this is an error, please refresh your library.</string>
+    <string name="surname">Surname</string>
+    <string name="firstname">First Name</string>
 </resources>

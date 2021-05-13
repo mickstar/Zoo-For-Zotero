@@ -99,6 +99,7 @@
 
             </LinearLayout>
 
+
             <LinearLayout
                 android:id="@+id/item_fragment_scrollview_ll_notes"
                 android:layout_width="match_parent"

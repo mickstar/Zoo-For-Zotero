@@ -5,11 +5,13 @@ import android.os.Bundle
 import android.util.Log
 import android.view.*
 import android.widget.ImageButton
+import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
-import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
+import com.google.android.material.textfield.TextInputEditText
+import com.google.android.material.textfield.TextInputLayout
 import com.mickstarify.zooforzotero.LibraryActivity.Notes.EditNoteDialog
 import com.mickstarify.zooforzotero.LibraryActivity.Notes.NoteInteractionListener
 import com.mickstarify.zooforzotero.LibraryActivity.Notes.onEditNoteChangeListener
@@ -29,23 +31,6 @@ class ItemViewFragment : BottomSheetDialogFragment(),
     NoteInteractionListener,
     onShareItemListener,
     ItemTagEntry.OnTagEntryInteractionListener {
-    override fun deleteNote(note: Note) {
-        listener?.onNoteDelete(note)
-    }
-
-    override fun editNote(note: Note) {
-        EditNoteDialog()
-            .show(context, note.note, object :
-                onEditNoteChangeListener {
-                override fun onCancel() {
-                }
-
-                override fun onSubmit(noteText: String) {
-                    note.note = noteText
-                    listener?.onNoteEdit(note)
-                }
-            })
-    }
 
     lateinit var libraryViewModel: LibraryListViewModel
 
@@ -67,6 +52,25 @@ class ItemViewFragment : BottomSheetDialogFragment(),
 
 
     }
+
+    override fun editNote(note: Note) {
+        EditNoteDialog()
+            .show(context, note.note, object :
+                onEditNoteChangeListener {
+                override fun onCancel() {
+                }
+
+                override fun onSubmit(noteText: String) {
+                    note.note = noteText
+                    listener?.onNoteEdit(note)
+                }
+            })
+    }
+
+    override fun deleteNote(note: Note) {
+        listener?.onNoteDelete(note)
+    }
+
 
     private fun showCreateNoteDialog() {
         EditNoteDialog()
@@ -168,7 +172,7 @@ class ItemViewFragment : BottomSheetDialogFragment(),
         for (note in notes) {
             fmt.add(
                 R.id.item_fragment_scrollview_ll_notes,
-                ItemNoteEntry.newInstance(note)
+                ItemNoteEntry.newInstance(note.key)
             )
         }
         fmt.commit()
@@ -187,23 +191,50 @@ class ItemViewFragment : BottomSheetDialogFragment(),
     }
 
     private fun addTextEntry(label: String, content: String) {
-        val fmt = this.childFragmentManager.beginTransaction()
-        fmt.add(
-            R.id.item_fragment_scrollview_ll_layout,
-            ItemTextEntry.newInstance(label, content) as Fragment
-        )
-        fmt.commit()
+        val layout =
+            requireView().findViewById<LinearLayout>(R.id.item_fragment_scrollview_ll_layout)
+
+        val inflater = LayoutInflater.from(requireContext())
+        val view = inflater.inflate(R.layout.fragment_item_text_entry, layout)
+        val viewGroup = view as ViewGroup
+        val textLayout = viewGroup.getChildAt(viewGroup.childCount - 1)
+
+        val textField = textLayout.findViewById<TextInputLayout>(R.id.textField_item_info)
+        textField.hint = label
+
+        val editText = textLayout.findViewById<TextInputEditText>(R.id.editText_itemInfo)
+        editText.setText(content)
     }
 
     private fun addCreators(creators: List<Creator>) {
-        val fmt = this.childFragmentManager.beginTransaction()
-        for (creator in creators) {
-            fmt.add(
-                R.id.item_fragment_scrollview_ll_layout,
-                ItemAuthorsEntry.newInstance(creator) as Fragment
+        val itemViewLayout =
+            requireView().findViewById<LinearLayout>(R.id.item_fragment_scrollview_ll_layout)
+
+        val inflator = LayoutInflater.from(requireContext())
+
+        val creatorLayout = LinearLayout(requireContext())
+        creatorLayout.orientation = LinearLayout.VERTICAL
+        creatorLayout.layoutParams =
+            LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
             )
+
+        itemViewLayout.addView(creatorLayout)
+
+        creators.forEachIndexed { index, creator ->
+            val parent = inflator.inflate(R.layout.fragment_item_authors_entry, creatorLayout)
+            val view = (parent as ViewGroup).getChildAt(index)
+
+            val creatorType = view.findViewById<TextView>(R.id.textView_creator_type)
+            val lastName = view.findViewById<TextInputEditText>(R.id.editText_lastname)
+            val firstName = view.findViewById<TextInputEditText>(R.id.editText_firstname)
+
+            creatorType.text = creator.creatorType
+            lastName.setText(creator.lastName ?: "")
+            firstName.setText(creator.firstName ?: "")
+
         }
-        fmt.commit()
     }
 
     override fun onAttach(context: Context) {

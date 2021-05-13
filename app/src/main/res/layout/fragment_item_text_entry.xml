@@ -1,33 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginStart="16dp"
+    android:layout_marginTop="8dp"
+    android:layout_marginEnd="16dp"
+    android:layout_marginBottom="8dp"
+    android:orientation="horizontal">
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/textField_item_info"
         android:layout_width="match_parent"
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
         android:layout_height="wrap_content"
-        android:orientation="horizontal">
+        android:hint="unset">
 
-    <TextView
-            android:id="@+id/item_label"
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/editText_itemInfo"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:layout_margin="@dimen/text_margin"
-            android:layout_marginStart="8dp"
-            android:layout_weight="7"
-            android:text="Label:"
-            android:textAppearance="?attr/textAppearanceListItem" />
+            android:focusable="false"
+            android:inputType="textNoSuggestions"
+            android:text=""
+            android:layout_height="wrap_content" />
 
-    <EditText
-            android:id="@+id/item_content"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center|end"
-            android:layout_margin="@dimen/text_margin"
-            android:layout_marginStart="8dp"
-            android:layout_marginTop="8dp"
-            android:layout_marginEnd="8dp"
-            android:layout_weight="2"
-            android:editable="false"
-            android:inputType="none"
-            android:text="hello world this is the text for label"
-            android:textAppearance="?attr/textAppearanceListItem"
-            android:textIsSelectable="true" />
+    </com.google.android.material.textfield.TextInputLayout>
 </LinearLayout>
