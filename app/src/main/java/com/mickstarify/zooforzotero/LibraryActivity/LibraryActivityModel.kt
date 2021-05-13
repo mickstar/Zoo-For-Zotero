@@ -1064,6 +1064,10 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
         return zoteroDB.getItemsForTag(tagName)
     }
 
+    override fun deleteLocalAttachment(attachment: Item) {
+        attachmentStorageManager.deleteAttachment(attachment)
+    }
+
     init {
         ((context as Activity).application as ZooForZoteroApplication).component.inject(this)
         firebaseAnalytics = FirebaseAnalytics.getInstance(context)

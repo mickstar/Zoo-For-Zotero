@@ -206,10 +206,6 @@ class PreferenceManager @Inject constructor(context: Context) {
         return sharedPreferences.getBoolean("should_live_search", true)
     }
 
-    fun shouldOpenPDFOnOpen(): Boolean {
-        return sharedPreferences.getBoolean("should_open_pdf_on_open", false)
-    }
-
     fun hasShownCustomStorageWarning(): Boolean {
         return sharedPreferences.getBoolean("has_shown_custom_storage_warning", false)
     }

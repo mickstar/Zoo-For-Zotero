@@ -10,6 +10,7 @@ import android.view.View
 import android.webkit.URLUtil
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.constraintlayout.widget.ConstraintLayout
@@ -90,6 +91,14 @@ class ZoteroAPISetup : AppCompatActivity(), Contract.View {
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
         presenter = ZoteroAPISetupPresenter(this, AuthenticationStorage(this))
+
+        val textView_zoteroUrl = findViewById<TextView>(R.id.textView_hint_zotero_keys)
+        textView_zoteroUrl.setOnClickListener {
+            val url = "https://www.zotero.org/settings/keys"
+            val intent = Intent(Intent.ACTION_VIEW)
+            intent.data = Uri.parse(url)
+            startActivity(intent)
+        }
     }
 
     override fun onNewIntent(intent: Intent?) {

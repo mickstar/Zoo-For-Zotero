@@ -52,11 +52,6 @@
             app:useSimpleSummaryProvider="true" />
 
         <SwitchPreference
-            android:defaultValue="false"
-            android:key="should_open_pdf_on_open"
-            android:title="Single press opens attachment" />
-
-        <SwitchPreference
             android:defaultValue="true"
             android:key="should_live_search"
             android:summary="Turn off if your search is too slow"

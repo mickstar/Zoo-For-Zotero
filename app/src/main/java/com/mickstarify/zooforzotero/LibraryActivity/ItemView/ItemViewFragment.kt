@@ -5,10 +5,13 @@ import android.os.Bundle
 import android.util.Log
 import android.view.*
 import android.widget.ImageButton
+import android.widget.LinearLayout
 import android.widget.TextView
-import androidx.fragment.app.Fragment
+import android.widget.Toast
 import androidx.lifecycle.ViewModelProvider
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
+import com.google.android.material.textfield.TextInputEditText
+import com.google.android.material.textfield.TextInputLayout
 import com.mickstarify.zooforzotero.LibraryActivity.Notes.EditNoteDialog
 import com.mickstarify.zooforzotero.LibraryActivity.Notes.NoteInteractionListener
 import com.mickstarify.zooforzotero.LibraryActivity.Notes.onEditNoteChangeListener
@@ -28,8 +31,26 @@ class ItemViewFragment : BottomSheetDialogFragment(),
     NoteInteractionListener,
     onShareItemListener,
     ItemTagEntry.OnTagEntryInteractionListener {
-    override fun deleteNote(note: Note) {
-        listener?.onNoteDelete(note)
+
+    lateinit var libraryViewModel: LibraryListViewModel
+
+    private lateinit var attachments: List<Item>
+    private lateinit var notes: List<Note>
+    private var listener: OnItemFragmentInteractionListener? = null
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+    }
+
+    private fun showShareItemDialog() {
+        val item = libraryViewModel.getOnItemClicked().value
+        if (item == null) {
+            Toast.makeText(requireContext(), "Item not loaded yet.", Toast.LENGTH_SHORT).show()
+        } else {
+            ShareItemDialog(item).show(context, this)
+        }
+
+
     }
 
     override fun editNote(note: Note) {
@@ -42,26 +63,14 @@ class ItemViewFragment : BottomSheetDialogFragment(),
                 override fun onSubmit(noteText: String) {
                     note.note = noteText
                     listener?.onNoteEdit(note)
-
                 }
-
             })
     }
 
-    lateinit var libraryViewModel: LibraryListViewModel
-
-    private lateinit var item: Item
-    private lateinit var attachments: List<Item>
-    private lateinit var notes: List<Note>
-    private var listener: OnItemFragmentInteractionListener? = null
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
+    override fun deleteNote(note: Note) {
+        listener?.onNoteDelete(note)
     }
 
-    private fun showShareItemDialog() {
-        ShareItemDialog(item).show(context, this)
-    }
 
     private fun showCreateNoteDialog() {
         EditNoteDialog()
@@ -72,11 +81,18 @@ class ItemViewFragment : BottomSheetDialogFragment(),
 
                 override fun onSubmit(noteText: String) {
                     Log.d("zotero", "got note $noteText")
+                    val item = libraryViewModel.getOnItemClicked().value
+                    if (item == null) {
+                        Toast.makeText(
+                            requireContext(),
+                            "Error, item unloaded from memory, please backup text and reopen app.",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                        return
+                    }
                     val note = Note(noteText, item.itemKey)
                     listener?.onNoteCreate(note)
-
                 }
-
             })
     }
 
@@ -99,39 +115,42 @@ class ItemViewFragment : BottomSheetDialogFragment(),
             Log.e("zotero", "error item in viewmodel is null!")
             dismiss()
         }
-        item = libraryViewModel.getOnItemClicked().value!!
-        attachments = item.attachments
-        notes = item.notes
-
-        addTextEntry("Item Type", item.data["itemType"] ?: "Unknown")
-        addTextEntry("title", item.getTitle())
-        if (item.creators.isNotEmpty()) {
-            this.addCreators(item.getSortedCreators())
-        } else {
-            // empty creator.
-            this.addCreators(listOf(Creator("null", "", "", "", -1)))
-        }
-        for ((key, value) in item.data) {
-            if (value != "" && key != "itemType" && key != "title") {
-                addTextEntry(key, value)
-            }
-        }
-        this.addAttachments(attachments)
-        this.populateNotes(notes)
-        this.populateTags(item.tags.map { it.tag })
 
         val addNotesButton = requireView().findViewById<ImageButton>(R.id.imageButton_add_notes)
         val shareButton = requireView().findViewById<ImageButton>(R.id.imageButton_share_item)
-
-        addNotesButton.setOnClickListener {
-            showCreateNoteDialog()
-        }
-        shareButton.setOnClickListener {
-            showShareItemDialog()
-        }
-
         val textViewTitle = requireView().findViewById<TextView>(R.id.textView_item_toolbar_title)
-        textViewTitle.text = item.getTitle()
+
+        libraryViewModel.getOnItemClicked().observe(viewLifecycleOwner) { item ->
+            attachments = item.attachments
+            notes = item.notes
+
+            addTextEntry("Item Type", item.data["itemType"] ?: "Unknown")
+            addTextEntry("title", item.getTitle())
+            if (item.creators.isNotEmpty()) {
+                this.addCreators(item.getSortedCreators())
+            } else {
+                // empty creator.
+                this.addCreators(listOf(Creator("null", "", "", "", -1)))
+            }
+            for ((key, value) in item.data) {
+                if (value != "" && key != "itemType" && key != "title") {
+                    addTextEntry(key, value)
+                }
+            }
+            this.addAttachments(attachments)
+            this.populateNotes(notes)
+            this.populateTags(item.tags.map { it.tag })
+
+            addNotesButton.setOnClickListener {
+                showCreateNoteDialog()
+            }
+            shareButton.setOnClickListener {
+                showShareItemDialog()
+            }
+
+
+            textViewTitle.text = item.getTitle()
+        }
     }
 
     private fun populateTags(tags: List<String>) {
@@ -153,11 +172,10 @@ class ItemViewFragment : BottomSheetDialogFragment(),
         for (note in notes) {
             fmt.add(
                 R.id.item_fragment_scrollview_ll_notes,
-                ItemNoteEntry.newInstance(note)
+                ItemNoteEntry.newInstance(note.key)
             )
         }
         fmt.commit()
-
     }
 
     private fun addAttachments(attachments: List<Item>) {
@@ -166,30 +184,57 @@ class ItemViewFragment : BottomSheetDialogFragment(),
             Log.d("zotero", "adding ${attachment.getTitle()}")
             fmt.add(
                 R.id.item_fragment_scrollview_ll_attachments,
-                ItemAttachmentEntry.newInstance(attachment)
+                ItemAttachmentEntry.newInstance(attachment.itemKey)
             )
         }
         fmt.commit()
     }
 
     private fun addTextEntry(label: String, content: String) {
-        val fmt = this.childFragmentManager.beginTransaction()
-        fmt.add(
-            R.id.item_fragment_scrollview_ll_layout,
-            ItemTextEntry.newInstance(label, content) as Fragment
-        )
-        fmt.commit()
+        val layout =
+            requireView().findViewById<LinearLayout>(R.id.item_fragment_scrollview_ll_layout)
+
+        val inflater = LayoutInflater.from(requireContext())
+        val view = inflater.inflate(R.layout.fragment_item_text_entry, layout)
+        val viewGroup = view as ViewGroup
+        val textLayout = viewGroup.getChildAt(viewGroup.childCount - 1)
+
+        val textField = textLayout.findViewById<TextInputLayout>(R.id.textField_item_info)
+        textField.hint = label
+
+        val editText = textLayout.findViewById<TextInputEditText>(R.id.editText_itemInfo)
+        editText.setText(content)
     }
 
     private fun addCreators(creators: List<Creator>) {
-        val fmt = this.childFragmentManager.beginTransaction()
-        for (creator in creators) {
-            fmt.add(
-                R.id.item_fragment_scrollview_ll_layout,
-                ItemAuthorsEntry.newInstance(creator) as Fragment
+        val itemViewLayout =
+            requireView().findViewById<LinearLayout>(R.id.item_fragment_scrollview_ll_layout)
+
+        val inflator = LayoutInflater.from(requireContext())
+
+        val creatorLayout = LinearLayout(requireContext())
+        creatorLayout.orientation = LinearLayout.VERTICAL
+        creatorLayout.layoutParams =
+            LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
             )
+
+        itemViewLayout.addView(creatorLayout)
+
+        creators.forEachIndexed { index, creator ->
+            val parent = inflator.inflate(R.layout.fragment_item_authors_entry, creatorLayout)
+            val view = (parent as ViewGroup).getChildAt(index)
+
+            val creatorType = view.findViewById<TextView>(R.id.textView_creator_type)
+            val lastName = view.findViewById<TextInputEditText>(R.id.editText_lastname)
+            val firstName = view.findViewById<TextInputEditText>(R.id.editText_firstname)
+
+            creatorType.text = creator.creatorType
+            lastName.setText(creator.lastName ?: "")
+            firstName.setText(creator.firstName ?: "")
+
         }
-        fmt.commit()
     }
 
     override fun onAttach(context: Context) {

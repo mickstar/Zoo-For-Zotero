@@ -165,7 +165,15 @@ class ZoteroDB constructor(
     }
 
     fun getAttachments(itemKey: String): List<Item> {
-        return items!!.filter { it.itemKey == itemKey }.firstOrNull()?.attachments ?: emptyList()
+        if (items == null) {
+            Log.e("Zotero", "Error database unloaded.")
+            this.loadItemsFromDatabase()
+                .subscribeOn(Schedulers.io())
+                .subscribe()
+            return emptyList()
+        }
+
+        return items?.filter { it.itemKey == itemKey }?.firstOrNull()?.attachments ?: emptyList()
     }
 
     private fun associateItemsWithAttachments() {

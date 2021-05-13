@@ -204,13 +204,21 @@ class BarcodeScanningScreen : Fragment() {
     }
 
     private fun stopScanning() {
-        this.camera?.close()
+        try {
+            this.camera?.close()
+        } catch (e: IllegalStateException) {
+            // camera already closed.
+        }
         findNavController().navigateUp()
     }
 
     override fun onStop() {
         super.onStop()
-        this.camera?.close()
+        try {
+            this.camera?.close()
+        } catch (e: IllegalStateException) {
+            // camera already closed.
+        }
     }
 
     override fun onRequestPermissionsResult(

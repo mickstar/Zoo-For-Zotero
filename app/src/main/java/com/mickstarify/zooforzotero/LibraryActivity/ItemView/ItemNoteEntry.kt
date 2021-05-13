@@ -1,7 +1,6 @@
 package com.mickstarify.zooforzotero.LibraryActivity.ItemView
 
 import android.app.AlertDialog
-import android.content.DialogInterface
 import android.os.Bundle
 import android.text.Html
 import android.util.Log
@@ -10,21 +9,22 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.ViewModelProvider
 import com.mickstarify.zooforzotero.LibraryActivity.Notes.NoteInteractionListener
 import com.mickstarify.zooforzotero.LibraryActivity.Notes.NoteView
+import com.mickstarify.zooforzotero.LibraryActivity.ViewModels.LibraryListViewModel
 import com.mickstarify.zooforzotero.R
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Note
 
 val ARG_NOTE = "note"
 
-class ItemNoteEntry : Fragment() {
+class ItemNoteEntry(val noteKey: String) : Fragment() {
     private var note: Note? = null
     private var listener: NoteInteractionListener? = null
+    lateinit var libraryViewModel: LibraryListViewModel
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        arguments?.let {
-            note = it.getParcelable(ARG_NOTE)
-        }
         onAttachToParentFragment(parentFragment)
     }
 
@@ -42,37 +42,47 @@ class ItemNoteEntry : Fragment() {
     ): View? {
         // Inflate the layout for this fragment
         val view = inflater.inflate(R.layout.fragment_item_note_entry, container, false)
-        val noteText = view.findViewById<TextView>(R.id.textView_note)
-        val htmlText = stripHtml(note?.note ?: "")
-        noteText.text = htmlText
-        val noteView = NoteView(context!!, note!!, listener!!)
+        return view
+    }
 
-        view.setOnClickListener({
-            noteView.show()
-        })
+    override fun onActivityCreated(savedInstanceState: Bundle?) {
+        super.onActivityCreated(savedInstanceState)
+        libraryViewModel =
+            ViewModelProvider(requireActivity()).get(LibraryListViewModel::class.java)
 
-        view.setOnLongClickListener(object : View.OnLongClickListener {
-            override fun onLongClick(dialog: View?): Boolean {
-                AlertDialog.Builder(this@ItemNoteEntry.context)
-                    .setTitle("Note")
-                    .setItems(
-                        arrayOf("View Note", "Edit Note", "Delete Note"),
-                        object : DialogInterface.OnClickListener {
-                            override fun onClick(dialog: DialogInterface?, item: Int) {
-                                when (item) {
-                                    0 -> noteView.show()
-                                    1 -> editNote()
-                                    2 -> deleteNote()
-                                }
-                            }
+        val noteText = requireView().findViewById<TextView>(R.id.textView_note)
 
-                        }).show()
-                return true
+        libraryViewModel.getOnItemClicked().observe(viewLifecycleOwner) { item ->
+            note = item?.notes?.filter { it.key == noteKey }?.firstOrNull()
+
+            val htmlText = stripHtml(note?.note ?: "")
+            noteText.text = htmlText
+            val noteView = NoteView(requireContext(), note!!, listener!!)
+
+            requireView().setOnClickListener {
+                noteView.show()
             }
 
-        })
+            requireView().setOnLongClickListener(object : View.OnLongClickListener {
+                override fun onLongClick(dialog: View?): Boolean {
+                    AlertDialog.Builder(this@ItemNoteEntry.context)
+                        .setTitle("Note")
+                        .setItems(
+                            arrayOf("View Note", "Edit Note", "Delete Note")
+                        ) { _dialog, item ->
+                            when (item) {
+                                0 -> noteView.show()
+                                1 -> editNote()
+                                2 -> deleteNote()
+                            }
+                        }.show()
+                    return true
+                }
 
-        return view
+            })
+        }
+
+
     }
 
     private fun editNote() {
@@ -102,11 +112,6 @@ class ItemNoteEntry : Fragment() {
 
     companion object {
         @JvmStatic
-        fun newInstance(note: Note) =
-            ItemNoteEntry().apply {
-                arguments = Bundle().apply {
-                    putParcelable(ARG_NOTE, note)
-                }
-            }
+        fun newInstance(noteKey: String) = ItemNoteEntry(noteKey)
     }
 }

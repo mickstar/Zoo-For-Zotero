@@ -44,11 +44,10 @@ class SyncSetupView : AppCompatActivity(), SyncSetupContract.View {
 
     override fun showHowToZoteroSyncDialog(onProceed: () -> Unit) {
         val dialog = AlertDialog.Builder(this)
-        dialog.setTitle("How to")
+        dialog.setTitle("How to access")
         dialog.setMessage(
-            "I am going to open up a browser for the zotero account website.\n\n" +
-                    "You will need to login with your Zotero Account.\n" +
-                    "Then scroll down and make sure you click \"Save Key\"\n\n" +
+            "You will need to login with your Zotero Account.\n" +
+                    "After your login in, make sure you scroll down and click \"Save Key\"\n\n" +
                     "Once this is complete the web browser should close."
         )
         dialog.setPositiveButton(
