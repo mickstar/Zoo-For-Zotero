@@ -257,18 +257,6 @@ class LibraryActivityPresenter(val view: LibraryActivity, context: Context) : Co
             val note = Note(item)
             view.showNote(note)
         } else {
-            val itemAttachments = model.getAttachments(item.itemKey)
-            if (!longPress && model.preferences.shouldOpenPDFOnOpen()) {
-                val pdfAttachment =
-                    itemAttachments.filter { it.data["contentType"] == "application/pdf" }
-                        .firstOrNull()
-                if (pdfAttachment != null) {
-                    openAttachment(pdfAttachment)
-                    return
-                }
-                // otherwise there is no PDF and we will continue and just open the itemview.
-            }
-
             model.selectedItem = item
             view.showItemDialog()
         }
