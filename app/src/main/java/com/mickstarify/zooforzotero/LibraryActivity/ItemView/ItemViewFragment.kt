@@ -11,7 +11,6 @@ import android.widget.Toast
 import androidx.lifecycle.ViewModelProvider
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.google.android.material.textfield.TextInputEditText
-import com.google.android.material.textfield.TextInputLayout
 import com.mickstarify.zooforzotero.LibraryActivity.Notes.EditNoteDialog
 import com.mickstarify.zooforzotero.LibraryActivity.Notes.NoteInteractionListener
 import com.mickstarify.zooforzotero.LibraryActivity.Notes.onEditNoteChangeListener
@@ -199,11 +198,13 @@ class ItemViewFragment : BottomSheetDialogFragment(),
         val viewGroup = view as ViewGroup
         val textLayout = viewGroup.getChildAt(viewGroup.childCount - 1)
 
-        val textField = textLayout.findViewById<TextInputLayout>(R.id.textField_item_info)
-        textField.hint = label
+        val textLabel = textLayout.findViewById<TextView>(R.id.textView_label)
+        textLabel.text = label
 
-        val editText = textLayout.findViewById<TextInputEditText>(R.id.editText_itemInfo)
-        editText.setText(content)
+//        val editText = textLayout.findViewById<TextInputEditText>(R.id.editText_itemInfo)
+//        editText.setText(content)
+        val textViewInfo = textLayout.findViewById<TextView>(R.id.textView_item_info)
+        textViewInfo.setText(content)
     }
 
     private fun addCreators(creators: List<Creator>) {

@@ -24,12 +24,13 @@ private const val ARG_ATTACHMENT = "attachment"
 
 
 class ItemAttachmentEntry(
-    val itemKey: String
 ) : Fragment() {
 
     private var attachment: Item? = null
     var fileOpenListener: OnAttachmentFragmentInteractionListener? = null
     lateinit var libraryViewModel: LibraryListViewModel
+
+    val itemKey: String by lazy { arguments?.getString("itemKey") ?: "" }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -43,6 +44,11 @@ class ItemAttachmentEntry(
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
+
+        if (itemKey == "") {
+            Log.e("Zotero", "error item key is null")
+            return
+        }
 
         libraryViewModel =
             ViewModelProvider(requireActivity()).get(LibraryListViewModel::class.java)
@@ -155,6 +161,15 @@ class ItemAttachmentEntry(
 
     companion object {
         @JvmStatic
-        fun newInstance(itemKey: String) = ItemAttachmentEntry(itemKey)
+        fun newInstance(itemKey: String): ItemAttachmentEntry {
+            val fragment = ItemAttachmentEntry()
+            val args = Bundle().apply {
+                putString("itemKey", itemKey)
+            }
+            fragment.arguments = args
+            return fragment
+        }
+
+        fun newInstance() = ItemAttachmentEntry()
     }
 }

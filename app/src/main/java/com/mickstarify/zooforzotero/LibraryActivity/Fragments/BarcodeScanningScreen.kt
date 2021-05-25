@@ -124,7 +124,7 @@ class BarcodeScanningScreen : Fragment() {
                         if (barcodeDetector.isOperational == false) {
                             Toast.makeText(
                                 requireContext(),
-                                "Failed to load barcode detector",
+                                "Google mobile services (GMS) unable. Barcode scanning unsupported.",
                                 Toast.LENGTH_SHORT
                             ).show()
                             stopScanning()
@@ -159,7 +159,11 @@ class BarcodeScanningScreen : Fragment() {
                                 }
                             } else {
                             }
-                            cameraImage.close()
+                            try {
+                                cameraImage.close()
+                            } catch (e: IllegalStateException) {
+                                // camera already closed.
+                            }
 
                         }, cameraBkgHandler)
 

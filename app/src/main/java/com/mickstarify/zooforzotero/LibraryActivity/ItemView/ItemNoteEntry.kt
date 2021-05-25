@@ -18,10 +18,12 @@ import com.mickstarify.zooforzotero.ZoteroAPI.Model.Note
 
 val ARG_NOTE = "note"
 
-class ItemNoteEntry(val noteKey: String) : Fragment() {
+class ItemNoteEntry() : Fragment() {
     private var note: Note? = null
     private var listener: NoteInteractionListener? = null
     lateinit var libraryViewModel: LibraryListViewModel
+
+    val noteKey: String by lazy { arguments?.getString("noteKey") ?: "" }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -51,6 +53,10 @@ class ItemNoteEntry(val noteKey: String) : Fragment() {
             ViewModelProvider(requireActivity()).get(LibraryListViewModel::class.java)
 
         val noteText = requireView().findViewById<TextView>(R.id.textView_note)
+
+        if (noteKey == "") {
+            return
+        }
 
         libraryViewModel.getOnItemClicked().observe(viewLifecycleOwner) { item ->
             note = item?.notes?.filter { it.key == noteKey }?.firstOrNull()
@@ -112,6 +118,15 @@ class ItemNoteEntry(val noteKey: String) : Fragment() {
 
     companion object {
         @JvmStatic
-        fun newInstance(noteKey: String) = ItemNoteEntry(noteKey)
+        fun newInstance(noteKey: String): ItemNoteEntry {
+            val fragment = ItemNoteEntry()
+            val args = Bundle().apply {
+                putString("noteKey", noteKey)
+            }
+            fragment.arguments = args
+            return fragment
+        }
+
+        fun newInstance() = ItemNoteEntry()
     }
 }
