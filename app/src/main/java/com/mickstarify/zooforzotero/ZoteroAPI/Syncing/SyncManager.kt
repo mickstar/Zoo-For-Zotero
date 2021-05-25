@@ -301,17 +301,20 @@ class SyncManager (
             throw Exception("Error cannot proceed to stage 2 if library still loading.")
         }
 
-        updateDeletedEntries(db).subscribeOn(Schedulers.io()).subscribe(object :
-            CompletableObserver {
-            override fun onSubscribe(d: Disposable) {
-                // nothing.
-            }
+        updateDeletedEntries(db)
+            .subscribeOn(Schedulers.io())
+            .observeOn(AndroidSchedulers.mainThread())
+            .subscribe(object :
+                CompletableObserver {
+                override fun onSubscribe(d: Disposable) {
+                    // nothing.
+                }
 
-            override fun onComplete() {
-                syncChangeListener.finishLibrarySync(db)
-            }
+                override fun onComplete() {
+                    syncChangeListener.finishLibrarySync(db)
+                }
 
-            override fun onError(e: Throwable) {
+                override fun onError(e: Throwable) {
                 Log.e("zotero", "there was an error processing deleted Entries, ${e}")
                 syncChangeListener.createErrorAlert(
                     "Error Updating Deleted Items",

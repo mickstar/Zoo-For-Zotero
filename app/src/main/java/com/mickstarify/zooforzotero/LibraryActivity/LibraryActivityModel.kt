@@ -1017,8 +1017,9 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                     )
                 }
 
-            }.doOnError {
+            }.onErrorComplete {
                 presenter.createErrorAlert("error loading library", "got error message ${it}", {})
+                true
             }.subscribe()
     }
 
