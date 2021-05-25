@@ -6,7 +6,9 @@ import com.mickstarify.zooforzotero.BuildConfig
 import com.mickstarify.zooforzotero.SyncSetup.AuthenticationStorage
 import io.reactivex.Completable
 import io.reactivex.Observable
+import io.reactivex.Observer
 import io.reactivex.android.schedulers.AndroidSchedulers
+import io.reactivex.disposables.Disposable
 import io.reactivex.schedulers.Schedulers
 import oauth.signpost.commonshttp.CommonsHttpOAuthConsumer
 import oauth.signpost.commonshttp.CommonsHttpOAuthProvider
@@ -55,12 +57,26 @@ class ZoteroAPISetupModel(val presenter: Contract.Presenter) : Contract.Model {
     override fun establishAPIConnection() {
         val d = Observable.fromCallable {
             OAuthProvider.retrieveRequestToken(OAuthConsumer, "zooforzotero://oauth_callback")
-        }.subscribeOn(Schedulers.io())
+        }
+            .subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())
-            .subscribe { requestURL ->
-                Log.d("zotero", "loading URL $requestURL")
-                presenter.loadAuthorizationURL(requestURL)
-            }
+            .subscribe(object : Observer<String> {
+                override fun onSubscribe(d: Disposable) {
+                }
+
+                override fun onNext(requestURL: String) {
+                    Log.d("zotero", "loading URL $requestURL")
+                    presenter.loadAuthorizationURL(requestURL)
+                }
+
+                override fun onError(e: Throwable) {
+                    presenter.showError("Error connecting to Zotero's server ${e.message}")
+                }
+
+                override fun onComplete() {
+                }
+
+            })
     }
 
 

@@ -16,6 +16,7 @@ interface Contract {
         fun loadAuthorizationURL(authorizationURL: String)
         fun handleOAuthCallback(uri: Uri?)
         fun openLibraryView()
+        fun showError(message: String)
     }
 
     interface Model {

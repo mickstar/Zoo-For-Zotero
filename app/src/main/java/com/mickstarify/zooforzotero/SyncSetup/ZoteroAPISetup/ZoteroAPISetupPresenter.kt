@@ -11,6 +11,10 @@ class ZoteroAPISetupPresenter(
         view.openLibraryView()
     }
 
+    override fun showError(message: String) {
+        view.makeErrorAlert("Error", message)
+    }
+
     override fun handleOAuthCallback(uri: Uri?) {
         val oauth_token = uri?.getQueryParameter("oauth_token")
         val oauth_verifier = uri?.getQueryParameter("oauth_verifier")
