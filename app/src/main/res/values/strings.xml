@@ -48,4 +48,11 @@
     <string name="catalog_empty">This catalog is empty. If you believe this is an error, please refresh your library.</string>
     <string name="surname">Surname</string>
     <string name="firstname">First Name</string>
+    <string name="username">Username</string>
+    <string name="password">Password</string>
+    <string name="host_url">Host URL</string>
+    <string name="webdav_config_title">Webdav Server Configuration</string>
+    <string name="advanced_configuration">Advanced Configuration</string>
+    <string name="connect">Connect</string>
+    <string name="save_connect">Save and Connect</string>
 </resources>

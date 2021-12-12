@@ -53,6 +53,7 @@ class ServerAlreadyExistsException(message: String) : RuntimeException(message)
 class ItemLockedException(message: String) : RuntimeException(message)
 class ItemChangedSinceException(message: String) : RuntimeException(message)
 class ZoteroNotFoundException(message: String) : RuntimeException(message)
+
 class ZoteroAPI(
     val API_KEY: String,
     val userID: String,
@@ -66,7 +67,7 @@ class ZoteroAPI(
             })
         }
         writeTimeout(
-            10,
+            1,
             TimeUnit.MINUTES
         ) // so socket doesn't timeout on large uploads (attachments)
         addInterceptor(object : Interceptor {
@@ -124,10 +125,7 @@ class ZoteroAPI(
         // When the user has webdav enabled on personal account or for groups are the only two conditions.
         if (!useGroup && preferenceManager.isWebDAVEnabled()) {
             val webdav = Webdav(
-                preferenceManager.getWebDAVAddress(),
-                preferenceManager.getWebDAVUsername(),
-                preferenceManager.getWebDAVPassword(),
-                preferenceManager.isInsecureSSLAllowed()
+                preferenceManager
             )
 
             return webdav.downloadFileRx(item, context, attachmentStorageManager)
@@ -555,10 +553,7 @@ class ZoteroAPI(
     fun uploadAttachmentWithWebdav(attachment: Item, context: Context): Completable {
         val preferenceManager = PreferenceManager(context)
         val webdav = Webdav(
-            preferenceManager.getWebDAVAddress(),
-            preferenceManager.getWebDAVUsername(),
-            preferenceManager.getWebDAVPassword(),
-            preferenceManager.isInsecureSSLAllowed()
+            preferenceManager
         )
         return webdav.uploadAttachment(attachment, attachmentStorageManager)
     }

@@ -188,6 +188,9 @@ class Item {
 
         if (this.data.containsKey("contentType")) {
             return (this.getFileExtension() != "UNKNOWN")
+        } else {
+            // i don't know, bit of a hack. - basically is returning if attachment and if has extension.
+            return (this.getFileExtension() != "UNKNOWN")
         }
         return false
     }
@@ -199,6 +202,7 @@ class Item {
             "application/epub+zip" -> "epub"
             "application/x-mobipocket-ebook" -> "mobi"
             "application/vnd.amazon.ebook" -> "azw"
+            "application/vnd.ms-excel" -> "xlsx"
             else -> "UNKNOWN"
         }
 

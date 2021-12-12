@@ -2,6 +2,15 @@ package com.mickstarify.zooforzotero.ZoteroAPI
 
 import android.content.Context
 import android.util.Log
+import com.burgstaller.okhttp.AuthenticationCacheInterceptor
+import com.burgstaller.okhttp.CachingAuthenticatorDecorator
+import com.burgstaller.okhttp.DispatchingAuthenticator
+import com.burgstaller.okhttp.basic.BasicAuthenticator
+import com.burgstaller.okhttp.digest.CachingAuthenticator
+import com.burgstaller.okhttp.digest.Credentials
+import com.burgstaller.okhttp.digest.DigestAuthenticator
+import com.mickstarify.zooforzotero.PreferenceManager
+import com.mickstarify.zooforzotero.WebdavAuthMode
 import com.mickstarify.zooforzotero.ZoteroStorage.AttachmentStorageManager
 import com.mickstarify.zooforzotero.ZoteroStorage.Database.Item
 import com.thegrizzlylabs.sardineandroid.impl.OkHttpSardine
@@ -18,7 +27,7 @@ import java.io.InputStream
 import java.security.SecureRandom
 import java.security.cert.CertificateException
 import java.security.cert.X509Certificate
-import java.util.*
+import java.util.Locale
 import java.util.concurrent.TimeUnit
 import javax.net.ssl.HostnameVerifier
 import javax.net.ssl.SSLContext
@@ -26,13 +35,12 @@ import javax.net.ssl.TrustManager
 import javax.net.ssl.X509TrustManager
 
 class Webdav(
-    address: String,
-    val username: String,
-    val password: String,
-    val allowInsecureSSL: Boolean = false
+    preferenceManager: PreferenceManager
 ) {
-    var sardine: OkHttpSardine
+    private var sardine: OkHttpSardine
     var address: String
+
+
     fun testConnection(): Boolean {
         return sardine.exists(address)
     }
@@ -136,7 +144,7 @@ class Webdav(
         * 4. send a delete request and  rename request to server so we have
         *  F3FXJF.zip + F3FXJF.prop resulting*/
 
-        return Completable.fromAction({
+        return Completable.fromAction {
             // STEP 1 CREATE ZIP
             val fileInputStream =
                 attachmentStorageManager.getItemInputStream(attachment).source()
@@ -194,18 +202,48 @@ class Webdav(
             sardine.move(newZipPath, zipPath)
 
             // DONE.
-        })
+        }
 
     }
 
-    init {
-        val clientBuillder = OkHttpClient.Builder()
-            .protocols(Collections.singletonList(Protocol.HTTP_1_1))
-            .callTimeout(30, TimeUnit.SECONDS)
-            .readTimeout(30, TimeUnit.SECONDS)
-            .writeTimeout(30, TimeUnit.SECONDS);
+    val authCach: MutableMap<String, CachingAuthenticator> = HashMap()
 
-        if (allowInsecureSSL){
+    init {
+        val username = preferenceManager.getWebDAVUsername()
+        val password = preferenceManager.getWebDAVPassword()
+        val verifySSL = preferenceManager.getVerifySSLForWebDAV()
+
+
+        val clientBuilder = OkHttpClient.Builder()
+            .protocols(listOf(Protocol.HTTP_1_1, Protocol.HTTP_2))
+            .callTimeout(0, TimeUnit.SECONDS) // no call timeout.
+            .connectTimeout(preferenceManager.getWebDAVConnectTimeout(), TimeUnit.MILLISECONDS)
+            .readTimeout(preferenceManager.getWebDAVReadTimeout(), TimeUnit.MILLISECONDS)
+            .writeTimeout(preferenceManager.getWebDAVWriteTimeout(), TimeUnit.MILLISECONDS);
+
+
+        if (username != "" && password != "") {
+            val credentials = Credentials(username, password)
+            val digestAuthenticator = DigestAuthenticator(credentials)
+            val basicAuthenticator = BasicAuthenticator(credentials)
+
+            val authenticator = when (preferenceManager.getWebDAVAuthMode()) {
+                WebdavAuthMode.BASIC -> basicAuthenticator
+                WebdavAuthMode.DIGEST -> digestAuthenticator
+                WebdavAuthMode.AUTOMATIC -> {
+                    DispatchingAuthenticator.Builder()
+                        .with("digest", digestAuthenticator)
+                        .with("basic", basicAuthenticator)
+                        .build()
+                }
+            }
+
+            clientBuilder
+                .authenticator(CachingAuthenticatorDecorator(authenticator, authCach))
+                .addInterceptor(AuthenticationCacheInterceptor(authCach))
+        }
+
+        if (!verifySSL) {
             val trustAllCerts = arrayOf<TrustManager>(
                 object : X509TrustManager {
                     @Throws(CertificateException::class)
@@ -230,27 +268,16 @@ class Webdav(
             val sslContext = SSLContext.getInstance("SSL")
             sslContext.init(null, trustAllCerts, SecureRandom())
             val sslSocketFactory = sslContext.socketFactory
-            clientBuillder.sslSocketFactory(sslSocketFactory, trustAllCerts[0] as X509TrustManager)
-            clientBuillder.hostnameVerifier(HostnameVerifier { hostname, session -> true })
+            clientBuilder.sslSocketFactory(sslSocketFactory, trustAllCerts[0] as X509TrustManager)
+            clientBuilder.hostnameVerifier(HostnameVerifier { hostname, session -> true })
         }
 
         sardine = OkHttpSardine(
-            clientBuillder.build()
+            clientBuilder.build()
         )
 
-        if (username != "" && password != "") {
-            sardine.setCredentials(username, password, true)
-        }
-
-        this.address = if (address.endsWith("/zotero")) {
-            address
-        } else {
-            if (address.endsWith("/")) { // so we don't get server.com//zotero
-                address + "zotero"
-            } else {
-                address + "/zotero"
-            }
-        }
+        this.address = preferenceManager.getWebDAVAddress()
     }
-
 }
+
+

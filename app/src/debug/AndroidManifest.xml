@@ -31,7 +31,7 @@
             android:name=".LibraryActivity.WebDAV.WebDAVSetup"
             android:label="@string/title_activity_web_davsetup"
             android:parentActivityName=".LibraryActivity.LibraryActivity"
-            android:theme="@style/AppTheme">
+            android:theme="@style/AppThemeLight">
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value="com.mickstarify.zooforzotero.LibraryActivity.LibraryActivity" />
