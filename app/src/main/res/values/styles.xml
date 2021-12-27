@@ -1,34 +1,4 @@
 <resources>
-
-    <style name="AppTheme" parent="Theme.MaterialComponents.DayNight.DarkActionBar">
-        <item name="colorPrimary">@color/colorPrimary</item>
-        <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
-        <item name="colorAccent">@color/colorAccent</item>
-        <item name="actionBarTheme">@style/AppTheme.Actionbar</item>
-    </style>
-
-    <style name="AppThemeLight" parent="Theme.MaterialComponents.Light.DarkActionBar">
-        <item name="colorPrimary">@color/colorPrimary</item>
-        <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
-        <item name="colorAccent">@color/colorAccent</item>
-        <item name="actionBarTheme">@style/AppTheme.Actionbar</item>
-    </style>
-
-    <style name="AppTheme.Actionbar" parent="ThemeOverlay.MaterialComponents.Dark.ActionBar">
-        <item name="colorPrimary">@color/colorPrimary</item>
-        <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
-        <item name="colorAccent">@color/colorAccent</item>
-    </style>
-
-    <style name="AppTheme.NoActionBar">
-        <item name="windowActionBar">false</item>
-        <item name="windowNoTitle">true</item>
-    </style>
-
-    <style name="AppTheme.AppBarOverlay" parent="AppTheme" />
-
-    <style name="AppTheme.PopupOverlay" parent="AppTheme" />
-
     <style name="menu_labels_style">
         <item name="android:textColor">#FFFFFF</item>
         <item name="android:background">@drawable/fab_actiontext_background</item>

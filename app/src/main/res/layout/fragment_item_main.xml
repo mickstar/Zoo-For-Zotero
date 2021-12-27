@@ -4,8 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="?android:colorBackground"
-    android:orientation="vertical"
-    android:theme="@style/AppTheme">
+    android:orientation="vertical">
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/constraintLayout_toolbar"
@@ -61,7 +60,6 @@
             android:layout_height="match_parent">
 
         <LinearLayout
-            android:theme="@style/AppTheme"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical">

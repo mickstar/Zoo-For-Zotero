@@ -60,53 +60,78 @@ class ZoteroAPI(
     val username: String,
     val attachmentStorageManager: AttachmentStorageManager
 ) {
-    val httpClient = OkHttpClient().newBuilder().apply {
+    private val baseHttpClient = OkHttpClient().newBuilder().apply {
         if (BuildConfig.DEBUG) {
             addInterceptor(HttpLoggingInterceptor().apply {
                 this.level = HttpLoggingInterceptor.Level.BODY
             })
         }
-        writeTimeout(
-            1,
-            TimeUnit.MINUTES
-        ) // so socket doesn't timeout on large uploads (attachments)
-        addInterceptor(object : Interceptor {
-            override fun intercept(chain: Interceptor.Chain): okhttp3.Response {
-                val request = chain.request().newBuilder()
-                    .addHeader("Zotero-API-Version", "3")
-                    .addHeader("Zotero-API-Key", API_KEY)
-                return chain.proceed(request.build())
-            }
-        })
     }.build()
 
-    val service = Retrofit.Builder()
-        .baseUrl(BASE_URL)
-        .client(httpClient)
-        .addConverterFactory(GsonConverterFactory.create())
-        .addCallAdapterFactory(RxJava2CallAdapterFactory.create())
-        .build().create(ZoteroAPIService::class.java)
+    private val zoteroHttpClient = baseHttpClient
+        .newBuilder().apply {
+            writeTimeout(
+                1,
+                TimeUnit.MINUTES
+            ) // so socket doesn't timeout on large uploads (attachments)
+            addInterceptor(object : Interceptor {
+                override fun intercept(chain: Interceptor.Chain): okhttp3.Response {
+                    val request = chain.request().newBuilder()
+                        .addHeader("Zotero-API-Version", "3")
+                        .addHeader("Zotero-API-Key", API_KEY)
+                    return chain.proceed(request.build())
+                }
+            })
+        }
+        .build()
 
-    fun buildAmazonService(): ZoteroAPIService {
-        val httpClient = OkHttpClient().newBuilder().apply {
-            if (BuildConfig.DEBUG) {
-                addInterceptor(HttpLoggingInterceptor().apply {
-                    this.level = HttpLoggingInterceptor.Level.BODY
-                })
-            }
+    private val zoteroHttpClientShortTimeout = baseHttpClient
+        .newBuilder().apply {
+            addInterceptor(object : Interceptor {
+                override fun intercept(chain: Interceptor.Chain): okhttp3.Response {
+                    val request = chain.request().newBuilder()
+                        .addHeader("Zotero-API-Version", "3")
+                        .addHeader("Zotero-API-Key", API_KEY)
+                    return chain.proceed(request.build())
+                }
+            })
+            connectTimeout(5000, TimeUnit.MILLISECONDS)
+            readTimeout(5000, TimeUnit.MILLISECONDS)
+            writeTimeout(5000, TimeUnit.MILLISECONDS)
+        }
+        .build()
+
+
+    private val httpClientForAttachments = baseHttpClient
+        .newBuilder()
+        .apply {
             writeTimeout(
                 10,
                 TimeUnit.MINUTES
             ) // so socket doesn't timeout on large uploads (attachments)
-        }.build()
+        }
+        .build()
 
-        return Retrofit.Builder()
-            .baseUrl(BASE_URL)
-            .client(httpClient)
-            .addConverterFactory(GsonConverterFactory.create())
-            .addCallAdapterFactory(RxJava2CallAdapterFactory.create())
-            .build().create(ZoteroAPIService::class.java)
-    }
+    val service: ZoteroAPIService = Retrofit.Builder()
+        .baseUrl(BASE_URL)
+        .client(zoteroHttpClient)
+        .addConverterFactory(GsonConverterFactory.create())
+        .addCallAdapterFactory(RxJava2CallAdapterFactory.create())
+        .build().create(ZoteroAPIService::class.java)
+
+    val attachmentsService: ZoteroAPIService = Retrofit.Builder()
+        .baseUrl(BASE_URL)
+        .client(httpClientForAttachments)
+        .addConverterFactory(GsonConverterFactory.create())
+        .addCallAdapterFactory(RxJava2CallAdapterFactory.create())
+        .build().create(ZoteroAPIService::class.java)
+
+    val shortTimeoutService: ZoteroAPIService = Retrofit.Builder()
+        .baseUrl(BASE_URL)
+        .client(zoteroHttpClientShortTimeout)
+        .addConverterFactory(GsonConverterFactory.create())
+        .addCallAdapterFactory(RxJava2CallAdapterFactory.create())
+        .build().create(ZoteroAPIService::class.java)
 
     fun downloadItemRx(
         item: Item,
@@ -137,7 +162,7 @@ class ZoteroAPI(
 
         val observable = Observable.create<DownloadProgress> { emitter ->
 
-            val downloader = if(!useGroup) {
+            val downloader = if (!useGroup) {
                 service.getFileForUser(userID, item.itemKey)
             } else {
                 service.getFileForGroup(groupID, item.itemKey)
@@ -328,14 +353,14 @@ class ZoteroAPI(
 
         val observable = if (modificationSinceVersion > -1) {
             if (groupID != GroupInfo.NO_GROUP_ID) {
-                service.getItemsForGroupSince(
+                shortTimeoutService.getItemsForGroupSince(
                     modificationSinceVersion,
                     groupID,
                     modificationSinceVersion,
                     index
                 )
             } else {
-                service.getItemsSince(
+                shortTimeoutService.getItemsSince(
                     modificationSinceVersion,
                     userID,
                     modificationSinceVersion,
@@ -344,9 +369,9 @@ class ZoteroAPI(
             }
         } else {
             if (groupID != GroupInfo.NO_GROUP_ID) {
-                service.getItemsForGroup(0, groupID, index)
+                shortTimeoutService.getItemsForGroup(0, groupID, index)
             } else {
-                service.getItems(0, userID, index)
+                shortTimeoutService.getItems(0, userID, index)
             }
 
         }
@@ -382,12 +407,15 @@ class ZoteroAPI(
         val observable = Observable.create(object : ObservableOnSubscribe<ZoteroAPIItemsResponse> {
             override fun subscribe(emitter: ObservableEmitter<ZoteroAPIItemsResponse>) {
                 var itemCount = fromIndex
+                Log.d("zotero", "getItemsFromIndex($libraryVersion, $itemCount, $groupID)")
                 val s = getItemsFromIndex(
                     libraryVersion,
                     itemCount,
                     groupID
                 )
-                val response = s.blockingSingle()
+                val response = s.blockingFirst()
+                Log.d("zotero", "got response $response")
+
                 if (downloadProgress != null && response.LastModifiedVersion != downloadProgress.libraryVersion) {
                     // Due to possible miss-syncs, we cannot continue the download.
                     // we will raise an exception which will tell the activity to redownload without the
@@ -494,13 +522,21 @@ class ZoteroAPI(
         }
     }
 
-    fun getTrashedItemsFromIndex(groupID: Int, sinceVersion: Int, index: Int): Observable<ZoteroAPIItemsResponse> {
-        val call = when(groupID){
-            GroupInfo.NO_GROUP_ID -> {service.getTrashedItemsForUser(sinceVersion, userID, sinceVersion, index)}
-            else -> {service.getTrashedItemsForGroup(sinceVersion, groupID, sinceVersion, index)}
+    fun getTrashedItemsFromIndex(
+        groupID: Int,
+        sinceVersion: Int,
+        index: Int
+    ): Observable<ZoteroAPIItemsResponse> {
+        val call = when (groupID) {
+            GroupInfo.NO_GROUP_ID -> {
+                service.getTrashedItemsForUser(sinceVersion, userID, sinceVersion, index)
+            }
+            else -> {
+                service.getTrashedItemsForGroup(sinceVersion, groupID, sinceVersion, index)
+            }
         }
 
-        return call.map {response ->
+        return call.map { response ->
             if (response.code() == 304) {
                 throw UpToDateException("304 trash already up to date.")
             } else if (response.code() == 200) {
@@ -538,7 +574,7 @@ class ZoteroAPI(
                         itemCount
                     ).blockingSingle()
                     itemCount += res.items.size
-                    if (res.items.size == 0){
+                    if (res.items.size == 0) {
                         throw(RuntimeException("Error, zotero api did not respond with any items for /trash/ $itemCount of ${res.totalResults}"))
                     }
                     emitter.onNext(res)
@@ -588,7 +624,7 @@ class ZoteroAPI(
                     attachment
                 )
             )
-            buildAmazonService().uploadAttachmentToAmazonMulti(
+            attachmentsService.uploadAttachmentToAmazonMulti(
                 authorizationPojo.url,
                 authorizationPojo.params.key
                     .toRequestBody("multipart/form-data".toMediaType()),

@@ -87,17 +87,18 @@ class ZoteroDB constructor(
         return !(collections == null || items == null)
     }
 
-    fun writeDatabaseUpdatedTimestamp() {
+    fun updateDatabaseLastSyncedTimestamp() {
         val editor = context.getSharedPreferences(namespace, MODE_PRIVATE).edit()
         val timestamp = System.currentTimeMillis() //timestamp in milliseconds.
-        editor.putLong("lastModified", timestamp)
+        editor.putLong("lastSynced", timestamp)
         editor.apply()
+        Log.d("zotero", "updated last modified timestamp. $timestamp")
     }
 
     /* Returns the timestamp in milliseconds of when the database was last updated.*/
-    fun getLastModifiedTimestamp(): Long {
+    fun getLastSyncedTimestamp(): Long {
         val sp = context.getSharedPreferences(namespace, MODE_PRIVATE)
-        val timestamp = sp.getLong("lastModified", 0L)
+        val timestamp = sp.getLong("lastSynced", 0L)
         return timestamp
     }
 

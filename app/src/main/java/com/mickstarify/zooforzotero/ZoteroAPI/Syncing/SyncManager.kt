@@ -208,13 +208,14 @@ class SyncManager (
                 zoteroDatabase.writeItemPOJOs(db.groupID, response.items).blockingAwait()
             }
             response // pass it on.
-        }.subscribeOn(Schedulers.io())
+        }
+            .subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())
-            .unsubscribeOn(Schedulers.io())
             .subscribe(object : Observer<ZoteroAPIItemsResponse> {
                 var libraryVersion = -1 //dummy value, will be replaced in onNext()
                 var downloaded = progress?.nDownloaded ?: 0
                 override fun onComplete() {
+                    Log.d("zotero", "load Items oncomplete")
                     if (db.getLibraryVersion() > -1) {
                         if (downloaded == 0) {
                             syncChangeListener.makeToastAlert("Already up to date.")
@@ -224,6 +225,7 @@ class SyncManager (
                     }
                     db.destroyDownloadProgress()
                     db.setItemsVersion(libraryVersion)
+                    db.updateDatabaseLastSyncedTimestamp()
                     finishGetItems(db)
                 }
 
@@ -257,6 +259,7 @@ class SyncManager (
                 override fun onError(e: Throwable) {
                     if (e is UpToDateException) {
                         Log.d("zotero", "our items are already up to date.")
+                        db.updateDatabaseLastSyncedTimestamp()
                     } else if (e is LibraryVersionMisMatchException) {
                         // we need to redownload items but without the progress.
                         Log.d("zotero", "mismatched, reloading items.")

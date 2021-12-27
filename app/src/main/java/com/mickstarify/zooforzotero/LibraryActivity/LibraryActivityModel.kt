@@ -90,11 +90,9 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
     }
 
     fun shouldIUpdateLibrary(): Boolean {
-        if (!zoteroDB.hasLegacyStorage()) {
-            return true
-        }
         val currentTimestamp = System.currentTimeMillis()
-        val lastModified = zoteroDB.getLastModifiedTimestamp()
+        val lastModified = zoteroDB.getLastSyncedTimestamp()
+        Log.d("zotero", "last modified = $lastModified")
 
         if (TimeUnit.MILLISECONDS.toHours(currentTimestamp - lastModified) >= 24) {
             return true
@@ -945,12 +943,18 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
         return state.currentGroup
     }
 
-    fun loadLibraryLocally() {
+    fun loadLibraryLocally(onFinish: () -> Unit = {}) {
         if (!zoteroDB.isPopulated())
-            finishLibrarySync(zoteroDB)
+            finishLibrarySync(zoteroDB) {
+                onFinish()
+            }
     }
 
-    override fun finishLibrarySync(db: ZoteroDB) {
+    override fun isFirstSync(): Boolean {
+        return zoteroDB.getLastSyncedTimestamp() == 0L
+    }
+
+    override fun finishLibrarySync(db: ZoteroDB, onFinish: () -> Unit) {
         /* This method is the endpoint for zotero api syncs,
         The role of this function is to load the library into memory and then
         trigger a UI update.
@@ -996,30 +1000,13 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                     db.setItemsVersion(0)
                 }
                 this.checkAllAttachmentsForModification()
-                // TODO Remove next release.
-                if (preferences.firstRunForVersion42() && !performedCleanSync) {
-                    presenter.createYesNoPrompt("Tags are now supported",
-                        "Zoo requires a full library resync if you want to access your tags. Would you like to resync your library?",
-                        "Resync",
-                        "No",
-                        {
-                            zoteroDatabase.deleteAllItemsForGroup(GroupInfo.NO_GROUP_ID).blockingAwait()
-                            groups?.forEach {
-                                val zDb = zoteroGroupDB.getGroup(it.id)
-                                zDb.destroyItemsDatabase()
-                                zoteroDatabase.deleteAllItemsForGroup(it.id).blockingAwait()
-                            }
-
-                            destroyLibrary()
-                            refreshLibrary()
-                        },
-                        {}
-                    )
-                }
-
             }.onErrorComplete {
                 presenter.createErrorAlert("error loading library", "got error message ${it}", {})
+                presenter.hideBasicSyncAnimation()
                 true
+            }
+            .doAfterTerminate {
+                onFinish()
             }.subscribe()
     }
 

@@ -397,17 +397,27 @@ class LibraryActivityPresenter(val view: LibraryActivity, context: Context) : Co
 
         view.initUI()
 
-        // todo start loading screen.
         view.navController.navigate(R.id.libraryLoadingScreen)
-
         libraryLoadingViewModel.setLoadingMessage("Loading your library")
 
-        if (model.shouldIUpdateLibrary()) {
+        Log.d(
+            "zotero",
+            "On Launch have model.shouldIUpdateLibrary()=${model.shouldIUpdateLibrary()}"
+        )
+        if (model.isFirstSync()) {
+            Log.d("zotero", "First sync - loading library from scratch")
             model.loadGroups()
-            model.downloadLibrary()
+            this.requestLibraryRefresh()
+        } else if (model.shouldIUpdateLibrary()) {
+            Log.d("zotero", "Updating library")
+            model.loadGroups()
+            model.loadLibraryLocally {
+                this.requestLibraryRefresh()
+            }
         } else {
-            model.loadLibraryLocally()
+            Log.d("zotero", "Loading library locally")
             model.loadGroups()
+            model.loadLibraryLocally()
         }
 
         libraryListViewModel.getOnItemClicked().observe(view) { item ->

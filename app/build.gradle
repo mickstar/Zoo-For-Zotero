@@ -10,7 +10,7 @@ android {
     compileSdkVersion 31
     defaultConfig {
         applicationId "com.mickstarify.zooforzotero"
-        minSdkVersion 21
+        minSdkVersion 23
         targetSdkVersion 31
         versionCode 48
         versionName "3.1"
@@ -87,7 +87,7 @@ dependencies {
     implementation 'androidx.lifecycle:lifecycle-livedata-ktx:2.4.0'
     implementation 'androidx.lifecycle:lifecycle-viewmodel-ktx:2.4.0'
 
-    debugImplementation 'com.squareup.leakcanary:leakcanary-android:2.0'
+    debugImplementation 'com.squareup.leakcanary:leakcanary-android:2.7'
 
     // facebook flipper
     debugImplementation 'com.facebook.flipper:flipper:0.91.1'
@@ -95,9 +95,9 @@ dependencies {
     releaseImplementation 'com.facebook.flipper:flipper-noop:0.91.1'
 
     // Room Dependencies
-    implementation "androidx.room:room-runtime:2.3.0"
-    implementation 'androidx.room:room-rxjava2:2.3.0'
-    kapt "androidx.room:room-compiler:2.3.0"
+    implementation "androidx.room:room-runtime:2.4.0"
+    implementation 'androidx.room:room-rxjava2:2.4.0'
+    kapt "androidx.room:room-compiler:2.4.0"
 
     // crashlytics
     implementation platform('com.google.firebase:firebase-bom:25.12.0')

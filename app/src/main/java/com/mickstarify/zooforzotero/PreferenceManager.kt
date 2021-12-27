@@ -270,7 +270,7 @@ class PreferenceManager @Inject constructor(context: Context) {
     }
 
     fun getWebDAVConnectTimeout(): Long {
-        return sharedPreferences.getLong("webdav_connect_timeout", 0L)
+        return sharedPreferences.getLong("webdav_connect_timeout", 10000L)
 
     }
 
