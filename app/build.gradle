@@ -25,14 +25,9 @@ android {
         }
     }
     packagingOptions {
-        exclude 'META-INF/DEPENDENCIES'
-        exclude 'META-INF/LICENSE'
-        exclude 'META-INF/LICENSE.txt'
-        exclude 'META-INF/license.txt'
-        exclude 'META-INF/NOTICE'
-        exclude 'META-INF/NOTICE.txt'
-        exclude 'META-INF/notice.txt'
-        exclude 'META-INF/ASL2.0'
+        resources {
+            excludes += ['META-INF/DEPENDENCIES', 'META-INF/LICENSE', 'META-INF/LICENSE.txt', 'META-INF/license.txt', 'META-INF/NOTICE', 'META-INF/NOTICE.txt', 'META-INF/notice.txt', 'META-INF/ASL2.0']
+        }
     }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
@@ -51,15 +46,15 @@ dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
     implementation 'androidx.drawerlayout:drawerlayout:1.1.1'
-    implementation 'androidx.appcompat:appcompat:1.4.0'
+    implementation 'androidx.appcompat:appcompat:1.4.1'
     implementation 'androidx.core:core-ktx:1.7.0'
     implementation 'androidx.constraintlayout:constraintlayout:2.1.2'
     implementation "androidx.navigation:navigation-fragment-ktx:2.3.5"
     implementation "androidx.navigation:navigation-ui-ktx:2.3.5"
-    implementation 'com.google.android.material:material:1.4.0'
+    implementation 'com.google.android.material:material:1.5.0'
     api 'com.google.guava:guava:29.0-jre'
 
-    implementation('com.squareup.okhttp3:okhttp:4.9.0')
+    implementation('com.squareup.okhttp3:okhttp:4.9.1')
     implementation('com.squareup.okhttp3:logging-interceptor:4.9.0')
     implementation 'oauth.signpost:oauth-signpost:2.1.1'
     implementation('oauth.signpost:signpost-commonshttp4:2.1.1') {
@@ -72,7 +67,7 @@ dependencies {
     implementation 'com.squareup.retrofit2:converter-gson:2.9.0'
     implementation 'androidx.legacy:legacy-support-v4:1.0.0'
     implementation 'androidx.recyclerview:recyclerview:1.2.1'
-    implementation 'androidx.preference:preference:1.1.1'
+    implementation 'androidx.preference:preference:1.2.0'
     testImplementation 'junit:junit:4.13.2'
     testImplementation 'org.mockito:mockito-inline:2.13.0'
     androidTestImplementation "org.mockito:mockito-core:2.28.2"
@@ -82,10 +77,10 @@ dependencies {
     implementation 'net.lingala.zip4j:zip4j:2.6.2'
     implementation 'com.github.mickstar:sardine-android:v0.7c'
 
-    implementation 'androidx.preference:preference:1.1.1'
+    implementation 'androidx.preference:preference:1.2.0'
 
-    implementation 'androidx.lifecycle:lifecycle-livedata-ktx:2.4.0'
-    implementation 'androidx.lifecycle:lifecycle-viewmodel-ktx:2.4.0'
+    implementation 'androidx.lifecycle:lifecycle-livedata-ktx:2.4.1'
+    implementation 'androidx.lifecycle:lifecycle-viewmodel-ktx:2.4.1'
 
     debugImplementation 'com.squareup.leakcanary:leakcanary-android:2.7'
 
@@ -95,9 +90,9 @@ dependencies {
     releaseImplementation 'com.facebook.flipper:flipper-noop:0.91.1'
 
     // Room Dependencies
-    implementation "androidx.room:room-runtime:2.4.0"
-    implementation 'androidx.room:room-rxjava2:2.4.0'
-    kapt "androidx.room:room-compiler:2.4.0"
+    implementation "androidx.room:room-runtime:2.4.1"
+    implementation 'androidx.room:room-rxjava2:2.4.1'
+    kapt "androidx.room:room-compiler:2.4.1"
 
     // crashlytics
     implementation platform('com.google.firebase:firebase-bom:25.12.0')
@@ -105,8 +100,8 @@ dependencies {
     implementation 'com.google.firebase:firebase-crashlytics'
 
     // Dagger Dependencies
-    implementation 'com.google.dagger:dagger:2.33'
-    kapt 'com.google.dagger:dagger-compiler:2.33'
+    implementation 'com.google.dagger:dagger:2.38.1'
+    kapt 'com.google.dagger:dagger-compiler:2.38.1'
 
     // for fab on main screen
     implementation 'com.getbase:floatingactionbutton:1.10.1'
