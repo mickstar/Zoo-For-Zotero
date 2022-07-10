@@ -419,7 +419,8 @@ class AttachmentStorageManager @Inject constructor(
                 var documentFile = DocumentFile.fromTreeUri(context, Uri.parse(location))
                 var i = index
                 while (i < directories.size) {
-                    documentFile = documentFile?.findFile(directories[i])
+                    val id: String = DocumentsContract.getDocumentId(documentFile?.uri) + "/" + directories[i]
+                    documentFile = DocumentFile.fromSingleUri(context, DocumentsContract.buildDocumentUriUsingTree(documentFile?.uri, id))
                     Log.d("zotero", "checking ${directories[i]}")
                     if (documentFile?.exists() ?: false) {
                         i++
