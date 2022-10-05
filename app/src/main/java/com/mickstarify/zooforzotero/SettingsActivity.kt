@@ -53,21 +53,19 @@ class SettingsActivity : AppCompatActivity() {
         override fun onResume() {
             super.onResume()
             // Set up a listener whenever a key changes
-            preferenceScreen.sharedPreferences
-                .registerOnSharedPreferenceChangeListener(this)
+            preferenceScreen.sharedPreferences!!.registerOnSharedPreferenceChangeListener(this)
 
             this.findPreference<SwitchPreference>("use_webdav")?.isChecked =
-                preferenceManager.sharedPreferences.getBoolean("use_webdav", false)
+                preferenceManager.sharedPreferences!!.getBoolean("use_webdav", false)
         }
 
         override fun onPause() {
             super.onPause()
-            preferenceScreen.sharedPreferences
-                .unregisterOnSharedPreferenceChangeListener(this)
+            preferenceScreen.sharedPreferences!!.unregisterOnSharedPreferenceChangeListener(this)
         }
 
-        override fun onPreferenceTreeClick(preference: Preference?): Boolean {
-            if (preference?.key == "configure_webdav") {
+        override fun onPreferenceTreeClick(preference: Preference): Boolean {
+            if (preference.key == "configure_webdav") {
                 val intent = Intent(requireContext(), WebDAVSetup::class.java)
                 startActivity(intent)
                 return true
