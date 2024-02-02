@@ -1,5 +1,6 @@
 package com.mickstarify.zooforzotero.ZoteroStorage.Database
 
+import android.os.Parcel
 import android.os.Parcelable
 import android.text.Html
 import android.util.Log
@@ -8,7 +9,7 @@ import com.mickstarify.zooforzotero.ZoteroAPI.Model.Note
 import io.reactivex.Completable
 import io.reactivex.Maybe
 import io.reactivex.Single
-import kotlinx.android.parcel.Parcelize
+import kotlinx.parcelize.Parcelize
 import java.util.LinkedList
 import java.util.Locale
 
@@ -30,8 +31,8 @@ class ItemInfo(
     //@Relation(entity = ItemData::class, parentColumn = "itemKey", entityColumn = "parent")
     //lateinit var itemData: List<ItemData>
 }
-
-class Item {
+@Parcelize
+class Item : Parcelable {
     companion object {
         val ATTACHMENT_TYPE = "attachment"
     }

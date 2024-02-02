@@ -2,12 +2,11 @@ package com.mickstarify.zooforzotero.ZoteroAPI.Model
 
 import android.os.Parcelable
 import com.google.gson.annotations.SerializedName
-import kotlinx.android.parcel.IgnoredOnParcel
-import kotlinx.android.parcel.Parcelize
+import kotlinx.parcelize.Parcelize
 import java.util.*
 
 @Parcelize
-open class ItemPOJO(
+data class ItemPOJO (
     @SerializedName("ItemKey")
     var ItemKey: String,
     @SerializedName("version")

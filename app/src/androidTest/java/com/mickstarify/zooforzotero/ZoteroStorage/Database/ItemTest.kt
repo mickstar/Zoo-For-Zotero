@@ -1,6 +1,7 @@
 package com.mickstarify.zooforzotero.ZoteroStorage.Database
 
 import android.os.Bundle
+import android.os.Parcelable
 import android.util.Log
 import androidx.test.platform.app.InstrumentationRegistry
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.ItemJSONConverter
