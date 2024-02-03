@@ -34,9 +34,10 @@ import com.mickstarify.zooforzotero.ZoteroStorage.Database.Collection
 import com.mickstarify.zooforzotero.ZoteroStorage.Database.Item
 import com.mickstarify.zooforzotero.adapters.LibraryListInteractionListener
 import com.mickstarify.zooforzotero.adapters.LibraryListRecyclerViewAdapter
+import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
-
+@AndroidEntryPoint
 class LibraryListFragment : Fragment(), LibraryListInteractionListener,
     SwipeRefreshLayout.OnRefreshListener {
 
@@ -126,7 +127,6 @@ class LibraryListFragment : Fragment(), LibraryListInteractionListener,
         super.onActivityCreated(savedInstanceState)
         setHasOptionsMenu(true)
         viewModel = ViewModelProvider(requireActivity()).get(LibraryListViewModel::class.java)
-        (requireActivity().application as ZooForZoteroApplication).component.inject(this)
         val recyclerView = requireView().findViewById<RecyclerView>(R.id.recyclerView)
         val adapter = LibraryListRecyclerViewAdapter(emptyList(), this)
 

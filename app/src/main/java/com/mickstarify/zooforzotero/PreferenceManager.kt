@@ -132,6 +132,10 @@ class PreferenceManager @Inject constructor(context: Context) {
         return sharedPreferences.getString("webdav_address", "") ?: ""
     }
 
+    fun isWebDAVConfigured(): Boolean {
+        return getWebDAVAddress() != ""
+    }
+
     fun isWebDAVEnabled(): Boolean {
         return sharedPreferences.getBoolean("use_webdav", false)
     }
@@ -315,6 +319,16 @@ class PreferenceManager @Inject constructor(context: Context) {
         sharedPreferences.edit {
             this.putLong("webdav_write_timeout", time)
             this.apply()
+        }
+    }
+
+    fun getHttpWriteTimeout(): Long {
+        val s = sharedPreferences.getString("http_write_timeout", "60000")
+        try {
+            return s?.toLong() ?: 60000L
+        } catch (e: NumberFormatException) {
+            Log.e("zotero", "error parsing http write timeout. $s")
+            return 60000L
         }
     }
 

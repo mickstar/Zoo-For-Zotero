@@ -58,7 +58,8 @@ class ZoteroAPI(
     val API_KEY: String,
     val userID: String,
     val username: String,
-    val attachmentStorageManager: AttachmentStorageManager
+    val attachmentStorageManager: AttachmentStorageManager,
+    val preferencesManager: PreferenceManager
 ) {
     private val baseHttpClient = OkHttpClient().newBuilder().apply {
         if (BuildConfig.DEBUG) {
@@ -71,8 +72,8 @@ class ZoteroAPI(
     private val zoteroHttpClient = baseHttpClient
         .newBuilder().apply {
             writeTimeout(
-                1,
-                TimeUnit.MINUTES
+                preferencesManager.getHttpWriteTimeout(),
+                TimeUnit.MILLISECONDS
             ) // so socket doesn't timeout on large uploads (attachments)
             addInterceptor(object : Interceptor {
                 override fun intercept(chain: Interceptor.Chain): okhttp3.Response {

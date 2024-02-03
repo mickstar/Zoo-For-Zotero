@@ -7,14 +7,10 @@ import android.app.Application
 //import com.facebook.flipper.plugins.inspector.DescriptorMapping
 //import com.facebook.flipper.plugins.inspector.InspectorFlipperPlugin
 //import com.facebook.soloader.SoLoader
-import com.mickstarify.zooforzotero.di.component.ApplicationComponent
-import com.mickstarify.zooforzotero.di.component.DaggerApplicationComponent
-import com.mickstarify.zooforzotero.di.module.ApplicationModule
+import dagger.hilt.android.HiltAndroidApp
 
+@HiltAndroidApp
 class ZooForZoteroApplication : Application() {
-
-    lateinit var component: ApplicationComponent
-
     override fun onCreate() {
         super.onCreate()
 
@@ -26,11 +22,6 @@ class ZooForZoteroApplication : Application() {
 //            client.addPlugin(DatabasesFlipperPlugin(this));
 //            client.start()
 //        }
-
-
-        component = DaggerApplicationComponent.builder().applicationModule(
-            ApplicationModule(this)
-        ).build()
     }
 
 }

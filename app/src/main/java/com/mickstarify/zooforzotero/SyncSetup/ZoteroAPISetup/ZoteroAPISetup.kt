@@ -6,6 +6,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
+import android.view.MenuItem
 import android.view.View
 import android.webkit.URLUtil
 import android.webkit.WebView
@@ -99,6 +100,15 @@ class ZoteroAPISetup : AppCompatActivity(), Contract.View {
             intent.data = Uri.parse(url)
             startActivity(intent)
         }
+
+        // bad code i know, but we have two of these links and i dont want to make a new layout for it.
+        val textView_zoteroUrl2 = findViewById<TextView>(R.id.textView_hint_zotero_keys2)
+        textView_zoteroUrl2.setOnClickListener {
+            val url = "https://www.zotero.org/settings/keys"
+            val intent = Intent(Intent.ACTION_VIEW)
+            intent.data = Uri.parse(url)
+            startActivity(intent)
+        }
     }
 
     override fun onNewIntent(intent: Intent?) {
@@ -116,5 +126,26 @@ class ZoteroAPISetup : AppCompatActivity(), Contract.View {
         }
     }
 
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        when(item.itemId){
+            android.R.id.home -> {
+                finish()
+            }
+        }
 
+        return super.onOptionsItemSelected(item)
+    }
+
+    override fun showErrorScreen() {
+        val errorScreen = findViewById<ConstraintLayout>(R.id.constraintLayout_failed_zotero_api_setup)
+        errorScreen.visibility = View.VISIBLE
+
+        val loadingScreen = findViewById<ConstraintLayout>(R.id.constraintLayout_progressdialog)
+        loadingScreen.visibility = View.GONE
+
+        val buttonReturn = findViewById<TextView>(R.id.button_go_back)
+        buttonReturn.setOnClickListener {
+            finish()
+        }
+    }
 }

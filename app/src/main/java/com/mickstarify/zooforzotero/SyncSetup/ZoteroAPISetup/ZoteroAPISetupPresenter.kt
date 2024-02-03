@@ -13,6 +13,7 @@ class ZoteroAPISetupPresenter(
 
     override fun showError(message: String) {
         view.makeErrorAlert("Error", message)
+        view.showErrorScreen()
     }
 
     override fun handleOAuthCallback(uri: Uri?) {

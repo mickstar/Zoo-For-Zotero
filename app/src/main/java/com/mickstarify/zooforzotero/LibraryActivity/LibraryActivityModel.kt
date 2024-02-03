@@ -22,6 +22,12 @@ import com.mickstarify.zooforzotero.ZoteroStorage.Database.*
 import com.mickstarify.zooforzotero.ZoteroStorage.ZoteroDB.ZoteroDB
 import com.mickstarify.zooforzotero.ZoteroStorage.ZoteroDB.ZoteroDBPicker
 import com.mickstarify.zooforzotero.ZoteroStorage.ZoteroDB.ZoteroGroupDB
+import com.mickstarify.zooforzotero.di.SingletonComponentsEntryPoint
+import com.mickstarify.zooforzotero.di.SingletonModule
+import dagger.hilt.EntryPoint
+import dagger.hilt.InstallIn
+import dagger.hilt.android.EntryPointAccessors
+import dagger.hilt.components.SingletonComponent
 import io.reactivex.Completable
 import io.reactivex.CompletableObserver
 import io.reactivex.MaybeObserver
@@ -51,11 +57,10 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
 
     private var syncManager: SyncManager
 
-    @Inject
-    lateinit var zoteroDatabase: ZoteroDatabase
+    val zoteroDatabase: ZoteroDatabase
+    val attachmentStorageManager: AttachmentStorageManager
+    val preferences: PreferenceManager
 
-    @Inject
-    lateinit var attachmentStorageManager: AttachmentStorageManager
     private val zoteroGroupDB =
         ZoteroGroupDB(
             context
@@ -69,8 +74,6 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
         )
     private var groups: List<GroupInfo>? = null
 
-    @Inject
-    lateinit var preferences: PreferenceManager
 
     val states = Stack<LibraryModelState>()
     val state: LibraryModelState
@@ -1057,8 +1060,15 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
     }
 
     init {
-        ((context as Activity).application as ZooForZoteroApplication).component.inject(this)
+        val appContext = (context as Activity).applicationContext
+        val hiltEntryPoint = EntryPointAccessors.fromApplication(appContext, SingletonComponentsEntryPoint::class.java)
+
+        zoteroDatabase = hiltEntryPoint.getZoteroDatabase()
+        attachmentStorageManager = hiltEntryPoint.getAttachmentStorageManager()
+        preferences = hiltEntryPoint.getPreferences()
+
         firebaseAnalytics = FirebaseAnalytics.getInstance(context)
+
         val auth = AuthenticationStorage(context)
         // add the first library state.
         states.push(LibraryModelState())
@@ -1068,7 +1078,8 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                 auth.getUserKey(),
                 auth.getUserID(),
                 auth.getUsername(),
-                attachmentStorageManager
+                attachmentStorageManager,
+                preferences
             )
         } else {
             presenter.createErrorAlert(
@@ -1080,9 +1091,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
             zoteroDB.clearItemsVersion()
         }
 
-        syncManager = SyncManager(zoteroAPI, this)
-        ((context as Activity).application as ZooForZoteroApplication).component.inject(syncManager)
-
+        syncManager = SyncManager(zoteroAPI, preferences, zoteroDatabase, this)
         checkAttachmentStorageAccess()
     }
 

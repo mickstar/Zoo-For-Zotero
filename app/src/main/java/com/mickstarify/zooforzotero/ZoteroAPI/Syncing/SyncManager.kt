@@ -20,10 +20,11 @@ import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposable
 import io.reactivex.functions.Action
 import io.reactivex.schedulers.Schedulers
-import javax.inject.Inject
 
 class SyncManager (
     val zoteroAPI: ZoteroAPI,
+    private val preferenceManager: PreferenceManager,
+    private val zoteroDatabase: ZoteroDatabase,
     val syncChangeListener: OnSyncChangeListener,
 ){
 
@@ -32,13 +33,6 @@ class SyncManager (
     var loadingItems = false
     var loadingCollections = false
     var loadingTrash = false
-
-    @Inject
-    lateinit var preferences: PreferenceManager
-
-    @Inject
-    lateinit var zoteroDatabase: ZoteroDatabase
-
     fun isSyncing() : Boolean {
         return (loadingItems || loadingCollections || loadingTrash)
     }
@@ -135,7 +129,7 @@ class SyncManager (
         loadingTrash = true
 
         //TODO Will remove in a future version
-        if (preferences.firstRunForVersion28()){
+        if (preferenceManager.firstRunForVersion28()){
             // I have recently fixed the deleted/trash syncing, so we will need a full resync from the beginning
             // to properly have the changes reflected in Zoo.
             db.setTrashVersion(0)

@@ -77,4 +77,21 @@
             android:key="configure_webdav"
             android:title="Configure Webdav" />
     </PreferenceCategory>
+
+    <PreferenceCategory android:title="Advanced">
+        <Preference
+            android:enabled="true"
+            android:key="http_write_timeout"
+            android:title="HTTP Upload timeout (ms)"
+            android:defaultValue="60000"
+            android:summary="This is the amount of time to wait for an upload to complete before timing out. Use 0 for indefinite."
+            android:inputType="number" />
+<!--        <Preference-->
+<!--            android:enabled="true"-->
+<!--            android:key="http_read_timeout"-->
+<!--            android:title="HTTP Download timeout (ms)"-->
+<!--            android:defaultValue="60000"-->
+<!--            android:summary="This is the amount of time to wait for a download to complete before timing out. Use 0 for indefinite."-->
+<!--            android:inputType="number" />-->
+    </PreferenceCategory>
 </PreferenceScreen>

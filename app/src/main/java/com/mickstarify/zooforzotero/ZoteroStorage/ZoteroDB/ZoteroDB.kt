@@ -14,6 +14,8 @@ import com.mickstarify.zooforzotero.ZoteroStorage.Database.AttachmentInfo
 import com.mickstarify.zooforzotero.ZoteroStorage.Database.Collection
 import com.mickstarify.zooforzotero.ZoteroStorage.Database.Item
 import com.mickstarify.zooforzotero.ZoteroStorage.Database.ZoteroDatabase
+import com.mickstarify.zooforzotero.di.SingletonComponentsEntryPoint
+import dagger.hilt.android.EntryPointAccessors
 import io.reactivex.Completable
 import io.reactivex.functions.Action
 import io.reactivex.functions.Consumer
@@ -27,13 +29,11 @@ class ZoteroDB constructor(
     val context: Context,
     val groupID: Int
 ) {
-
+    private val zoteroDatabase: ZoteroDatabase
     init {
-        ((context as Activity).application as ZooForZoteroApplication).component.inject(this)
+        val hiltEntryPoint = EntryPointAccessors.fromApplication(context, SingletonComponentsEntryPoint::class.java)
+        zoteroDatabase = hiltEntryPoint.getZoteroDatabase()
     }
-
-    @Inject
-    lateinit var zoteroDatabase: ZoteroDatabase
 
     val prefix = if (groupID == Collection.NO_GROUP_ID) {
         ""

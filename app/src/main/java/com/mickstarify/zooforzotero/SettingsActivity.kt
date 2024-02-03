@@ -1,21 +1,31 @@
 package com.mickstarify.zooforzotero
 
+import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Bundle
 import android.util.Log
+import android.view.Menu
+import android.view.MenuItem
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.preference.Preference
 import androidx.preference.PreferenceFragmentCompat
 import androidx.preference.SwitchPreference
+import com.mickstarify.zooforzotero.LibraryActivity.LibraryActivity
 import com.mickstarify.zooforzotero.LibraryActivity.WebDAV.WebDAVSetup
 import com.mickstarify.zooforzotero.ZoteroStorage.AttachmentStorageManager
 import com.mickstarify.zooforzotero.ZoteroStorage.STORAGE_ACCESS_REQUEST
+import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
+@AndroidEntryPoint
 class SettingsActivity : AppCompatActivity() {
     @Inject
     lateinit var myStorageManager: AttachmentStorageManager
+
+    @Inject
+    lateinit var myPreferenceManager: PreferenceManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -25,9 +35,6 @@ class SettingsActivity : AppCompatActivity() {
             .replace(R.id.settings, SettingsFragment())
             .commit()
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
-
-        // get our storage manager
-        (application as ZooForZoteroApplication).component.inject(this)
     }
 
     fun openStoragePicker() {
@@ -43,7 +50,6 @@ class SettingsActivity : AppCompatActivity() {
             }
         }
     }
-
     class SettingsFragment : PreferenceFragmentCompat(),
         SharedPreferences.OnSharedPreferenceChangeListener {
         override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
@@ -89,7 +95,19 @@ class SettingsActivity : AppCompatActivity() {
                         (this.activity as SettingsActivity).openStoragePicker()
                     }
                 }
+                "use_webdav" -> {
+                    if (sharedPreferences?.getBoolean("use_webdav", false) == true && !(requireActivity() as SettingsActivity).myPreferenceManager.isWebDAVConfigured()) {
+                        Toast.makeText(requireContext(), "Please configure webdav first", Toast.LENGTH_SHORT).show()
+                        sharedPreferences.edit().putBoolean("use_webdav", false).apply()
+                        (requireActivity() as SettingsActivity).updateWebDAVPreferenceUI(false)
+                    }
+                }
             }
         }
+    }
+
+    private fun updateWebDAVPreferenceUI(flag: Boolean) {
+        val fragment = supportFragmentManager.findFragmentById(R.id.settings) as SettingsFragment
+        fragment.findPreference<SwitchPreference>("use_webdav")?.isChecked = flag
     }
 }
