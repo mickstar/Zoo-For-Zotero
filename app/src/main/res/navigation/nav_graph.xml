@@ -13,8 +13,8 @@
         <action
             android:id="@+id/action_libraryListFragment_to_barcodeScanningScreen"
             app:destination="@id/barcodeScanningScreen"
-            app:enterAnim="@anim/fragment_fade_enter"
-            app:exitAnim="@anim/fragment_fade_exit" />
+            app:enterAnim="@android:anim/fade_in"
+            app:exitAnim="@android:anim/fade_out" />
     </fragment>
     <fragment
         android:id="@+id/barcodeScanningScreen"
@@ -28,7 +28,7 @@
         <action
             android:id="@+id/action_libraryLoadingScreen_to_libraryListFragment"
             app:destination="@id/libraryListFragment"
-            app:enterAnim="@anim/fragment_fade_enter"
-            app:exitAnim="@anim/fragment_fade_exit" />
+            app:enterAnim="@android:anim/fade_in"
+            app:exitAnim="@android:anim/fade_out" />
     </fragment>
 </navigation>

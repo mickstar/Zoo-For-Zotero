@@ -39,8 +39,9 @@ import com.mickstarify.zooforzotero.ZoteroAPI.Model.Note
 import com.mickstarify.zooforzotero.ZoteroStorage.Database.Collection
 import com.mickstarify.zooforzotero.ZoteroStorage.Database.GroupInfo
 import com.mickstarify.zooforzotero.ZoteroStorage.Database.Item
+import dagger.hilt.android.AndroidEntryPoint
 
-
+@AndroidEntryPoint
 class LibraryActivity : AppCompatActivity(),
     NavigationView.OnNavigationItemSelectedListener,
 

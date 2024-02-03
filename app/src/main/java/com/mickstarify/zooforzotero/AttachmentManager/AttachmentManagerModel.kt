@@ -14,6 +14,8 @@ import com.mickstarify.zooforzotero.ZoteroStorage.Database.GroupInfo
 import com.mickstarify.zooforzotero.ZoteroStorage.Database.Item
 import com.mickstarify.zooforzotero.ZoteroStorage.Database.ZoteroDatabase
 import com.mickstarify.zooforzotero.ZoteroStorage.ZoteroDB.ZoteroDB
+import com.mickstarify.zooforzotero.di.SingletonComponentsEntryPoint
+import dagger.hilt.android.EntryPointAccessors
 import io.reactivex.Completable
 import io.reactivex.CompletableObserver
 import io.reactivex.Observable
@@ -31,26 +33,27 @@ class AttachmentManagerModel(val presenter: Contract.Presenter, val context: Con
     lateinit var zoteroAPI: ZoteroAPI
     lateinit var zoteroDB: ZoteroDB
 
-    @Inject
-    lateinit var zoteroDatabase: ZoteroDatabase
-
-    @Inject
-    lateinit var attachmentStorageManager: AttachmentStorageManager
-
-    @Inject
-    lateinit var preferenceManager: PreferenceManager
+    val zoteroDatabase: ZoteroDatabase
+    val attachmentStorageManager: AttachmentStorageManager
+    val preferenceManager: PreferenceManager
 
     override var isDownloading = false // useful for button state.
 
     init {
-        ((context as Activity).application as ZooForZoteroApplication).component.inject(this)
+        val appContext = (context as Activity).applicationContext
+        val hiltEntryPoint = EntryPointAccessors.fromApplication(appContext, SingletonComponentsEntryPoint::class.java)
+        zoteroDatabase = hiltEntryPoint.getZoteroDatabase()
+        attachmentStorageManager = hiltEntryPoint.getAttachmentStorageManager()
+        preferenceManager = hiltEntryPoint.getPreferences()
+
         val auth = AuthenticationStorage(context)
         if (auth.hasCredentials()) {
             zoteroAPI = ZoteroAPI(
                 auth.getUserKey(),
                 auth.getUserID(),
                 auth.getUsername(),
-                attachmentStorageManager
+                attachmentStorageManager,
+                preferenceManager
             )
         } else {
             presenter.createErrorAlert(

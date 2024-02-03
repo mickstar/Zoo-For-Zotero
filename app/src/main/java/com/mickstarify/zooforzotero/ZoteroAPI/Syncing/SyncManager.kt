@@ -20,10 +20,11 @@ import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposable
 import io.reactivex.functions.Action
 import io.reactivex.schedulers.Schedulers
-import javax.inject.Inject
 
 class SyncManager (
     val zoteroAPI: ZoteroAPI,
+    private val preferenceManager: PreferenceManager,
+    private val zoteroDatabase: ZoteroDatabase,
     val syncChangeListener: OnSyncChangeListener,
 ){
 
@@ -32,13 +33,6 @@ class SyncManager (
     var loadingItems = false
     var loadingCollections = false
     var loadingTrash = false
-
-    @Inject
-    lateinit var preferences: PreferenceManager
-
-    @Inject
-    lateinit var zoteroDatabase: ZoteroDatabase
-
     fun isSyncing() : Boolean {
         return (loadingItems || loadingCollections || loadingTrash)
     }
@@ -135,7 +129,7 @@ class SyncManager (
         loadingTrash = true
 
         //TODO Will remove in a future version
-        if (preferences.firstRunForVersion28()){
+        if (preferenceManager.firstRunForVersion28()){
             // I have recently fixed the deleted/trash syncing, so we will need a full resync from the beginning
             // to properly have the changes reflected in Zoo.
             db.setTrashVersion(0)
@@ -208,13 +202,14 @@ class SyncManager (
                 zoteroDatabase.writeItemPOJOs(db.groupID, response.items).blockingAwait()
             }
             response // pass it on.
-        }.subscribeOn(Schedulers.io())
+        }
+            .subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())
-            .unsubscribeOn(Schedulers.io())
             .subscribe(object : Observer<ZoteroAPIItemsResponse> {
                 var libraryVersion = -1 //dummy value, will be replaced in onNext()
                 var downloaded = progress?.nDownloaded ?: 0
                 override fun onComplete() {
+                    Log.d("zotero", "load Items oncomplete")
                     if (db.getLibraryVersion() > -1) {
                         if (downloaded == 0) {
                             syncChangeListener.makeToastAlert("Already up to date.")
@@ -224,6 +219,7 @@ class SyncManager (
                     }
                     db.destroyDownloadProgress()
                     db.setItemsVersion(libraryVersion)
+                    db.updateDatabaseLastSyncedTimestamp()
                     finishGetItems(db)
                 }
 
@@ -257,6 +253,7 @@ class SyncManager (
                 override fun onError(e: Throwable) {
                     if (e is UpToDateException) {
                         Log.d("zotero", "our items are already up to date.")
+                        db.updateDatabaseLastSyncedTimestamp()
                     } else if (e is LibraryVersionMisMatchException) {
                         // we need to redownload items but without the progress.
                         Log.d("zotero", "mismatched, reloading items.")

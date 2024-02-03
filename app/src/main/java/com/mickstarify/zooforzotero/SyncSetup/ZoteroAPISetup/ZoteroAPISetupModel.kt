@@ -53,7 +53,6 @@ class ZoteroAPISetupModel(val presenter: Contract.Presenter) : Contract.Model {
         client_key,
         client_secret
     )
-
     override fun establishAPIConnection() {
         val d = Observable.fromCallable {
             OAuthProvider.retrieveRequestToken(OAuthConsumer, "zooforzotero://oauth_callback")
@@ -70,6 +69,7 @@ class ZoteroAPISetupModel(val presenter: Contract.Presenter) : Contract.Model {
                 }
 
                 override fun onError(e: Throwable) {
+                    Log.e("zotero", "Error connecting to Zotero's server ${e.message}")
                     presenter.showError("Error connecting to Zotero's server ${e.message}")
                 }
 
@@ -86,6 +86,7 @@ class ZoteroAPISetupModel(val presenter: Contract.Presenter) : Contract.Model {
         oauth_verifier: String,
         authenticationStorage: AuthenticationStorage
     ) {
+        Log.i("zotero", "handling oauth callback")
         Completable.fromAction {
             OAuthProvider.retrieveAccessToken(OAuthConsumer, oauth_verifier)
         }

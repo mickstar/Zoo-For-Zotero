@@ -10,6 +10,8 @@ interface Contract {
         fun startLoadingAnimation()
         fun stopLoadingAnimation()
         fun openLibraryView()
+
+        fun showErrorScreen()
     }
 
     interface Presenter {

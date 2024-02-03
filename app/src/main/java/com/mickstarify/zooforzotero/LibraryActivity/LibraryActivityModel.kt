@@ -22,6 +22,12 @@ import com.mickstarify.zooforzotero.ZoteroStorage.Database.*
 import com.mickstarify.zooforzotero.ZoteroStorage.ZoteroDB.ZoteroDB
 import com.mickstarify.zooforzotero.ZoteroStorage.ZoteroDB.ZoteroDBPicker
 import com.mickstarify.zooforzotero.ZoteroStorage.ZoteroDB.ZoteroGroupDB
+import com.mickstarify.zooforzotero.di.SingletonComponentsEntryPoint
+import com.mickstarify.zooforzotero.di.SingletonModule
+import dagger.hilt.EntryPoint
+import dagger.hilt.InstallIn
+import dagger.hilt.android.EntryPointAccessors
+import dagger.hilt.components.SingletonComponent
 import io.reactivex.Completable
 import io.reactivex.CompletableObserver
 import io.reactivex.MaybeObserver
@@ -51,11 +57,10 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
 
     private var syncManager: SyncManager
 
-    @Inject
-    lateinit var zoteroDatabase: ZoteroDatabase
+    val zoteroDatabase: ZoteroDatabase
+    val attachmentStorageManager: AttachmentStorageManager
+    val preferences: PreferenceManager
 
-    @Inject
-    lateinit var attachmentStorageManager: AttachmentStorageManager
     private val zoteroGroupDB =
         ZoteroGroupDB(
             context
@@ -69,8 +74,6 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
         )
     private var groups: List<GroupInfo>? = null
 
-    @Inject
-    lateinit var preferences: PreferenceManager
 
     val states = Stack<LibraryModelState>()
     val state: LibraryModelState
@@ -90,11 +93,9 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
     }
 
     fun shouldIUpdateLibrary(): Boolean {
-        if (!zoteroDB.hasLegacyStorage()) {
-            return true
-        }
         val currentTimestamp = System.currentTimeMillis()
-        val lastModified = zoteroDB.getLastModifiedTimestamp()
+        val lastModified = zoteroDB.getLastSyncedTimestamp()
+        Log.d("zotero", "last modified = $lastModified")
 
         if (TimeUnit.MILLISECONDS.toHours(currentTimestamp - lastModified) >= 24) {
             return true
@@ -945,12 +946,18 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
         return state.currentGroup
     }
 
-    fun loadLibraryLocally() {
+    fun loadLibraryLocally(onFinish: () -> Unit = {}) {
         if (!zoteroDB.isPopulated())
-            finishLibrarySync(zoteroDB)
+            finishLibrarySync(zoteroDB) {
+                onFinish()
+            }
     }
 
-    override fun finishLibrarySync(db: ZoteroDB) {
+    override fun isFirstSync(): Boolean {
+        return zoteroDB.getLastSyncedTimestamp() == 0L
+    }
+
+    override fun finishLibrarySync(db: ZoteroDB, onFinish: () -> Unit) {
         /* This method is the endpoint for zotero api syncs,
         The role of this function is to load the library into memory and then
         trigger a UI update.
@@ -996,30 +1003,13 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                     db.setItemsVersion(0)
                 }
                 this.checkAllAttachmentsForModification()
-                // TODO Remove next release.
-                if (preferences.firstRunForVersion42() && !performedCleanSync) {
-                    presenter.createYesNoPrompt("Tags are now supported",
-                        "Zoo requires a full library resync if you want to access your tags. Would you like to resync your library?",
-                        "Resync",
-                        "No",
-                        {
-                            zoteroDatabase.deleteAllItemsForGroup(GroupInfo.NO_GROUP_ID).blockingAwait()
-                            groups?.forEach {
-                                val zDb = zoteroGroupDB.getGroup(it.id)
-                                zDb.destroyItemsDatabase()
-                                zoteroDatabase.deleteAllItemsForGroup(it.id).blockingAwait()
-                            }
-
-                            destroyLibrary()
-                            refreshLibrary()
-                        },
-                        {}
-                    )
-                }
-
             }.onErrorComplete {
                 presenter.createErrorAlert("error loading library", "got error message ${it}", {})
+                presenter.hideBasicSyncAnimation()
                 true
+            }
+            .doAfterTerminate {
+                onFinish()
             }.subscribe()
     }
 
@@ -1070,8 +1060,15 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
     }
 
     init {
-        ((context as Activity).application as ZooForZoteroApplication).component.inject(this)
+        val appContext = (context as Activity).applicationContext
+        val hiltEntryPoint = EntryPointAccessors.fromApplication(appContext, SingletonComponentsEntryPoint::class.java)
+
+        zoteroDatabase = hiltEntryPoint.getZoteroDatabase()
+        attachmentStorageManager = hiltEntryPoint.getAttachmentStorageManager()
+        preferences = hiltEntryPoint.getPreferences()
+
         firebaseAnalytics = FirebaseAnalytics.getInstance(context)
+
         val auth = AuthenticationStorage(context)
         // add the first library state.
         states.push(LibraryModelState())
@@ -1081,7 +1078,8 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                 auth.getUserKey(),
                 auth.getUserID(),
                 auth.getUsername(),
-                attachmentStorageManager
+                attachmentStorageManager,
+                preferences
             )
         } else {
             presenter.createErrorAlert(
@@ -1093,9 +1091,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
             zoteroDB.clearItemsVersion()
         }
 
-        syncManager = SyncManager(zoteroAPI, this)
-        ((context as Activity).application as ZooForZoteroApplication).component.inject(syncManager)
-
+        syncManager = SyncManager(zoteroAPI, preferences, zoteroDatabase, this)
         checkAttachmentStorageAccess()
     }
 

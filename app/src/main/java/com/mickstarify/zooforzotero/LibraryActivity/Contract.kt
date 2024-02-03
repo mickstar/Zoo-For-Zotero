@@ -130,5 +130,6 @@ interface Contract {
         fun loadPriorState()
         fun getItemsForTag(tagName: String): List<Item>
         fun deleteLocalAttachment(attachment: Item)
+        fun isFirstSync(): Boolean
     }
 }

@@ -2,15 +2,10 @@ package com.mickstarify.zooforzotero
 
 import android.content.Context
 import android.util.Log
+import androidx.core.content.edit
 import androidx.preference.PreferenceManager
 import javax.inject.Inject
 
-enum class SortMethod {
-    TITLE,
-    DATE,
-    AUTHOR,
-    DATE_ADDED
-}
 
 class PreferenceManager @Inject constructor(context: Context) {
     val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
@@ -98,14 +93,16 @@ class PreferenceManager @Inject constructor(context: Context) {
         editor.apply()
     }
 
-    fun setWebDAVAuthentication(address: String, username: String, password: String, allowInsecureSSL: Boolean) {
+    fun setWebDAVAuthentication(
+        address: String,
+        username: String,
+        password: String,
+    ) {
         val editor = sharedPreferences.edit()
         editor.putBoolean("use_webdav", true)
         editor.putString("webdav_address", address)
         editor.putString("webdav_username", username)
         editor.putString("webdav_password", password)
-        editor.putBoolean("webdav_allowInsecureSSL", allowInsecureSSL)
-
         editor.apply()
     }
 
@@ -116,6 +113,9 @@ class PreferenceManager @Inject constructor(context: Context) {
         editor.putString("webdav_username", "")
         editor.putString("webdav_password", "")
         editor.putBoolean("webdav_allowInsecureSSL", false)
+        editor.putBoolean("webdav_verify_ssl", false)
+        editor.putBoolean("webdav_add_zotero_to_url", false)
+        editor.putString("webdav_auth_mode", "automatic")
 
         editor.apply()
     }
@@ -132,6 +132,10 @@ class PreferenceManager @Inject constructor(context: Context) {
         return sharedPreferences.getString("webdav_address", "") ?: ""
     }
 
+    fun isWebDAVConfigured(): Boolean {
+        return getWebDAVAddress() != ""
+    }
+
     fun isWebDAVEnabled(): Boolean {
         return sharedPreferences.getBoolean("use_webdav", false)
     }
@@ -143,8 +147,57 @@ class PreferenceManager @Inject constructor(context: Context) {
         }
     }
 
-    fun isInsecureSSLAllowed(): Boolean {
-        return sharedPreferences.getBoolean("webdav_allowInsecureSSL", false)
+    fun getWebDAVAddZoteroToUrl(): Boolean {
+        return sharedPreferences.getBoolean("webdav_add_zotero_to_url", true)
+    }
+
+    fun setWebDAVAddZoteroToUrl(flag: Boolean) {
+        sharedPreferences.edit {
+            this.putBoolean("webdav_add_zotero_to_url", flag)
+            apply()
+        }
+    }
+
+    fun getWebDAVAuthMode(): WebdavAuthMode {
+        return when (sharedPreferences.getString("webdav_auth_mode", "automatic")) {
+            "automatic" -> WebdavAuthMode.AUTOMATIC
+            "basic" -> WebdavAuthMode.BASIC
+            "digest" -> WebdavAuthMode.DIGEST
+            else -> WebdavAuthMode.AUTOMATIC
+        }
+    }
+
+    fun setWebDAVAuthMode(authMode: WebdavAuthMode) {
+        sharedPreferences.edit {
+            this.putString(
+                "webdav_auth_mode", when (authMode) {
+                    WebdavAuthMode.AUTOMATIC -> "automatic"
+                    WebdavAuthMode.DIGEST -> "digest"
+                    WebdavAuthMode.BASIC -> "basic"
+                }
+            )
+            apply()
+        }
+    }
+
+    fun getVerifySSLForWebDAV(): Boolean {
+        var default = true
+
+        // this is for legacy reasons.
+        // I originally used "allowInsecureSSL" for the preference name but I changed it to
+        // verifySSL. new users won't ever execute this path.
+        if (!sharedPreferences.contains("webdav_verify_ssl")) {
+            default = !sharedPreferences.getBoolean("webdav_allowInsecureSSL", false)
+        }
+
+        return sharedPreferences.getBoolean("webdav_verify_ssl", default)
+    }
+
+    fun setVerifySSLForWebDAV(value: Boolean) {
+        sharedPreferences.edit {
+            this.putBoolean("webdav_verify_ssl", value)
+            this.apply()
+        }
     }
 
     fun isWebDAVEnabledForGroups(): Boolean {
@@ -216,8 +269,67 @@ class PreferenceManager @Inject constructor(context: Context) {
         editor.apply()
     }
 
-    fun shouldCheckMd5SumBeforeOpening(): Boolean{
+    fun shouldCheckMd5SumBeforeOpening(): Boolean {
         return sharedPreferences.getBoolean("check_md5sum_before_attachment_open", false)
+    }
+
+    fun getWebDAVConnectTimeout(): Long {
+        return sharedPreferences.getLong("webdav_connect_timeout", 10000L)
+
+    }
+
+    fun setWebDAVConnectTimeout(time: Long) {
+        if (time < 0L) {
+            Log.e("Zotero", "Error invalid time $time.")
+            return
+        }
+
+        sharedPreferences.edit {
+            this.putLong("webdav_connect_timeout", time)
+            this.apply()
+        }
+    }
+
+    fun getWebDAVReadTimeout(): Long {
+        return sharedPreferences.getLong("webdav_read_timeout", 30000L)
+    }
+
+    fun setWebDAVReadTimeout(time: Long) {
+        if (time < 0L) {
+            Log.e("Zotero", "Error invalid time $time.")
+            return
+        }
+
+        sharedPreferences.edit {
+            this.putLong("webdav_read_timeout", time)
+            this.apply()
+        }
+    }
+
+    fun getWebDAVWriteTimeout(): Long {
+        return sharedPreferences.getLong("webdav_write_timeout", 30000L)
+    }
+
+    fun setWebDAVWriteTimeout(time: Long) {
+        if (time < 0L) {
+            Log.e("Zotero", "Error invalid time $time.")
+            return
+        }
+
+        sharedPreferences.edit {
+            this.putLong("webdav_write_timeout", time)
+            this.apply()
+        }
+    }
+
+    fun getHttpWriteTimeout(): Long {
+        val s = sharedPreferences.getString("http_write_timeout", "60000")
+        try {
+            return s?.toLong() ?: 60000L
+        } catch (e: NumberFormatException) {
+            Log.e("zotero", "error parsing http write timeout. $s")
+            return 60000L
+        }
     }
 
     companion object {
@@ -225,4 +337,17 @@ class PreferenceManager @Inject constructor(context: Context) {
         val SORT_METHOD_DESCENDING = "DESCENDING"
     }
 
+}
+
+enum class WebdavAuthMode {
+    BASIC,
+    DIGEST,
+    AUTOMATIC
+}
+
+enum class SortMethod {
+    TITLE,
+    DATE,
+    AUTHOR,
+    DATE_ADDED
 }

@@ -1,5 +1,6 @@
 package com.mickstarify.zooforzotero.LibraryActivity.ViewModels
 
+import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -12,6 +13,7 @@ class LibraryListViewModel : ViewModel() {
 
     fun getItems(): LiveData<List<ListEntry>> = items
     fun setItems(items: List<ListEntry>) {
+        Log.d("zotero", "Setting items ${items.size}")
         this.items.value = items
     }
 
