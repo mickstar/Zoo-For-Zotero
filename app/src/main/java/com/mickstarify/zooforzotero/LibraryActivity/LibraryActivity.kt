@@ -1,6 +1,7 @@
 package com.mickstarify.zooforzotero.LibraryActivity
 
 import android.app.ProgressDialog
+import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.content.res.Configuration
 import android.net.Uri
@@ -17,6 +18,8 @@ import android.view.MotionEvent
 import android.view.inputmethod.InputMethodManager
 import android.widget.EditText
 import android.graphics.Rect
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.viewModels
 import androidx.core.content.getSystemService
 import androidx.appcompat.app.ActionBarDrawerToggle
 import androidx.appcompat.app.AlertDialog
@@ -25,6 +28,7 @@ import androidx.appcompat.widget.SearchView
 import androidx.core.view.GravityCompat
 import androidx.core.view.iterator
 import androidx.drawerlayout.widget.DrawerLayout
+import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.NavController
 import androidx.navigation.fragment.NavHostFragment
 import com.google.android.material.navigation.NavigationView
@@ -33,6 +37,7 @@ import com.mickstarify.zooforzotero.LibraryActivity.ItemView.ItemAttachmentEntry
 import com.mickstarify.zooforzotero.LibraryActivity.ItemView.ItemViewFragment
 import com.mickstarify.zooforzotero.LibraryActivity.Notes.NoteInteractionListener
 import com.mickstarify.zooforzotero.LibraryActivity.Notes.NoteView
+import com.mickstarify.zooforzotero.LibraryActivity.ViewModels.LibraryListViewModel
 import com.mickstarify.zooforzotero.R
 import com.mickstarify.zooforzotero.SettingsActivity
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Note
@@ -64,9 +69,13 @@ class LibraryActivity : AppCompatActivity(),
     // used to "uncheck" the last pressed menu item if we change via code.
     private var currentPressedMenuItem: MenuItem? = null
 
+    private lateinit var libraryListViewModel: LibraryListViewModel
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_library)
+
+        libraryListViewModel = ViewModelProvider(this).get(LibraryListViewModel::class.java)
 
         navHostFragment =
             supportFragmentManager.findFragmentById(R.id.nav_host_fragment_container) as NavHostFragment
@@ -86,22 +95,56 @@ class LibraryActivity : AppCompatActivity(),
                 R.id.libraryLoadingScreen -> {
                     libraryLoadingScreenShown()
                 }
-                R.id.barcodeScanningScreen -> {
-                    barcodeScanningScreenShown()
-                }
                 else -> {
                     throw(NotImplementedError("Error screen $destination not handled."))
                 }
             }
+        }
 
+        libraryListViewModel.getOnBarcodeScanButtonPressed().observe(this) {
+            if (!it) {
+                return@observe
+            }
+            handleBarcodeScanRequest()
         }
     }
 
-    private fun barcodeScanningScreenShown() {
-        supportActionBar?.title = "Barcode Scanner"
-        mDrawerToggle.isDrawerIndicatorEnabled = false
-        supportActionBar?.setDisplayHomeAsUpEnabled(true)
+    private val getBarcode = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode == RESULT_OK) {
+            val data: Intent? = result.data
+            val contents = data?.getStringExtra("SCAN_RESULT")
+            Log.i("zotero", "got barcode scan result $contents")
+            if(contents != null) {
+                libraryListViewModel.scannedBarcodeNumber(contents)
+            }
+        }
     }
+
+    private fun handleBarcodeScanRequest(){
+        val intent = Intent("com.google.zxing.client.android.SCAN")
+        intent.setPackage("com.google.zxing.client.android")
+        intent.putExtra("SCAN_MODE", "PRODUCT_MODE")
+        intent.putExtra("SCAN_FORMATS", "EAN_13")
+
+        try {
+            getBarcode.launch(intent)
+        } catch (e: ActivityNotFoundException){
+            Log.e("zotero", "error launching barcode scanner. ${e.message}")
+
+            val alertDialog = AlertDialog.Builder(this)
+                .setTitle("Barcode Scanner Not Found")
+                .setMessage("You need to install the ZXing barcode scanner to use this feature.")
+                .setPositiveButton("Install", {_, _ ->
+                    val intent2 = Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=com.google.zxing.client.android"))
+                    startActivity(intent2)
+                })
+                .setIcon(android.R.drawable.ic_dialog_alert)
+                .setNegativeButton("Cancel", {_, _ -> })
+            alertDialog.show()
+        }
+    }
+
+
 
     private fun libraryLoadingScreenShown() {
         supportActionBar?.title = "Loading"
@@ -527,14 +570,7 @@ class LibraryActivity : AppCompatActivity(),
 
     private var doubleBackToExitPressedOnce = false
     override fun onBackPressed() {
-        // our list view has a custom back handler
-        // if we are on the barcode screen we will just want to return to the previous screen
-        if (getCurrentScreen() == AvailableScreens.BARCODE_SCANNING_SCREEN) {
-            navController.navigateUp()
-        } else {
-            presenter.backButtonPressed()
-        }
-
+        presenter.backButtonPressed()
         Handler().postDelayed(Runnable { doubleBackToExitPressedOnce = false }, 2000)
     }
 
@@ -542,6 +578,7 @@ class LibraryActivity : AppCompatActivity(),
         const val ACTION_FILTER =
             "com.mickstarify.zooforzotero.intent.action.LIBRARY_FILTER_INTENT"
         const val EXTRA_QUERY = "com.mickstarify.zooforzotero.intent.EXTRA_QUERY_TEXT"
+        private const val ACTIVITY_RESULT_REQUEST_BARCODE_SCANNER_CODE = 10
     }
 
     override fun deleteNote(note: Note) {
@@ -572,7 +609,6 @@ class LibraryActivity : AppCompatActivity(),
         return when (navController.currentDestination?.id) {
             R.id.libraryListFragment -> AvailableScreens.LIBRARY_LISTVIEW_SCREEN
             R.id.libraryLoadingScreen -> AvailableScreens.LIBRARY_LOADING_SCREEN
-            R.id.barcodeScanningScreen -> AvailableScreens.BARCODE_SCANNING_SCREEN
             else -> throw (Exception("Unknown current screen ${navController.currentDestination}"))
         }
     }
@@ -602,6 +638,5 @@ class LibraryActivity : AppCompatActivity(),
 
 enum class AvailableScreens {
     LIBRARY_LOADING_SCREEN,
-    LIBRARY_LISTVIEW_SCREEN,
-    BARCODE_SCANNING_SCREEN
+    LIBRARY_LISTVIEW_SCREEN
 }

@@ -15,15 +15,12 @@ import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.constraintlayout.widget.ConstraintLayout
-import com.google.firebase.analytics.FirebaseAnalytics
 import com.mickstarify.zooforzotero.LibraryActivity.LibraryActivity
 import com.mickstarify.zooforzotero.R
 import com.mickstarify.zooforzotero.SyncSetup.AuthenticationStorage
 
 
 class ZoteroAPISetup : AppCompatActivity(), Contract.View {
-    private lateinit var firebaseAnalytics: FirebaseAnalytics
-
     override fun openLibraryView() {
         val intent = Intent(this, LibraryActivity::class.java)
         startActivity(intent)
@@ -88,7 +85,6 @@ class ZoteroAPISetup : AppCompatActivity(), Contract.View {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_zotero_api_setup)
-        firebaseAnalytics = FirebaseAnalytics.getInstance(this)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
         presenter = ZoteroAPISetupPresenter(this, AuthenticationStorage(this))

@@ -8,7 +8,6 @@ import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
 import android.util.Log
-import com.google.firebase.analytics.FirebaseAnalytics
 import com.google.gson.JsonObject
 import com.mickstarify.zooforzotero.PreferenceManager
 import com.mickstarify.zooforzotero.SyncSetup.AuthenticationStorage
@@ -50,8 +49,6 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
     // stores the current item being viewed by the user. (useful for refreshing the view)
     var selectedItem: Item? = null
     var isDisplayingItems = false
-
-    private var firebaseAnalytics: FirebaseAnalytics
 
     private lateinit var zoteroAPI: ZoteroAPI
 
@@ -437,7 +434,6 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
     }
 
     override fun modifyNote(note: Note) {
-        firebaseAnalytics.logEvent("modify_note", Bundle())
         if (state.isUsingGroup()) {
             presenter.makeToastAlert("Sorry, this isn't supported in shared collections.")
             return
@@ -457,9 +453,6 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                 }
 
                 override fun onError(e: Throwable) {
-                    firebaseAnalytics.logEvent(
-                        "modify_note_error",
-                        Bundle().apply { putString("error_message", e.toString()) })
                     if (e is ItemLockedException) {
                         presenter.createErrorAlert(
                             "Error modifying note",
@@ -483,7 +476,6 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
     }
 
     override fun deleteNote(note: Note) {
-        firebaseAnalytics.logEvent("delete_note", Bundle())
         if (state.isUsingGroup()) {
             presenter.makeToastAlert("Sorry, this isn't supported in shared collections.")
             return
@@ -576,9 +568,6 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                         "Error loading group data",
                         "Message: ${e.message}",
                         {})
-                    val bundle = Bundle()
-                    bundle.putString("error_message", e.message)
-                    firebaseAnalytics.logEvent("error_loading_group_data", bundle)
                 }
 
             })
@@ -661,10 +650,6 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                             removeFromRecentlyViewed(item)
                         } catch (e: Exception) {
                             Log.e("zotero", "validateMd5 got error $e")
-                            val bundle = Bundle().apply {
-                                putString("error_message", e.toString())
-                            }
-                            firebaseAnalytics.logEvent("error_check_attachments", bundle)
                             removeFromRecentlyViewed(item)
                         }
                     }
@@ -682,10 +667,6 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
 
                 override fun onError(e: Throwable) {
                     Log.e("zotero", "validateMd5 observer got error $e")
-                    val bundle = Bundle().apply {
-                        putString("error_message", e.message)
-                    }
-                    firebaseAnalytics.logEvent("error_check_attachments", bundle)
                 }
 
                 override fun onSuccess(itemsToUpload: MutableList<Pair<Item, Int>>) {
@@ -710,8 +691,6 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
 
         if (fileSizeBytes == 0L) {
             Log.e("zotero", "avoiding uploading a garbage PDF")
-            FirebaseAnalytics.getInstance(context)
-                .logEvent("AVOIDED_UPLOAD_GARBAGE", Bundle())
             attachmentStorageManager.deleteAttachment(attachment)
             removeFromRecentlyViewed(attachment)
             return
@@ -729,7 +708,6 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
             "No",
             {
                 if (version < attachment.getVersion()) {
-                    firebaseAnalytics.logEvent("upload_attachment_version_mismatch", Bundle())
                     presenter.createYesNoPrompt("Outdated Version",
                         "This local copy is older than the version on Zotero's server, are you sure you upload (this will irreversibly overwrite the server's copy)",
                         "I am sure",
@@ -779,10 +757,6 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                                 attachmentStorageManager.getMtime(attachment),
                                 AttachmentInfo.WEBDAV
                             ).subscribeOn(Schedulers.io()).subscribe()
-                            firebaseAnalytics.logEvent(
-                                "upload_attachment_successful_webdav",
-                                Bundle()
-                            )
                         }
 
                         override fun onSubscribe(d: Disposable) {
@@ -795,12 +769,6 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                                 e.toString(),
                                 {})
                             Log.e("zotero", "got exception: $e")
-                            val bundle =
-                                Bundle().apply { putString("error_message", e.toString()) }
-                            firebaseAnalytics.logEvent(
-                                "error_uploading_attachments_webdav",
-                                bundle
-                            )
                             presenter.stopUploadingAttachmentProgress()
                         }
                     })
@@ -854,9 +822,6 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
                                 e.toString(),
                                 {})
                             Log.e("zotero", "got exception: $e")
-                            val bundle =
-                                Bundle().apply { putString("error_message", e.toString()) }
-                            firebaseAnalytics.logEvent("error_uploading_attachments", bundle)
                         }
                         presenter.stopUploadingAttachmentProgress()
                     }
@@ -1066,8 +1031,6 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
         zoteroDatabase = hiltEntryPoint.getZoteroDatabase()
         attachmentStorageManager = hiltEntryPoint.getAttachmentStorageManager()
         preferences = hiltEntryPoint.getPreferences()
-
-        firebaseAnalytics = FirebaseAnalytics.getInstance(context)
 
         val auth = AuthenticationStorage(context)
         // add the first library state.
