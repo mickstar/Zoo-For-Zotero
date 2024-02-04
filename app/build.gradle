@@ -16,7 +16,7 @@ android {
         applicationId "com.mickstarify.zooforzotero"
         minSdkVersion 23
         targetSdkVersion 34
-        versionCode 48
+        versionCode 49
         versionName "3.1"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "zotero_api_key", apikeyProperties['zotero_api_key'])
@@ -43,10 +43,7 @@ android {
     namespace 'com.mickstarify.zooforzotero'
 }
 
-apply plugin: 'com.google.gms.google-services'
 apply plugin: 'kotlin-kapt'
-// Apply the Crashlytics Gradle plugin
-apply plugin: 'com.google.firebase.crashlytics'
 
 dependencies {
     def nav_version = "2.3.5"
@@ -92,29 +89,20 @@ dependencies {
 
     debugImplementation 'com.squareup.leakcanary:leakcanary-android:2.7'
 
-    // facebook flipper
-    debugImplementation 'com.facebook.flipper:flipper:0.91.1'
-    debugImplementation 'com.facebook.soloader:soloader:0.10.1'
-    releaseImplementation 'com.facebook.flipper:flipper-noop:0.91.1'
-
     // Room Dependencies
     implementation "androidx.room:room-runtime:2.6.1"
     implementation 'androidx.room:room-rxjava2:2.6.1'
     kapt "androidx.room:room-compiler:2.6.1"
 
-    // crashlytics
-    implementation platform('com.google.firebase:firebase-bom:32.7.1')
-    implementation 'com.google.firebase:firebase-analytics'
-    implementation 'com.google.firebase:firebase-crashlytics'
+    def acraVersion = "5.11.3"
+    implementation "ch.acra:acra-mail:$acraVersion"
+    implementation("ch.acra:acra-dialog:$acraVersion")
 
     implementation "com.google.dagger:hilt-android:2.46"
     kapt "com.google.dagger:hilt-compiler:2.46"
 
     // for fab on main screen
     implementation 'com.getbase:floatingactionbutton:1.10.1'
-
-    // barcode stuff
-    implementation 'com.google.android.gms:play-services-vision:20.1.3'
 
     // for webdav
     implementation "io.github.rburgst:okhttp-digest:2.5"

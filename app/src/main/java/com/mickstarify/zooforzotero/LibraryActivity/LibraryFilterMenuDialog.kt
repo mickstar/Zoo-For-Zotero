@@ -10,7 +10,6 @@ import android.view.View
 import android.widget.Button
 import android.widget.CheckBox
 import android.widget.ImageButton
-import com.google.firebase.analytics.FirebaseAnalytics
 import com.mickstarify.zooforzotero.PreferenceManager
 import com.mickstarify.zooforzotero.R
 
@@ -41,8 +40,6 @@ class LibraryFilterMenuDialog(val context: Context, val onFilterChange: (() -> (
             putBoolean("only_notes", onlyNotes)
             putString("sort_method", selected_sorting_method)
         }
-        FirebaseAnalytics.getInstance(context).logEvent("set_filter", params)
-
         onFilterChange()
     }
 
@@ -51,7 +48,6 @@ class LibraryFilterMenuDialog(val context: Context, val onFilterChange: (() -> (
         if (i == -1) {
             val params = Bundle()
             params.putString("method", method)
-            FirebaseAnalytics.getInstance(context).logEvent("error_sort_method_not_found", params)
             return "Error"
         }
         return context.resources.getTextArray(R.array.sort_options_entries)[i].toString()

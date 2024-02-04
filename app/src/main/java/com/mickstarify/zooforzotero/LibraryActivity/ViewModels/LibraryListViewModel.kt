@@ -66,4 +66,12 @@ class LibraryListViewModel : ViewModel() {
             this.libraryFilterText.value = query
         }
     }
+
+    private val _onBarcodeScanButtonPressed = MutableLiveData<Boolean>(false)
+    fun onBarcodeScanButtonPressed() {
+        Log.d("zotero", "barcode scan button pressed")
+        _onBarcodeScanButtonPressed.value = true
+        _onBarcodeScanButtonPressed.value = false
+    }
+    fun getOnBarcodeScanButtonPressed(): LiveData<Boolean> = _onBarcodeScanButtonPressed
 }

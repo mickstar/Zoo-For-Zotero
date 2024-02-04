@@ -165,7 +165,7 @@ class LibraryListFragment : Fragment(), LibraryListInteractionListener,
         val fabISBNScanner =
             requireView().findViewById<FloatingActionButton>(R.id.fab_action_barcode_scanner)
         fabISBNScanner.setOnClickListener {
-            findNavController().navigate(R.id.action_libraryListFragment_to_barcodeScanningScreen)
+            viewModel.onBarcodeScanButtonPressed()
         }
     }
 

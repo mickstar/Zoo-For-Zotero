@@ -9,18 +9,7 @@
         android:id="@+id/libraryListFragment"
         android:name="com.mickstarify.zooforzotero.LibraryActivity.Fragments.LibraryListFragment"
         android:label="library_list_fragment"
-        tools:layout="@layout/library_list_fragment">
-        <action
-            android:id="@+id/action_libraryListFragment_to_barcodeScanningScreen"
-            app:destination="@id/barcodeScanningScreen"
-            app:enterAnim="@android:anim/fade_in"
-            app:exitAnim="@android:anim/fade_out" />
-    </fragment>
-    <fragment
-        android:id="@+id/barcodeScanningScreen"
-        android:name="com.mickstarify.zooforzotero.LibraryActivity.Fragments.BarcodeScanningScreen"
-        android:label="barcode_scanning_screen_fragment"
-        tools:layout="@layout/barcode_scanning_screen_fragment" />
+        tools:layout="@layout/library_list_fragment"/>
     <fragment
         android:id="@+id/libraryLoadingScreen"
         android:name="com.mickstarify.zooforzotero.LibraryActivity.Fragments.LibraryLoadingScreen"
