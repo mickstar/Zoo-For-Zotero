@@ -89,6 +89,9 @@ dependencies {
 
     debugImplementation 'com.squareup.leakcanary:leakcanary-android:2.7'
 
+    // barcode scanner
+    implementation 'com.journeyapps:zxing-android-embedded:4.3.0'
+
     // Room Dependencies
     implementation "androidx.room:room-runtime:2.6.1"
     implementation 'androidx.room:room-rxjava2:2.6.1'

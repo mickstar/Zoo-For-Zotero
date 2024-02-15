@@ -120,6 +120,11 @@
             </intent-filter>
         </activity>
 
+        <activity
+            android:name="com.journeyapps.barcodescanner.CaptureActivity"
+            android:screenOrientation="fullSensor"
+            tools:replace="screenOrientation" />
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="com.mickstarify.zooforzotero.fileprovider.app"

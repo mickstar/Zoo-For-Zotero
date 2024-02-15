@@ -4,6 +4,7 @@ import android.app.ProgressDialog
 import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.content.res.Configuration
+import android.graphics.Rect
 import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
@@ -12,19 +13,17 @@ import android.util.Log
 import android.util.SparseArray
 import android.view.Menu
 import android.view.MenuItem
-import android.view.WindowManager
-import android.widget.Toast
 import android.view.MotionEvent
+import android.view.WindowManager
 import android.view.inputmethod.InputMethodManager
 import android.widget.EditText
-import android.graphics.Rect
+import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.activity.viewModels
-import androidx.core.content.getSystemService
 import androidx.appcompat.app.ActionBarDrawerToggle
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SearchView
+import androidx.core.content.getSystemService
 import androidx.core.view.GravityCompat
 import androidx.core.view.iterator
 import androidx.drawerlayout.widget.DrawerLayout
@@ -32,6 +31,8 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.NavController
 import androidx.navigation.fragment.NavHostFragment
 import com.google.android.material.navigation.NavigationView
+import com.journeyapps.barcodescanner.ScanContract
+import com.journeyapps.barcodescanner.ScanOptions
 import com.mickstarify.zooforzotero.AttachmentManager.AttachmentManager
 import com.mickstarify.zooforzotero.LibraryActivity.ItemView.ItemAttachmentEntry
 import com.mickstarify.zooforzotero.LibraryActivity.ItemView.ItemViewFragment
@@ -45,6 +46,8 @@ import com.mickstarify.zooforzotero.ZoteroStorage.Database.Collection
 import com.mickstarify.zooforzotero.ZoteroStorage.Database.GroupInfo
 import com.mickstarify.zooforzotero.ZoteroStorage.Database.Item
 import dagger.hilt.android.AndroidEntryPoint
+
+private const val TAG = "LibraryActivity"
 
 @AndroidEntryPoint
 class LibraryActivity : AppCompatActivity(),
@@ -92,11 +95,13 @@ class LibraryActivity : AppCompatActivity(),
                 R.id.libraryListFragment -> {
                     libraryListScreenShown()
                 }
+
                 R.id.libraryLoadingScreen -> {
                     libraryLoadingScreenShown()
                 }
+
                 else -> {
-                    throw(NotImplementedError("Error screen $destination not handled."))
+                    throw (NotImplementedError("Error screen $destination not handled."))
                 }
             }
         }
@@ -109,18 +114,40 @@ class LibraryActivity : AppCompatActivity(),
         }
     }
 
-    private val getBarcode = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-        if (result.resultCode == RESULT_OK) {
-            val data: Intent? = result.data
-            val contents = data?.getStringExtra("SCAN_RESULT")
-            Log.i("zotero", "got barcode scan result $contents")
-            if(contents != null) {
-                libraryListViewModel.scannedBarcodeNumber(contents)
+    private val getBarcode =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            if (result.resultCode == RESULT_OK) {
+                val data: Intent? = result.data
+                val contents = data?.getStringExtra("SCAN_RESULT")
+                Log.i("zotero", "got barcode scan result $contents")
+                if (contents != null) {
+                    libraryListViewModel.scannedBarcodeNumber(contents)
+                }
             }
+        }
+
+    private val barcodeLauncher = registerForActivityResult(
+        ScanContract()
+    ) {
+        if (it.contents != null) {
+            Log.i(TAG, "scanned barcode: ${it.contents}")
+            libraryListViewModel.scannedBarcodeNumber(it.contents)
+        } else {
+            Log.e(TAG, "error scanning barcode.")
         }
     }
 
-    private fun handleBarcodeScanRequest(){
+    private fun handleBarcodeScanRequest() {
+        barcodeLauncher.launch(ScanOptions().apply {
+            setDesiredBarcodeFormats(ScanOptions.EAN_13)
+            setPrompt("Scan a barcode")
+            setBarcodeImageEnabled(true)
+            setBeepEnabled(true)
+            setOrientationLocked(false)
+        })
+    }
+
+    private fun handleBarcodeScanRequestExternal() {
         val intent = Intent("com.google.zxing.client.android.SCAN")
         intent.setPackage("com.google.zxing.client.android")
         intent.putExtra("SCAN_MODE", "PRODUCT_MODE")
@@ -128,22 +155,24 @@ class LibraryActivity : AppCompatActivity(),
 
         try {
             getBarcode.launch(intent)
-        } catch (e: ActivityNotFoundException){
+        } catch (e: ActivityNotFoundException) {
             Log.e("zotero", "error launching barcode scanner. ${e.message}")
 
             val alertDialog = AlertDialog.Builder(this)
                 .setTitle("Barcode Scanner Not Found")
                 .setMessage("You need to install the ZXing barcode scanner to use this feature.")
-                .setPositiveButton("Install", {_, _ ->
-                    val intent2 = Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=com.google.zxing.client.android"))
+                .setPositiveButton("Install", { _, _ ->
+                    val intent2 = Intent(
+                        Intent.ACTION_VIEW,
+                        Uri.parse("market://details?id=com.google.zxing.client.android")
+                    )
                     startActivity(intent2)
                 })
                 .setIcon(android.R.drawable.ic_dialog_alert)
-                .setNegativeButton("Cancel", {_, _ -> })
+                .setNegativeButton("Cancel", { _, _ -> })
             alertDialog.show()
         }
     }
-
 
 
     private fun libraryLoadingScreenShown() {
@@ -294,13 +323,16 @@ class LibraryActivity : AppCompatActivity(),
                 val intent = Intent(this, SettingsActivity::class.java)
                 startActivity(intent)
             }
+
             R.id.attachment_manager -> {
                 val intent = Intent(this, AttachmentManager::class.java)
                 startActivity(intent)
             }
+
             R.id.force_resync -> {
                 presenter.requestForceResync()
             }
+
             android.R.id.home -> {
                 onBackPressed()
             }
@@ -619,6 +651,7 @@ class LibraryActivity : AppCompatActivity(),
         intent.data = Uri.parse(url)
         startActivity(intent)
     }
+
     // this  lets keyboard close when clicked in backgroud
     override fun dispatchTouchEvent(event: MotionEvent): Boolean {
         if (event.action == MotionEvent.ACTION_DOWN) {
@@ -628,7 +661,10 @@ class LibraryActivity : AppCompatActivity(),
                 v.getGlobalVisibleRect(outRect)
                 if (!outRect.contains(event.rawX.toInt(), event.rawY.toInt())) {
                     v.clearFocus()
-                    val imm = getSystemService<InputMethodManager>()?.hideSoftInputFromWindow(v.windowToken, 0)
+                    val imm = getSystemService<InputMethodManager>()?.hideSoftInputFromWindow(
+                        v.windowToken,
+                        0
+                    )
                 }
             }
         }
