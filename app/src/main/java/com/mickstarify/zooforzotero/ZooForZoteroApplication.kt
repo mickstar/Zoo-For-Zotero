@@ -2,6 +2,8 @@ package com.mickstarify.zooforzotero
 
 import android.app.Application
 import dagger.hilt.android.HiltAndroidApp
+import org.acra.ACRA
+import org.acra.ReportField
 import org.acra.config.dialog
 import org.acra.config.mailSender
 import org.acra.data.StringFormat
@@ -14,8 +16,17 @@ class ZooForZoteroApplication : Application() {
 
         initAcra {
             //core configuration:
-            buildConfigClass = BuildConfig::class.java
+            reportContent = listOf(
+                ReportField.APP_VERSION_CODE,
+                ReportField.ANDROID_VERSION,
+                ReportField.PHONE_MODEL,
+                ReportField.CUSTOM_DATA,
+                ReportField.STACK_TRACE,
+                ReportField.LOGCAT
+            )
+
             reportFormat = StringFormat.JSON
+            excludeMatchingSharedPreferencesKeys = listOf("*")
             //each plugin you chose above can be configured in a block like this:
 
             dialog {
