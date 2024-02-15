@@ -114,18 +114,6 @@ class LibraryActivity : AppCompatActivity(),
         }
     }
 
-    private val getBarcode =
-        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-            if (result.resultCode == RESULT_OK) {
-                val data: Intent? = result.data
-                val contents = data?.getStringExtra("SCAN_RESULT")
-                Log.i("zotero", "got barcode scan result $contents")
-                if (contents != null) {
-                    libraryListViewModel.scannedBarcodeNumber(contents)
-                }
-            }
-        }
-
     private val barcodeLauncher = registerForActivityResult(
         ScanContract()
     ) {
@@ -146,34 +134,6 @@ class LibraryActivity : AppCompatActivity(),
             setOrientationLocked(false)
         })
     }
-
-    private fun handleBarcodeScanRequestExternal() {
-        val intent = Intent("com.google.zxing.client.android.SCAN")
-        intent.setPackage("com.google.zxing.client.android")
-        intent.putExtra("SCAN_MODE", "PRODUCT_MODE")
-        intent.putExtra("SCAN_FORMATS", "EAN_13")
-
-        try {
-            getBarcode.launch(intent)
-        } catch (e: ActivityNotFoundException) {
-            Log.e("zotero", "error launching barcode scanner. ${e.message}")
-
-            val alertDialog = AlertDialog.Builder(this)
-                .setTitle("Barcode Scanner Not Found")
-                .setMessage("You need to install the ZXing barcode scanner to use this feature.")
-                .setPositiveButton("Install", { _, _ ->
-                    val intent2 = Intent(
-                        Intent.ACTION_VIEW,
-                        Uri.parse("market://details?id=com.google.zxing.client.android")
-                    )
-                    startActivity(intent2)
-                })
-                .setIcon(android.R.drawable.ic_dialog_alert)
-                .setNegativeButton("Cancel", { _, _ -> })
-            alertDialog.show()
-        }
-    }
-
 
     private fun libraryLoadingScreenShown() {
         supportActionBar?.title = "Loading"
