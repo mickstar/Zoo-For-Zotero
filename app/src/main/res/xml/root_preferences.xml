@@ -79,7 +79,7 @@
     </PreferenceCategory>
 
     <PreferenceCategory android:title="Advanced">
-        <Preference
+        <EditTextPreference
             android:enabled="true"
             android:key="http_write_timeout"
             android:title="HTTP Upload timeout (ms)"

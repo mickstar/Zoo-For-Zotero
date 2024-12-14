@@ -4,11 +4,13 @@ import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Bundle
+import android.text.InputType
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.preference.EditTextPreference
 import androidx.preference.Preference
 import androidx.preference.PreferenceFragmentCompat
 import androidx.preference.SwitchPreference
@@ -54,6 +56,25 @@ class SettingsActivity : AppCompatActivity() {
         SharedPreferences.OnSharedPreferenceChangeListener {
         override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
             setPreferencesFromResource(R.xml.root_preferences, rootKey)
+
+
+            val httpTimeoutPreference: EditTextPreference? = findPreference("http_write_timeout")
+
+            httpTimeoutPreference?.setOnBindEditTextListener { editText ->
+                // Ensure the input allows only integers
+                editText.inputType = InputType.TYPE_CLASS_NUMBER
+            }
+
+            httpTimeoutPreference?.setOnPreferenceChangeListener { _, newValue ->
+                // Validate the input to ensure it's a non-negative integer
+                val value = newValue.toString()
+                val isValid = value.matches(Regex("\\d+")) // Match only non-negative integers
+                if (!isValid) {
+                    Toast.makeText(context, "Please enter a valid non-negative integer", Toast.LENGTH_SHORT).show()
+                }
+                isValid
+            }
+
         }
 
         override fun onResume() {
