@@ -49,6 +49,8 @@ class ZoteroAPISetup : AppCompatActivity(), Contract.View {
     override fun loadURL(url: String) {
         val webView = findViewById<WebView>(R.id.webview_zotero_API_setup)
 
+        webView.settings.javaScriptEnabled = true
+
         webView.webViewClient = object : WebViewClient() {
             override fun shouldOverrideUrlLoading(view: WebView?, url: String?): Boolean {
                 Log.d(packageName, "got url $url")
