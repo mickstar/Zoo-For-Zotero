@@ -146,14 +146,14 @@ class Item : Parcelable {
     /* Matches the query text against the metadata stored in item,
 * checks to see if we can find the text anywhere. Useful for search. */
     fun query(queryText: String): Boolean {
-        val queryUpper = queryText.toUpperCase(Locale.ROOT)
+        val queryUpper = queryText.uppercase()
 
-        return this.itemKey.toUpperCase(Locale.ROOT).contains(queryUpper) ||
-                this.tags.joinToString("_").toUpperCase(Locale.ROOT).contains(queryUpper) ||
-                this.data.values.joinToString("_").toUpperCase(Locale.ROOT).contains(
+        return this.itemKey.uppercase().contains(queryUpper) ||
+                this.tags.joinToString("_").uppercase().contains(queryUpper) ||
+                this.data.values.joinToString("_").uppercase().contains(
                     queryUpper
                 ) || this.creators.map {
-            it.makeString().toUpperCase(Locale.ROOT)
+            it.makeString().uppercase()
         }.joinToString("_").contains(queryUpper)
     }
 

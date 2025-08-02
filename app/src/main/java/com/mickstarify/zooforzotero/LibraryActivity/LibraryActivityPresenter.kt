@@ -20,11 +20,11 @@ class LibraryActivityPresenter(val view: LibraryActivity, context: Context) : Co
 
     val sortMethod = compareBy<Item> {
         when (model.preferences.getSortMethod()) {
-            SortMethod.TITLE -> it.getTitle().toLowerCase(Locale.ROOT)
+            SortMethod.TITLE -> it.getTitle().lowercase(Locale.ROOT)
             SortMethod.DATE -> it.getSortableDateString()
             SortMethod.DATE_ADDED -> it.getSortableDateAddedString()
             SortMethod.AUTHOR -> {
-                val authorText = it.getAuthor().toLowerCase(Locale.ROOT)
+                val authorText = it.getAuthor().lowercase(Locale.ROOT)
                 // force empty authors to the bottom. Just like the zotero desktop client.
                 if (authorText == "") {
                     "zzz"
@@ -33,7 +33,7 @@ class LibraryActivityPresenter(val view: LibraryActivity, context: Context) : Co
                 }
             }
         }
-    }.thenBy { it.getTitle().toLowerCase(Locale.ROOT) }
+    }.thenBy { it.getTitle().lowercase(Locale.ROOT) }
 
     override fun openGroup(groupTitle: String) {
         model.getGroupByTitle(groupTitle)?.also {
@@ -168,7 +168,7 @@ class LibraryActivityPresenter(val view: LibraryActivity, context: Context) : Co
         val items = model.filterItems(query).sort()
 
         val entries = LinkedList<ListEntry>()
-        entries.addAll(collections.sortedBy { it.name.toLowerCase(Locale.ROOT) }
+        entries.addAll(collections.sortedBy { it.name.lowercase(Locale.ROOT) }
             .map { ListEntry(it) })
         entries.addAll(
             items
@@ -343,7 +343,7 @@ class LibraryActivityPresenter(val view: LibraryActivity, context: Context) : Co
             entries.addAll(model.getCollections().filter {
                 !it.hasParent()
             }.sortedBy {
-                it.name.toLowerCase(Locale.ROOT)
+                it.name.lowercase(Locale.ROOT)
             }.map { ListEntry(it) })
             entries.addAll(model.getLibraryItems().sort().map { ListEntry(it) })
             model.isDisplayingItems = entries.size > 0
@@ -356,7 +356,7 @@ class LibraryActivityPresenter(val view: LibraryActivity, context: Context) : Co
             view.setTitle(collection?.name ?: "Unknown Collection")
             val entries = LinkedList<ListEntry>()
             entries.addAll(model.getSubCollections(collectionKey).sortedBy {
-                it.name.toLowerCase(Locale.ROOT)
+                it.name.lowercase(Locale.ROOT)
             }.map { ListEntry(it) })
 
             entries.addAll(model.getItemsFromCollection(collectionKey).sort().map { ListEntry(it) })
@@ -369,7 +369,7 @@ class LibraryActivityPresenter(val view: LibraryActivity, context: Context) : Co
         view.clearSidebar()
         for (collection: Collection in collections.filter {
             !it.hasParent()
-        }.sortedBy { it.name.toLowerCase(Locale.ROOT) }) {
+        }.sortedBy { it.name.lowercase(Locale.ROOT) }) {
             Log.d("zotero", "Got collection ${collection.name}")
             view.addNavigationEntry(collection, "Catalog")
         }
