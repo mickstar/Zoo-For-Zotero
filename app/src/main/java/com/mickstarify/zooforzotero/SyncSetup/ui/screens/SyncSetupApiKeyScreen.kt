@@ -40,20 +40,21 @@ fun SyncSetupApiKeyScreen(
     viewModel: ManualApiViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsState()
-    
+
     LaunchedEffect(viewModel.effects) {
         viewModel.effects.collect { effect ->
             when (effect) {
                 is ManualApiViewModel.Effect.NavigateToLibrary -> {
                     onNavigateToLibrary()
                 }
+
                 is ManualApiViewModel.Effect.NavigateBack -> {
                     onNavigateBack()
                 }
             }
         }
     }
-    
+
     SyncSetupApiKeyScreenContent(
         state = state,
         onEvent = viewModel::dispatch
@@ -73,30 +74,30 @@ private fun SyncSetupApiKeyScreenContent(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Spacer(modifier = Modifier.height(32.dp))
-        
+
         Text(
             text = "Enter API Key",
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
             textAlign = TextAlign.Center
         )
-        
+
         Spacer(modifier = Modifier.height(8.dp))
-        
+
         Text(
             text = "Connect to your Zotero account using an API key",
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
         )
-        
+
         Spacer(modifier = Modifier.height(32.dp))
-        
+
         // Instructions Card
         ApiKeyInstructionsCard()
-        
+
         Spacer(modifier = Modifier.height(24.dp))
-        
+
         OutlinedTextField(
             value = state.apiKey,
             onValueChange = { onEvent(ManualApiViewModel.Event.ApiKeyChanged(it)) },
@@ -117,9 +118,9 @@ private fun SyncSetupApiKeyScreenContent(
                 }
             }
         )
-        
+
         Spacer(modifier = Modifier.height(24.dp))
-        
+
         Button(
             onClick = { onEvent(ManualApiViewModel.Event.SubmitApiKey) },
             enabled = state.isSubmitEnabled && !state.isValidating,
@@ -143,9 +144,9 @@ private fun SyncSetupApiKeyScreenContent(
                 Text("Continue with API Key")
             }
         }
-        
+
         Spacer(modifier = Modifier.height(16.dp))
-        
+
         TextButton(
             onClick = { onEvent(ManualApiViewModel.Event.NavigateBack) },
             enabled = !state.isValidating,
@@ -153,7 +154,7 @@ private fun SyncSetupApiKeyScreenContent(
         ) {
             Text("Back")
         }
-        
+
         Spacer(modifier = Modifier.height(24.dp))
     }
 }

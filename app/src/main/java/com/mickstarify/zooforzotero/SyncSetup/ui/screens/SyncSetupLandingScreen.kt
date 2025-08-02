@@ -2,18 +2,15 @@ package com.mickstarify.zooforzotero.SyncSetup.ui.screens
 
 import android.content.Intent
 import android.net.Uri
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.text.ClickableText
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
@@ -29,7 +26,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextAlign
@@ -38,7 +34,6 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.mickstarify.zooforzotero.R
-import com.mickstarify.zooforzotero.SyncSetup.SyncOption
 import com.mickstarify.zooforzotero.SyncSetup.ui.components.AuthenticationOptionsSection
 import com.mickstarify.zooforzotero.SyncSetup.ui.components.WelcomeHeroSection
 import com.mickstarify.zooforzotero.SyncSetup.viewmodels.SyncSetupViewModel
@@ -51,7 +46,7 @@ fun SyncSetupLandingScreen(
     onEvent: (SyncSetupViewModel.Event) -> Unit
 ) {
     val context = LocalContext.current
-    
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -60,10 +55,10 @@ fun SyncSetupLandingScreen(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Spacer(modifier = Modifier.height(32.dp))
-        
+
         // Welcome Hero Section
         WelcomeHeroSection()
-        
+
         // Authentication Options
         AuthenticationOptionsSection(
             selectedOption = state.selectedSyncOption,
@@ -71,9 +66,9 @@ fun SyncSetupLandingScreen(
                 onEvent(SyncSetupViewModel.Event.SelectSyncOption(option))
             }
         )
-        
+
         Spacer(modifier = Modifier.height(32.dp))
-        
+
         // Disclaimer
         Text(
             text = stringResource(R.string.app_frontpage_disclaimer),
@@ -88,7 +83,7 @@ fun SyncSetupLandingScreen(
         // Legal Agreement Text
         val annotatedText = buildAnnotatedString {
             append(stringResource(R.string.legal_agreement_prefix))
-            
+
             pushStringAnnotation(tag = "terms", annotation = Constants.Legal.TERMS_OF_USE_URL)
             withStyle(
                 style = SpanStyle(
@@ -99,9 +94,9 @@ fun SyncSetupLandingScreen(
                 append(stringResource(R.string.terms_of_use))
             }
             pop()
-            
+
             append(stringResource(R.string.legal_agreement_middle))
-            
+
             pushStringAnnotation(tag = "privacy", annotation = Constants.Legal.PRIVACY_POLICY_URL)
             withStyle(
                 style = SpanStyle(
@@ -113,7 +108,7 @@ fun SyncSetupLandingScreen(
             }
             pop()
         }
-        
+
         ClickableText(
             text = annotatedText,
             style = MaterialTheme.typography.bodyMedium.copy(
@@ -134,9 +129,9 @@ fun SyncSetupLandingScreen(
                     }
             }
         )
-        
+
         Spacer(modifier = Modifier.height(32.dp))
-        
+
         // Continue Button
         Button(
             onClick = { onEvent(SyncSetupViewModel.Event.ProceedWithSetup) },
@@ -150,10 +145,10 @@ fun SyncSetupLandingScreen(
                 style = MaterialTheme.typography.titleMedium
             )
         }
-        
+
         Spacer(modifier = Modifier.height(24.dp))
     }
-    
+
     // API Key Dialog (Legacy - should be removed once navigation is fully implemented)
     if (state.showApiKeyDialog) {
         ApiKeyDialog(
@@ -173,7 +168,7 @@ private fun ApiKeyDialog(
     onDismiss: () -> Unit
 ) {
     var apiKey by remember { mutableStateOf("") }
-    
+
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Enter your API Key") },

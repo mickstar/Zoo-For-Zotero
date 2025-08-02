@@ -22,8 +22,8 @@ class ManualApiViewModel @Inject constructor(
     )
 
     sealed class Effect {
-        object NavigateToLibrary : ManualApiViewModel.Effect()
-        object NavigateBack : ManualApiViewModel.Effect()
+        object NavigateToLibrary : Effect()
+        object NavigateBack : Effect()
     }
 
     sealed class Event {

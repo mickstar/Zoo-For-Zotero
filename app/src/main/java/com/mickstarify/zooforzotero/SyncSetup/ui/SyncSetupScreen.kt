@@ -27,29 +27,30 @@ object SyncSetupRoutes {
 
 @Composable
 fun SyncSetupScreen(
-    onNavigateToZoteroApiSetup: () -> Unit,
     onNavigateToLibrary: () -> Unit,
     viewModel: SyncSetupViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsState()
     val navController = rememberNavController()
-    
+
     LaunchedEffect(viewModel.effects) {
         viewModel.effects.collect { effect ->
             when (effect) {
                 is SyncSetupViewModel.Effect.NavigateToZoteroApiSetup -> {
                     navController.navigate(SyncSetupRoutes.WEBVIEW_AUTH)
                 }
+
                 is SyncSetupViewModel.Effect.NavigateToApiKeyEntry -> {
                     navController.navigate(SyncSetupRoutes.API_KEY_ENTRY)
                 }
+
                 is SyncSetupViewModel.Effect.NavigateToLibrary -> {
                     onNavigateToLibrary()
                 }
             }
         }
     }
-    
+
     Scaffold { paddingValues ->
         NavHost(
             navController = navController,
@@ -62,7 +63,7 @@ fun SyncSetupScreen(
                     onEvent = viewModel::dispatch
                 )
             }
-            
+
             composable(SyncSetupRoutes.WEBVIEW_AUTH) {
                 SyncSetupWebViewScreen(
                     onNavigateBack = {
@@ -73,7 +74,7 @@ fun SyncSetupScreen(
                     }
                 )
             }
-            
+
             composable(SyncSetupRoutes.API_KEY_ENTRY) {
                 SyncSetupApiKeyScreen(
                     onNavigateBack = {
@@ -93,7 +94,6 @@ fun SyncSetupScreen(
 private fun SyncSetupScreenPreview() {
     ZoteroTheme {
         SyncSetupScreen(
-            onNavigateToZoteroApiSetup = {},
             onNavigateToLibrary = {}
         )
     }

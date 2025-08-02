@@ -14,7 +14,8 @@ class ZooForZoteroApplication : Application() {
     override fun onCreate() {
         super.onCreate()
 
-        initAcra {
+        if (!BuildConfig.DEBUG) {
+            initAcra {
             //core configuration:
             reportContent = listOf(
                 ReportField.APP_VERSION_CODE,
@@ -52,6 +53,7 @@ class ZooForZoteroApplication : Application() {
                 subject = "Zoo for Zotero crash report"
             }
         }
+    }
     }
 
 }

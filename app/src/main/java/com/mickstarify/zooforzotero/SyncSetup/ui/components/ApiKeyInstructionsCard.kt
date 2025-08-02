@@ -33,7 +33,7 @@ import com.mickstarify.zooforzotero.ui.theme.ZoteroTheme
 @Composable
 fun ApiKeyInstructionsCard() {
     val uriHandler = LocalUriHandler.current
-    
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
@@ -59,18 +59,21 @@ fun ApiKeyInstructionsCard() {
                     color = MaterialTheme.colorScheme.primary
                 )
             }
-            
+
             Spacer(modifier = Modifier.height(12.dp))
-            
+
             Text(
                 text = stringResource(R.string.api_key_instructions_steps),
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.padding(bottom = 8.dp)
             )
-            
+
             val linkText = buildAnnotatedString {
                 append("Open ")
-                pushStringAnnotation(tag = "URL", annotation = "https://www.zotero.org/settings/security#applications")
+                pushStringAnnotation(
+                    tag = "URL",
+                    annotation = "https://www.zotero.org/settings/security#applications"
+                )
                 withStyle(
                     style = SpanStyle(
                         color = MaterialTheme.colorScheme.primary,
@@ -82,7 +85,7 @@ fun ApiKeyInstructionsCard() {
                 }
                 pop()
             }
-            
+
             Row(
                 verticalAlignment = Alignment.CenterVertically
             ) {

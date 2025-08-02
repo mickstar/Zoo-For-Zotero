@@ -1,6 +1,5 @@
 package com.mickstarify.zooforzotero.SyncSetup.viewmodels
 
-import android.net.Uri
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -88,13 +87,16 @@ class ZoteroAccountAuthViewModel @Inject constructor(
 
     private fun startOAuthFlow() {
         _state.value = _state.value.copy(isLoading = true, error = null)
-        
+
         viewModelScope.launch {
             try {
                 val authUrl = withContext(dispatchers.io) {
-                    oAuthProvider.retrieveRequestToken(oAuthConsumer, "zooforzotero://oauth_callback")
+                    oAuthProvider.retrieveRequestToken(
+                        oAuthConsumer,
+                        "zooforzotero://oauth_callback"
+                    )
                 }
-                
+
                 Log.d(TAG, "OAuth authorization URL: $authUrl")
                 _state.value = _state.value.copy(
                     isLoading = false,
@@ -112,29 +114,29 @@ class ZoteroAccountAuthViewModel @Inject constructor(
 
     private fun handleOAuthCallback(token: String, verifier: String) {
         _state.value = _state.value.copy(isLoading = true, error = null)
-        
+
         viewModelScope.launch {
             try {
                 withContext(dispatchers.io) {
                     oAuthProvider.retrieveAccessToken(oAuthConsumer, verifier)
                 }
-                
+
                 val params = oAuthProvider.responseParameters
                 val username = params.getFirst("username")
                 val userID = params.getFirst("userID")
                 val userKey = oAuthConsumer.token
-                
+
                 Log.d(TAG, "OAuth success - userID: $userID, username: $username")
-                
+
                 authenticationStorage.setCredentials(username, userID, userKey)
-                
+
                 _state.value = _state.value.copy(
                     isLoading = false,
                     isAuthComplete = true
                 )
-                
+
                 _effects.value = Effect.NavigateToLibrary
-                
+
             } catch (e: Exception) {
                 Log.e(TAG, "Error handling OAuth callback: ${e.message}", e)
                 _state.value = _state.value.copy(

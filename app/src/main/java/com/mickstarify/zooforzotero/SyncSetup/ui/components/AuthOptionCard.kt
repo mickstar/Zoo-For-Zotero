@@ -47,12 +47,18 @@ fun AuthOptionCard(
         animationSpec = tween(300),
         label = "elevation"
     )
-    
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onClick() }
-            .let { if (selected) it.border(2.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(16.dp)) else it },
+            .let {
+                if (selected) it.border(
+                    2.dp,
+                    MaterialTheme.colorScheme.primary,
+                    RoundedCornerShape(16.dp)
+                ) else it
+            },
         colors = if (selected) {
             CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.primaryContainer,
@@ -98,9 +104,9 @@ fun AuthOptionCard(
                     }
                 )
             }
-            
+
             Spacer(modifier = Modifier.width(16.dp))
-            
+
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = title,
@@ -123,7 +129,7 @@ fun AuthOptionCard(
                     }
                 )
             }
-            
+
             if (selected) {
                 Spacer(modifier = Modifier.width(8.dp))
                 Box(

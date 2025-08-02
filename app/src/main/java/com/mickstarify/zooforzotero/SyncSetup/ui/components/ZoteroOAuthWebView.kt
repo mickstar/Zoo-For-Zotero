@@ -29,7 +29,7 @@ fun ZoteroOAuthWebView(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
-    
+
     val webView = remember {
         WebView(context).apply {
             layoutParams = ViewGroup.LayoutParams(
@@ -60,16 +60,19 @@ fun ZoteroOAuthWebView(
             view.webViewClient = object : WebViewClient() {
                 override fun shouldOverrideUrlLoading(view: WebView?, url: String?): Boolean {
                     Log.d(TAG, "shouldOverrideUrlLoading: $url")
-                    
+
                     url?.let { urlString ->
                         // Check for OAuth callback URL
                         if (urlString.startsWith("zooforzotero://oauth_callback")) {
                             val uri = Uri.parse(urlString)
                             val oauthToken = uri.getQueryParameter("oauth_token")
                             val oauthVerifier = uri.getQueryParameter("oauth_verifier")
-                            
-                            Log.d(TAG, "OAuth callback - token: $oauthToken, verifier: $oauthVerifier")
-                            
+
+                            Log.d(
+                                TAG,
+                                "OAuth callback - token: $oauthToken, verifier: $oauthVerifier"
+                            )
+
                             if (oauthToken != null && oauthVerifier != null) {
                                 onOAuthCallback(oauthToken, oauthVerifier)
                             } else {
@@ -77,13 +80,13 @@ fun ZoteroOAuthWebView(
                             }
                             return true
                         }
-                        
+
                         // Allow network URLs to be loaded normally
                         if (URLUtil.isNetworkUrl(urlString)) {
                             return false
                         }
                     }
-                    
+
                     return super.shouldOverrideUrlLoading(view, url)
                 }
 
@@ -104,12 +107,16 @@ fun ZoteroOAuthWebView(
                     onError("Connection error: $description")
                 }
 
-                override fun onPageStarted(view: WebView?, url: String?, favicon: android.graphics.Bitmap?) {
+                override fun onPageStarted(
+                    view: WebView?,
+                    url: String?,
+                    favicon: android.graphics.Bitmap?
+                ) {
                     super.onPageStarted(view, url, favicon)
                     Log.d(TAG, "onPageStarted: $url")
                 }
             }
-            
+
             // Only load URL if it's different from current URL to avoid reloading
             if (view.url != url) {
                 view.loadUrl(url)

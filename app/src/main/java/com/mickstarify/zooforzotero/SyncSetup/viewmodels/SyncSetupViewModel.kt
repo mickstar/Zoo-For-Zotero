@@ -35,14 +35,14 @@ class SyncSetupViewModel @Inject constructor(
     override fun handleEvent(event: Event) {
         when (event) {
             is Event.SelectSyncOption -> {
-                updateState { 
+                updateState {
                     it.copy(
                         selectedSyncOption = event.option,
                         isProceedEnabled = event.option != SyncOption.Unset
                     )
                 }
             }
-            
+
             is Event.ProceedWithSetup -> {
                 when (currentState.selectedSyncOption) {
                     SyncOption.ZoteroAPI -> {
@@ -50,21 +50,23 @@ class SyncSetupViewModel @Inject constructor(
                             sendEffect(Effect.NavigateToZoteroApiSetup)
                         }
                     }
+
                     SyncOption.ZoteroAPIManual -> {
                         viewModelScope.launch {
                             sendEffect(Effect.NavigateToApiKeyEntry)
                         }
                     }
+
                     SyncOption.Unset -> {
                         // Do nothing - button should be disabled
                     }
                 }
             }
-            
+
             is Event.DismissApiKeyDialog -> {
                 updateState { it.copy(showApiKeyDialog = false) }
             }
-            
+
             is Event.SubmitApiKey -> {
                 updateState { it.copy(showApiKeyDialog = false) }
                 // TODO: Validate API key, for now just navigate to library

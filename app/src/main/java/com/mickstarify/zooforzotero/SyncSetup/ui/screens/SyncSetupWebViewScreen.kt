@@ -3,10 +3,8 @@ package com.mickstarify.zooforzotero.SyncSetup.ui.screens
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -57,6 +55,7 @@ fun SyncSetupWebViewScreen(
             is ZoteroAccountAuthViewModel.Effect.NavigateToLibrary -> {
                 onAuthComplete()
             }
+
             null -> {}
         }
     }
@@ -102,13 +101,16 @@ fun SyncSetupWebViewScreen(
                         )
                     }
                 }
-                
+
                 state.authorizationUrl != null -> {
                     ZoteroOAuthWebView(
                         url = state.authorizationUrl!!,
                         onOAuthCallback = { token, verifier ->
                             viewModel.handleEvent(
-                                ZoteroAccountAuthViewModel.Event.HandleOAuthCallback(token, verifier)
+                                ZoteroAccountAuthViewModel.Event.HandleOAuthCallback(
+                                    token,
+                                    verifier
+                                )
                             )
                         },
                         onPageFinished = {
@@ -119,7 +121,7 @@ fun SyncSetupWebViewScreen(
                         }
                     )
                 }
-                
+
                 else -> {
                     Column(
                         modifier = Modifier
@@ -156,8 +158,8 @@ fun SyncSetupWebViewScreen(
     // Error dialog
     state.error?.let { errorMessage ->
         AlertDialog(
-            onDismissRequest = { 
-                viewModel.handleEvent(ZoteroAccountAuthViewModel.Event.DismissError) 
+            onDismissRequest = {
+                viewModel.handleEvent(ZoteroAccountAuthViewModel.Event.DismissError)
             },
             title = { Text("Authentication Error") },
             text = { Text(errorMessage) },
