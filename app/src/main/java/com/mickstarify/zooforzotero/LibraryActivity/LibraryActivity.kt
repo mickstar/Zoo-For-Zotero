@@ -17,10 +17,12 @@ import android.view.WindowManager
 import android.view.inputmethod.InputMethodManager
 import android.widget.EditText
 import android.widget.Toast
+import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.ActionBarDrawerToggle
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SearchView
+import androidx.appcompat.widget.Toolbar
 import androidx.core.content.getSystemService
 import androidx.core.view.GravityCompat
 import androidx.core.view.iterator
@@ -73,8 +75,13 @@ class LibraryActivity : AppCompatActivity(),
     private lateinit var libraryListViewModel: LibraryListViewModel
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        enableEdgeToEdge()
+
         super.onCreate(savedInstanceState)
+        
         setContentView(R.layout.activity_library)
+
+        setupToolbar()
 
         libraryListViewModel = ViewModelProvider(this).get(LibraryListViewModel::class.java)
 
@@ -531,7 +538,6 @@ class LibraryActivity : AppCompatActivity(),
     }
 
     override fun onPostResume() {
-        Log.e("zotero", "post-resumed")
         super.onPostResume()
         presenter.onResume()
     }
@@ -627,6 +633,11 @@ class LibraryActivity : AppCompatActivity(),
             }
         }
         return super.dispatchTouchEvent(event)
+    }
+
+    private fun setupToolbar() {
+        val toolbar = findViewById<Toolbar>(R.id.toolbar)
+        setSupportActionBar(toolbar)
     }
 }
 

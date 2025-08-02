@@ -9,15 +9,21 @@ import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.Toolbar
 import com.mickstarify.zooforzotero.R
 
 class AttachmentManager : AppCompatActivity(), Contract.View {
     lateinit var presenter: Contract.Presenter
     override fun onCreate(savedInstanceState: Bundle?) {
+        enableEdgeToEdge()
+        
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_attachment_manager)
+        
+        setupToolbar()
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
         presenter = AttachmentManagerPresenter(this, this)
@@ -121,5 +127,8 @@ class AttachmentManager : AppCompatActivity(), Contract.View {
         }
     }
 
-
+    private fun setupToolbar() {
+        val toolbar = findViewById<Toolbar>(R.id.toolbar)
+        setSupportActionBar(toolbar)
+    }
 }

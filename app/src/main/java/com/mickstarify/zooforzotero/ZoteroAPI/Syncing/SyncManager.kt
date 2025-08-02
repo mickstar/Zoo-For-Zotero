@@ -13,13 +13,13 @@ import com.mickstarify.zooforzotero.ZoteroStorage.Database.Collection
 import com.mickstarify.zooforzotero.ZoteroStorage.Database.ZoteroDatabase
 import com.mickstarify.zooforzotero.ZoteroStorage.ZoteroDB.ItemsDownloadProgress
 import com.mickstarify.zooforzotero.ZoteroStorage.ZoteroDB.ZoteroDB
-import io.reactivex.Completable
-import io.reactivex.CompletableObserver
-import io.reactivex.Observer
-import io.reactivex.android.schedulers.AndroidSchedulers
-import io.reactivex.disposables.Disposable
-import io.reactivex.functions.Action
-import io.reactivex.schedulers.Schedulers
+import io.reactivex.rxjava3.core.Completable
+import io.reactivex.rxjava3.core.CompletableObserver
+import io.reactivex.rxjava3.core.Observer
+import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
+import io.reactivex.rxjava3.disposables.Disposable
+import io.reactivex.rxjava3.functions.Action
+import io.reactivex.rxjava3.schedulers.Schedulers
 
 class SyncManager (
     val zoteroAPI: ZoteroAPI,
@@ -199,7 +199,9 @@ class SyncManager (
         itemsObservable.map { response ->
             // check to see if there are any items.
             if (response.isCached == false) {
+                Log.d("zotero", "About to write ${response.items.size} items to DB for groupID=${db.groupID}")
                 zoteroDatabase.writeItemPOJOs(db.groupID, response.items).blockingAwait()
+                Log.d("zotero", "Finished writing ${response.items.size} items to DB for groupID=${db.groupID}")
             }
             response // pass it on.
         }
@@ -340,10 +342,10 @@ class SyncManager (
         val completable = Completable.fromAction(Action {
             val deletedEntriesPojo = zoteroAPI.getDeletedEntries(deletedItemsCheckVersion, db.groupID).blockingGet()
             for (itemKey in deletedEntriesPojo.items){
-                zoteroDatabase.deleteItem(itemKey).blockingGet()
+                zoteroDatabase.deleteItem(itemKey).blockingAwait()
             }
             for (collectionKey in deletedEntriesPojo.collections){
-                zoteroDatabase.deleteCollection(collectionKey).blockingGet()
+                zoteroDatabase.deleteCollection(collectionKey).blockingAwait()
             }
 
             Log.d(

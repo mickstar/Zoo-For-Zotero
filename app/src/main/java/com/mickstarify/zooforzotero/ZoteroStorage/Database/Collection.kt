@@ -12,9 +12,9 @@ import androidx.room.Query
 import androidx.room.Transaction
 import androidx.room.Update
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.CollectionPOJO
-import io.reactivex.Completable
-import io.reactivex.Maybe
-import io.reactivex.Single
+import io.reactivex.rxjava3.core.Completable
+import io.reactivex.rxjava3.core.Maybe
+import io.reactivex.rxjava3.core.Single
 import java.util.LinkedList
 
 @Entity(tableName = "Collections")

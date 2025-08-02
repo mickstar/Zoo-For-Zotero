@@ -6,7 +6,9 @@ import android.os.Bundle
 import android.text.InputType
 import android.util.Log
 import android.widget.Toast
+import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.Toolbar
 import androidx.preference.EditTextPreference
 import androidx.preference.Preference
 import androidx.preference.PreferenceFragmentCompat
@@ -26,8 +28,13 @@ class SettingsActivity : AppCompatActivity() {
     lateinit var myPreferenceManager: PreferenceManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        enableEdgeToEdge()
+        
         super.onCreate(savedInstanceState)
         setContentView(R.layout.settings_activity)
+        
+        setupToolbar()
+        
         supportFragmentManager
             .beginTransaction()
             .replace(R.id.settings, SettingsFragment())
@@ -126,5 +133,10 @@ class SettingsActivity : AppCompatActivity() {
     private fun updateWebDAVPreferenceUI(flag: Boolean) {
         val fragment = supportFragmentManager.findFragmentById(R.id.settings) as SettingsFragment
         fragment.findPreference<SwitchPreference>("use_webdav")?.isChecked = flag
+    }
+    
+    private fun setupToolbar() {
+        val toolbar = findViewById<Toolbar>(R.id.toolbar)
+        setSupportActionBar(toolbar)
     }
 }

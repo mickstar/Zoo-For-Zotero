@@ -6,7 +6,7 @@ import com.mickstarify.zooforzotero.ZoteroAPI.Model.CollectionPOJO
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.DeletedEntriesPojo
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.GroupPojo
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.KeyInfo
-import io.reactivex.Observable
+import io.reactivex.rxjava3.core.Observable
 import okhttp3.RequestBody
 import okhttp3.ResponseBody
 import retrofit2.Call

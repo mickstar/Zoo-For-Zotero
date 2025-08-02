@@ -15,14 +15,14 @@ import com.mickstarify.zooforzotero.ZoteroStorage.Database.ZoteroDatabase
 import com.mickstarify.zooforzotero.ZoteroStorage.ZoteroDB.ZoteroDB
 import com.mickstarify.zooforzotero.di.SingletonComponentsEntryPoint
 import dagger.hilt.android.EntryPointAccessors
-import io.reactivex.Completable
-import io.reactivex.CompletableObserver
-import io.reactivex.Observable
-import io.reactivex.Observer
-import io.reactivex.android.schedulers.AndroidSchedulers
-import io.reactivex.disposables.Disposable
-import io.reactivex.internal.operators.observable.ObservableFromIterable
-import io.reactivex.schedulers.Schedulers
+import io.reactivex.rxjava3.core.Completable
+import io.reactivex.rxjava3.core.CompletableObserver
+import io.reactivex.rxjava3.core.Observable
+import io.reactivex.rxjava3.core.Observer
+import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
+import io.reactivex.rxjava3.disposables.Disposable
+import io.reactivex.rxjava3.internal.operators.observable.ObservableFromIterable
+import io.reactivex.rxjava3.schedulers.Schedulers
 import java.util.LinkedList
 
 class AttachmentManagerModel(val presenter: Contract.Presenter, val context: Context) :
@@ -121,7 +121,7 @@ class AttachmentManagerModel(val presenter: Contract.Presenter, val context: Con
 
                         override fun onNext(it: DownloadProgress) {
                             if (setMetadata == false && it.metadataHash != "") {
-                                val err = zoteroDatabase.writeAttachmentInfo(
+                                zoteroDatabase.writeAttachmentInfo(
                                     AttachmentInfo(
                                         attachment.itemKey,
                                         zoteroDB.groupID,
@@ -133,8 +133,7 @@ class AttachmentManagerModel(val presenter: Contract.Presenter, val context: Con
                                             AttachmentInfo.ZOTEROAPI
                                         }
                                     )
-                                ).blockingGet()
-                                err?.let { throw(err) }
+                                ).blockingAwait()
                                 setMetadata = true
                             }
                         }

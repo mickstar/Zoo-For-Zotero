@@ -5,9 +5,9 @@ import android.text.Html
 import android.util.Log
 import androidx.room.*
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Note
-import io.reactivex.Completable
-import io.reactivex.Maybe
-import io.reactivex.Single
+import io.reactivex.rxjava3.core.Completable
+import io.reactivex.rxjava3.core.Maybe
+import io.reactivex.rxjava3.core.Single
 import kotlinx.parcelize.Parcelize
 import java.util.LinkedList
 
@@ -339,19 +339,18 @@ interface ItemDao {
     fun insertTags(tags: List<ItemTag>): Completable
 
 
-    @Transaction
     fun insertItem(
         itemInfo: ItemInfo,
         itemDatas: List<ItemData>,
         creators: List<Creator>,
         collections: List<ItemCollection>,
         tags: List<ItemTag>
-    ) {
-        insertItemInfo(itemInfo).blockingAwait()
-        insertItemData(itemDatas).blockingAwait()
-        insertCreators(creators).blockingAwait()
-        insertItemCollections(collections).blockingAwait()
-        insertTags(tags).blockingAwait()
+    ): Completable {
+        return insertItemInfo(itemInfo)
+            .andThen(insertItemData(itemDatas))
+            .andThen(insertCreators(creators))
+            .andThen(insertItemCollections(collections))
+            .andThen(insertTags(tags))
     }
 
 //

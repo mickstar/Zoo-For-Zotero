@@ -14,8 +14,8 @@ import com.mickstarify.zooforzotero.WebdavAuthMode
 import com.mickstarify.zooforzotero.ZoteroStorage.AttachmentStorageManager
 import com.mickstarify.zooforzotero.ZoteroStorage.Database.Item
 import com.thegrizzlylabs.sardineandroid.impl.OkHttpSardine
-import io.reactivex.Completable
-import io.reactivex.Observable
+import io.reactivex.rxjava3.core.Completable
+import io.reactivex.rxjava3.core.Observable
 import net.lingala.zip4j.ZipFile
 import okhttp3.OkHttpClient
 import okhttp3.Protocol
