@@ -14,15 +14,15 @@ import com.mickstarify.zooforzotero.ZoteroStorage.Database.Item
 import com.mickstarify.zooforzotero.ZoteroStorage.Database.ZoteroDatabase
 import com.mickstarify.zooforzotero.di.SingletonComponentsEntryPoint
 import dagger.hilt.android.EntryPointAccessors
-import io.reactivex.Completable
-import io.reactivex.functions.Action
-import io.reactivex.functions.Consumer
-import io.reactivex.schedulers.Schedulers
+import io.reactivex.rxjava3.core.Completable
+import io.reactivex.rxjava3.functions.Action
+import io.reactivex.rxjava3.functions.Consumer
+import io.reactivex.rxjava3.schedulers.Schedulers
 import java.io.File
 import java.io.InputStreamReader
 import java.util.LinkedList
 
-class ZoteroDB constructor(
+class ZoteroDB(
     val context: Context,
     val groupID: Int
 ) {
@@ -119,7 +119,7 @@ class ZoteroDB constructor(
         val completable =
             Completable.fromMaybe(zoteroDatabase.getItemsForGroup(groupID).doOnSuccess(
                 Consumer {
-                    Log.d("zotero", "loaded items from DB, setting now.")
+                    Log.d("zotero", "loaded ${it.size} items from DB for groupID=$groupID, setting now.")
                     items = it
                 }
             )).andThen(

@@ -1,14 +1,15 @@
 package com.mickstarify.zooforzotero.ZoteroStorage.Database
 
 import android.content.Context
+import android.util.Log
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.ItemPOJO
-import io.reactivex.Completable
-import io.reactivex.Maybe
-import io.reactivex.Single
-import io.reactivex.functions.Action
+import io.reactivex.rxjava3.core.Completable
+import io.reactivex.rxjava3.core.Maybe
+import io.reactivex.rxjava3.core.Single
+import io.reactivex.rxjava3.functions.Action
 import java.util.LinkedList
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -68,11 +69,19 @@ class ZoteroDatabase @Inject constructor(val context: Context) {
         groupID: Int,
         itemsPOJO: List<ItemPOJO>
     ): Completable {
+        Log.d("zotero", "writeItemPOJOs() - writing ${itemsPOJO.size} items for groupID=$groupID")
         var completable: Completable = Completable.complete()
         for (item in itemsPOJO) {
             completable = completable.andThen(writeItem(groupID, item))
         }
-        return completable
+        return completable.doOnComplete {
+            Log.d(
+                "zotero",
+                "writeItemPOJOs() - completed writing ${itemsPOJO.size} items for groupID=$groupID"
+            )
+        }.doOnError { error ->
+            Log.e("zotero", "writeItemPOJOs() - error writing items: $error")
+        }
     }
 
     fun deleteItem(itemKey: String): Completable {
@@ -87,39 +96,11 @@ class ZoteroDatabase @Inject constructor(val context: Context) {
         })
     }
 
-
-    fun writeItems(
-        groupID: Int,
-        items: List<Item>
-    ): Completable {
-        var completable = Completable.complete()
-        for (item in items) {
-            completable = completable.andThen(writeItem(groupID, item))
-        }
-        return completable
-    }
-
-    fun writeItem(groupID: Int, item: Item): Completable {
-        return Completable.fromAction {
-            db.itemDao().insertItem(
-                item.itemInfo,
-                item.itemData,
-                item.creators,
-                item.collections.map {
-                    ItemCollection(
-                        it,
-                        item.itemKey
-                    )
-                }, // i know, bad code, i know
-                item.tags
-            )
-        }
-    }
-
     fun writeItem(
         groupID: Int,
         itemPOJO: ItemPOJO
     ): Completable {
+        Log.d("zotero", "writeItem() - writing item ${itemPOJO.ItemKey} for groupID=$groupID")
         val itemInfo =
             ItemInfo(itemPOJO.ItemKey, groupID, itemPOJO.version, Boolean.fromInt(itemPOJO.deleted))
         var itemDatas = LinkedList<ItemData>()
@@ -145,7 +126,13 @@ class ZoteroDatabase @Inject constructor(val context: Context) {
         val collections = itemPOJO.collections.map { ItemCollection(it, itemPOJO.ItemKey) }
 
         val insertCompletable = Completable.fromAction {
+            Log.d("zotero", "About to call insertItem() for ${itemPOJO.ItemKey}")
+        }.andThen(
             db.itemDao().insertItem(itemInfo, itemDatas, itemCreators, collections, itemTags)
+        ).doOnComplete {
+            Log.d("zotero", "writeItem() completed successfully for ${itemPOJO.ItemKey}")
+        }.doOnError { error ->
+            Log.e("zotero", "writeItem() failed for ${itemPOJO.ItemKey}: $error")
         }
         return insertCompletable
     }

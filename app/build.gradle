@@ -111,9 +111,9 @@ dependencies {
         exclude group: 'org.apache.httpcomponents'
     }
     implementation('com.squareup.retrofit2:retrofit:2.9.0')
-    implementation 'com.squareup.retrofit2:adapter-rxjava2:2.9.0'
-    implementation 'io.reactivex.rxjava2:rxjava:2.2.14'
-    implementation 'io.reactivex.rxjava2:rxandroid:2.1.1'
+    implementation 'com.squareup.retrofit2:adapter-rxjava3:2.9.0'
+    implementation 'io.reactivex.rxjava3:rxjava:3.1.8'
+    implementation 'io.reactivex.rxjava3:rxandroid:3.0.2'
     implementation 'com.squareup.retrofit2:converter-gson:2.9.0'
     implementation "io.github.rburgst:okhttp-digest:3.1.1"
 
@@ -122,7 +122,7 @@ dependencies {
 
     // Room Dependencies
     implementation "androidx.room:room-runtime:2.7.2"
-    implementation 'androidx.room:room-rxjava2:2.7.2'
+    implementation 'androidx.room:room-rxjava3:2.7.2'
     ksp "androidx.room:room-compiler:2.7.2"
 
     // ACRA crash reporting

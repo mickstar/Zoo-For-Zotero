@@ -531,7 +531,6 @@ class LibraryActivity : AppCompatActivity(),
     }
 
     override fun onPostResume() {
-        Log.e("zotero", "post-resumed")
         super.onPostResume()
         presenter.onResume()
     }

@@ -49,11 +49,6 @@ class AttachmentStorageManager @Inject constructor(
         }
 
 
-    init {
-//        ((context as Activity).application as ZooForZoteroApplication).component.inject(this)
-        Log.e("zotero", "MADE AN INSTANCE OF ATTACHMENT MANAGER")
-    }
-
     fun validateAccess() {
         if (storageMode == StorageMode.CUSTOM) {
             if (testStorage() == false) {
@@ -71,7 +66,7 @@ class AttachmentStorageManager @Inject constructor(
         md5Key: String
     ): Boolean {
         if (item.itemType != Item.ATTACHMENT_TYPE) {
-            throw(Exception("error invalid item ${item.itemKey}: ${item.itemType} cannot calculate md5."))
+            throw (Exception("error invalid item ${item.itemKey}: ${item.itemType} cannot calculate md5."))
         }
         if (md5Key == "") {
             Log.d("zotero", "error cannot check MD5, no MD5 Available")
@@ -250,7 +245,7 @@ class AttachmentStorageManager @Inject constructor(
         return intent
     }
 
-    fun openAttachment(uri: Uri, contentType:String = ""): Intent {
+    fun openAttachment(uri: Uri, contentType: String = ""): Intent {
         var intent = Intent(Intent.ACTION_VIEW)
         Log.d("zotero", "opening PDF with Uri $uri")
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
@@ -326,10 +321,12 @@ class AttachmentStorageManager @Inject constructor(
                 val file = getAttachmentFile(attachment)
                 return file.lastModified()
             }
+
             StorageMode.CUSTOM -> {
                 val docFile = DocumentFile.fromSingleUri(context, getAttachmentUri(attachment))
                 return docFile?.lastModified() ?: throw FileNotFoundException()
             }
+
             else -> throw Exception("Invalid storage mode")
         }
 
@@ -384,6 +381,7 @@ class AttachmentStorageManager @Inject constructor(
                     Log.d("zotero", "cannot delete file. Not found.")
                 }
             }
+
             StorageMode.CUSTOM -> {
                 try {
                     val docFile = DocumentFile.fromSingleUri(context, getAttachmentUri(attachment))
@@ -392,6 +390,7 @@ class AttachmentStorageManager @Inject constructor(
                     Log.d("zotero", "cannot delete file. Not found.")
                 }
             }
+
             else -> throw Exception("not implemented")
         }
     }
@@ -423,8 +422,12 @@ class AttachmentStorageManager @Inject constructor(
                 var documentFile = DocumentFile.fromTreeUri(context, Uri.parse(location))
                 var i = index
                 while (i < directories.size) {
-                    val id: String = DocumentsContract.getDocumentId(documentFile?.uri) + "/" + directories[i]
-                    documentFile = DocumentFile.fromSingleUri(context, DocumentsContract.buildDocumentUriUsingTree(documentFile?.uri, id))
+                    val id: String =
+                        DocumentsContract.getDocumentId(documentFile?.uri) + "/" + directories[i]
+                    documentFile = DocumentFile.fromSingleUri(
+                        context,
+                        DocumentsContract.buildDocumentUriUsingTree(documentFile?.uri, id)
+                    )
                     Log.d("zotero", "checking ${directories[i]}")
                     if (documentFile?.exists() ?: false) {
                         i++
@@ -434,19 +437,19 @@ class AttachmentStorageManager @Inject constructor(
                 }
                 if (documentFile?.isFile ?: false) {
                     Log.d("zotero", "found file ${documentFile?.name}")
-                    return openAttachment(documentFile!!.uri, item.data["contentType"]?:"")
+                    return openAttachment(documentFile!!.uri, item.data["contentType"] ?: "")
                 }
             }
         } else if (storageMode == StorageMode.EXTERNAL_CACHE) {
             // logic using File api is much simpler
-            for (i in directories.indices){
-                var path = directories.slice(i..directories.size-1).joinToString("/")
-                if (path.first() == '/'){
-                   path = path.slice(1..path.length-1)
+            for (i in directories.indices) {
+                var path = directories.slice(i..directories.size - 1).joinToString("/")
+                if (path.first() == '/') {
+                    path = path.slice(1..path.length - 1)
                 }
                 Log.d("zotero", "checking path $path")
                 var document = File(context.externalCacheDir, path)
-                if (document.exists()){
+                if (document.exists()) {
                     val uri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                         FileProvider.getUriForFile(
                             context,
@@ -456,14 +459,13 @@ class AttachmentStorageManager @Inject constructor(
                     } else {
                         Uri.fromFile(document)
                     }
-                    return openAttachment(uri, item.data["contentType"]?:"")
+                    return openAttachment(uri, item.data["contentType"] ?: "")
                 }
             }
 
 
-        }
-        else {
-            throw  NotImplementedError()
+        } else {
+            throw NotImplementedError()
         }
 
         return null

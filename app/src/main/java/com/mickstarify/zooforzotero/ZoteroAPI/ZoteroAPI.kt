@@ -17,13 +17,13 @@ import com.mickstarify.zooforzotero.ZoteroStorage.AttachmentStorageManager
 import com.mickstarify.zooforzotero.ZoteroStorage.Database.GroupInfo
 import com.mickstarify.zooforzotero.ZoteroStorage.Database.Item
 import com.mickstarify.zooforzotero.ZoteroStorage.ZoteroDB.ItemsDownloadProgress
-import io.reactivex.Completable
-import io.reactivex.Observable
-import io.reactivex.ObservableEmitter
-import io.reactivex.ObservableOnSubscribe
-import io.reactivex.Observer
-import io.reactivex.Single
-import io.reactivex.disposables.Disposable
+import io.reactivex.rxjava3.core.Completable
+import io.reactivex.rxjava3.core.Observable
+import io.reactivex.rxjava3.core.ObservableEmitter
+import io.reactivex.rxjava3.core.ObservableOnSubscribe
+import io.reactivex.rxjava3.core.Observer
+import io.reactivex.rxjava3.core.Single
+import io.reactivex.rxjava3.disposables.Disposable
 import okhttp3.Interceptor
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -35,7 +35,7 @@ import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 import retrofit2.Retrofit
-import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory
+import retrofit2.adapter.rxjava3.RxJava3CallAdapterFactory
 import retrofit2.converter.gson.GsonConverterFactory
 import java.util.LinkedList
 import java.util.concurrent.TimeUnit
@@ -117,21 +117,21 @@ class ZoteroAPI(
         .baseUrl(BASE_URL)
         .client(zoteroHttpClient)
         .addConverterFactory(GsonConverterFactory.create())
-        .addCallAdapterFactory(RxJava2CallAdapterFactory.create())
+        .addCallAdapterFactory(RxJava3CallAdapterFactory.create())
         .build().create(ZoteroAPIService::class.java)
 
     val attachmentsService: ZoteroAPIService = Retrofit.Builder()
         .baseUrl(BASE_URL)
         .client(httpClientForAttachments)
         .addConverterFactory(GsonConverterFactory.create())
-        .addCallAdapterFactory(RxJava2CallAdapterFactory.create())
+        .addCallAdapterFactory(RxJava3CallAdapterFactory.create())
         .build().create(ZoteroAPIService::class.java)
 
     val shortTimeoutService: ZoteroAPIService = Retrofit.Builder()
         .baseUrl(BASE_URL)
         .client(zoteroHttpClientShortTimeout)
         .addConverterFactory(GsonConverterFactory.create())
-        .addCallAdapterFactory(RxJava2CallAdapterFactory.create())
+        .addCallAdapterFactory(RxJava3CallAdapterFactory.create())
         .build().create(ZoteroAPIService::class.java)
 
     fun downloadItemRx(
@@ -303,7 +303,7 @@ class ZoteroAPI(
         }
         return Single.fromObservable(observable.map { response ->
             if (response.code() == 200) {
-                response.body()
+                response.body() ?: throw Exception("Response body is null")
             } else {
                 throw Exception("Error server responded with code ${response.code()}")
             }

@@ -33,13 +33,13 @@ import com.mickstarify.zooforzotero.ZoteroStorage.ZoteroDB.ZoteroDBPicker
 import com.mickstarify.zooforzotero.ZoteroStorage.ZoteroDB.ZoteroGroupDB
 import com.mickstarify.zooforzotero.di.SingletonComponentsEntryPoint
 import dagger.hilt.android.EntryPointAccessors
-import io.reactivex.Completable
-import io.reactivex.CompletableObserver
-import io.reactivex.MaybeObserver
-import io.reactivex.Observer
-import io.reactivex.android.schedulers.AndroidSchedulers
-import io.reactivex.disposables.Disposable
-import io.reactivex.schedulers.Schedulers
+import io.reactivex.rxjava3.core.Completable
+import io.reactivex.rxjava3.core.CompletableObserver
+import io.reactivex.rxjava3.core.MaybeObserver
+import io.reactivex.rxjava3.core.Observer
+import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
+import io.reactivex.rxjava3.disposables.Disposable
+import io.reactivex.rxjava3.schedulers.Schedulers
 import java.io.FileNotFoundException
 import java.util.LinkedList
 import java.util.Stack
@@ -148,12 +148,19 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
     }
 
     override fun getLibraryItems(): List<Item> {
-        return filterItems(zoteroDB.getDisplayableItems())
+        val items = zoteroDB.getDisplayableItems()
+        Log.d(TAG, "getLibraryItems() - got ${items.size} items from zoteroDB.getDisplayableItems()")
+        val filteredItems = filterItems(items)
+        Log.d(TAG, "getLibraryItems() - after filtering: ${filteredItems.size} items")
+        return filteredItems
     }
 
     override fun getItemsFromCollection(collectionKey: String): List<Item> {
         val items = zoteroDB.getItemsFromCollection(collectionKey)
-        return filterItems(items)
+        Log.d(TAG, "getItemsFromCollection($collectionKey) - got ${items.size} items from zoteroDB")
+        val filteredItems = filterItems(items)
+        Log.d(TAG, "getItemsFromCollection($collectionKey) - after filtering: ${filteredItems.size} items")
+        return filteredItems
     }
 
     override fun getSubCollections(collectionKey: String): List<ZoteroCollection> {
@@ -938,11 +945,15 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
         val loadCollections = db.loadCollectionsFromDatabase().doOnError { e ->
             Log.e(TAG, "loading collections from db got error $e")
             db.collections = LinkedList()
+        }.doOnComplete {
+            Log.d(TAG, "loadCollectionsFromDatabase completed - loaded ${db.collections?.size ?: 0} collections")
         }
 
         val loadItems = db.loadItemsFromDatabase().doOnError { e ->
             Log.e(TAG, "loading Items from db got error $e")
             db.items = LinkedList()
+        }.doOnComplete {
+            Log.d(TAG, "loadItemsFromDatabase completed - loaded ${db.items?.size ?: 0} items")
         }
 
         loadCollections

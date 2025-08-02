@@ -5,9 +5,9 @@ import android.text.Html
 import android.util.Log
 import androidx.room.*
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Note
-import io.reactivex.Completable
-import io.reactivex.Maybe
-import io.reactivex.Single
+import io.reactivex.rxjava3.core.Completable
+import io.reactivex.rxjava3.core.Maybe
+import io.reactivex.rxjava3.core.Single
 import kotlinx.parcelize.Parcelize
 import java.util.LinkedList
 
