@@ -170,9 +170,9 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
     }
 
     override fun filterCollections(query: String): List<ZoteroCollection> {
-        val queryUpper = query.toUpperCase(Locale.ROOT)
+        val queryUpper = query.uppercase()
         return zoteroDB.collections?.filter {
-            it.name.toUpperCase(Locale.ROOT).contains(queryUpper)
+            it.name.uppercase().contains(queryUpper)
         } ?: LinkedList()
     }
 

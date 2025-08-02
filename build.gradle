@@ -2,7 +2,7 @@
 
 buildscript {
     ext.kotlin_version = '2.1.21'
-    ext.ksp_version = '2.2.0-2.0.2'
+    ext.ksp_version = '2.1.21-2.0.1'
     repositories {
         google()
         mavenCentral()

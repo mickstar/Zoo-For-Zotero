@@ -81,7 +81,7 @@ class AttachmentStorageManager @Inject constructor(
     fun checkIfAttachmentExists(item: Item, checkMd5: Boolean = true): Boolean {
         val filename = getFilenameForItem(item)
         if (storageMode == StorageMode.EXTERNAL_CACHE) {
-            val outputDir = File(context.externalCacheDir, item.itemKey.toUpperCase(Locale.ROOT))
+            val outputDir = File(context.externalCacheDir, item.itemKey.uppercase())
             if (!outputDir.exists() || outputDir.isDirectory == false) {
                 return false
             }
@@ -99,17 +99,17 @@ class AttachmentStorageManager @Inject constructor(
         } else if (storageMode == StorageMode.CUSTOM) {
             val location = preferenceManager.getCustomAttachmentStorageLocation()
             val rootDocFile = DocumentFile.fromTreeUri(context, Uri.parse(location))
-            var directory = rootDocFile?.findFile(item.itemKey.toUpperCase(Locale.ROOT))
+            var directory = rootDocFile?.findFile(item.itemKey.uppercase())
 
             if (directory == null || directory.isDirectory == false) {
                 return false
             }
             val file = directory?.findFile(filename)
 //            val helper = SAFHelper(location)
-//            val file = DocumentFile.fromSingleUri(context, helper.getUriForItem(item.itemKey.toUpperCase(Locale.ROOT), filename))
+//            val file = DocumentFile.fromSingleUri(context, helper.getUriForItem(item.itemKey.uppercase(), filename))
 
 //            Log.d("zotero", "actual URI: ${file?.uri}")
-//            Log.d("zotero", "my     URI: ${helper.getUriForItem(item.itemKey.toUpperCase(Locale.ROOT), filename)}")
+//            Log.d("zotero", "my     URI: ${helper.getUriForItem(item.itemKey.uppercase(), filename)}")
 
             if (file == null) {
                 return false
@@ -164,9 +164,9 @@ class AttachmentStorageManager @Inject constructor(
             return file.outputStream()
         } else if (storageMode == StorageMode.CUSTOM) {
             val documentTree = DocumentFile.fromTreeUri(context, getCustomStorageTreeURI())
-            var directory = documentTree?.findFile(item.itemKey.toUpperCase(Locale.ROOT))
+            var directory = documentTree?.findFile(item.itemKey.uppercase())
             if (directory == null || directory.isDirectory == false) {
-                directory = documentTree?.createDirectory(item.itemKey.toUpperCase(Locale.ROOT))
+                directory = documentTree?.createDirectory(item.itemKey.uppercase())
             }
             var itemFile = directory!!.findFile(filename)
             if (itemFile == null || !itemFile.exists()) {
@@ -205,7 +205,7 @@ class AttachmentStorageManager @Inject constructor(
 
         } else if (storageMode == StorageMode.CUSTOM) {
             val documentTree = DocumentFile.fromTreeUri(context, getCustomStorageTreeURI())
-            val directory = documentTree?.findFile(item.itemKey.toUpperCase(Locale.ROOT))
+            val directory = documentTree?.findFile(item.itemKey.uppercase())
             val file = directory?.findFile(filename) ?: throw FileNotFoundException()
             if (file.exists()) {
                 return file.uri
@@ -334,7 +334,7 @@ class AttachmentStorageManager @Inject constructor(
 
     private fun getAttachmentFile(attachment: Item): File {
         val filename = getFilenameForItem(attachment)
-        val directory = File(context.externalCacheDir, attachment.itemKey.toUpperCase(Locale.ROOT))
+        val directory = File(context.externalCacheDir, attachment.itemKey.uppercase())
         if (!directory.exists()) {
             directory.mkdirs()
         }

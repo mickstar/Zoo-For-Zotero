@@ -58,8 +58,8 @@ class Webdav(
         context: Context,
         attachmentStorageManager: AttachmentStorageManager
     ): Observable<DownloadProgress> {
-        val webpathProp = address + "/${attachment.itemKey.toUpperCase(Locale.ROOT)}.prop"
-        val webpathZip = address + "/${attachment.itemKey.toUpperCase(Locale.ROOT)}.zip"
+        val webpathProp = address + "/${attachment.itemKey.uppercase()}.prop"
+        val webpathZip = address + "/${attachment.itemKey.uppercase()}.zip"
 
         val observable: Observable<DownloadProgress> = Observable.create { emitter ->
             try {
@@ -79,7 +79,7 @@ class Webdav(
 
                 val zipFile =
                     attachmentStorageManager.createTempFile(
-                        "${attachment.itemKey.toUpperCase(Locale.ROOT)}.pdf"
+                        "${attachment.itemKey.uppercase()}.pdf"
                     )
                 val downloadOutputStream = zipFile.outputStream()
 
@@ -102,9 +102,7 @@ class Webdav(
                 if (read > 0) {
                     throw RuntimeException(
                         "Error did not finish downloading ${
-                            attachment.itemKey.toUpperCase(
-                                Locale.ROOT
-                            )
+                            attachment.itemKey.uppercase()
                         }.zip"
                     )
                 }
@@ -156,13 +154,13 @@ class Webdav(
             fileInputStream.close()
 
             val zipFile =
-                attachmentStorageManager.createTempFile("${attachment.itemKey.toUpperCase(Locale.ROOT)}_NEW.zip")
+                attachmentStorageManager.createTempFile("${attachment.itemKey.uppercase()}_NEW.zip")
 
             ZipFile(zipFile).addFile(tempFile)
             tempFile.delete()
             // STEP 2 -- CREATE PROP
             val propFile =
-                attachmentStorageManager.createTempFile("${attachment.itemKey.toUpperCase(Locale.ROOT)}_NEW.prop")
+                attachmentStorageManager.createTempFile("${attachment.itemKey.uppercase()}_NEW.prop")
             val propContent = WebdavProp(
                 attachmentStorageManager.getMtime(attachment),
                 attachmentStorageManager.calculateMd5(attachment)
@@ -172,8 +170,8 @@ class Webdav(
             outputStream.close()
 
             // STEP 3 -- UPLOAD ZIP AND PROP
-            val newZipPath = address + "/${attachment.itemKey.toUpperCase(Locale.ROOT)}_NEW.zip"
-            val newPropPath = address + "/${attachment.itemKey.toUpperCase(Locale.ROOT)}_NEW.prop"
+            val newZipPath = address + "/${attachment.itemKey.uppercase()}_NEW.zip"
+            val newPropPath = address + "/${attachment.itemKey.uppercase()}_NEW.prop"
 
             // mostly useless step, delete any old _NEW.zip files that shouldn't exist
             // but might incase of a failed update earlier.
@@ -192,8 +190,8 @@ class Webdav(
             propFile.delete()
 
             // STEP 4 -- DELETE AND RENAME TO REPLACE OLD CONTENT.
-            val zipPath = address + "/${attachment.itemKey.toUpperCase(Locale.ROOT)}.zip"
-            val propPath = address + "/${attachment.itemKey.toUpperCase(Locale.ROOT)}.prop"
+            val zipPath = address + "/${attachment.itemKey.uppercase()}.zip"
+            val propPath = address + "/${attachment.itemKey.uppercase()}.prop"
 
             sardine.delete(propPath)
             sardine.delete(zipPath)
