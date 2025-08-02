@@ -2,7 +2,6 @@ package com.mickstarify.zooforzotero
 
 import android.app.Application
 import dagger.hilt.android.HiltAndroidApp
-import org.acra.ACRA
 import org.acra.ReportField
 import org.acra.config.dialog
 import org.acra.config.mailSender
@@ -14,7 +13,8 @@ class ZooForZoteroApplication : Application() {
     override fun onCreate() {
         super.onCreate()
 
-        initAcra {
+        if (!BuildConfig.DEBUG) {
+            initAcra {
             //core configuration:
             reportContent = listOf(
                 ReportField.APP_VERSION_CODE,
@@ -52,6 +52,7 @@ class ZooForZoteroApplication : Application() {
                 subject = "Zoo for Zotero crash report"
             }
         }
+    }
     }
 
 }

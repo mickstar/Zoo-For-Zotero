@@ -55,4 +55,14 @@
     <string name="advanced_configuration">Advanced Configuration</string>
     <string name="connect">Connect</string>
     <string name="save_connect">Save and Connect</string>
+    
+    <!-- API Key Setup -->
+    <string name="api_key_instructions_title">How to get your API key</string>
+    <string name="api_key_instructions_steps">1. Visit Zotero Account settings\n2. Navigate to Security\n3. Create new private key</string>
+    
+    <!-- Privacy Policy -->
+    <string name="privacy_policy">Privacy Policy</string>
+    <string name="terms_of_use">Terms of Use</string>
+    <string name="legal_agreement_prefix">By using this app, you agree to our </string>
+    <string name="legal_agreement_middle"> and </string>
 </resources>

@@ -1,0 +1,61 @@
+package com.mickstarify.zooforzotero.SyncSetup.viewmodels
+
+import androidx.lifecycle.viewModelScope
+import com.mickstarify.zooforzotero.SyncSetup.SyncOption
+import com.mickstarify.zooforzotero.common.BaseViewModel
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.launch
+import javax.inject.Inject
+
+@HiltViewModel
+class SyncSetupViewModel @Inject constructor(
+) : BaseViewModel<SyncSetupViewModel.State, SyncSetupViewModel.Effect, SyncSetupViewModel.Event>() {
+
+    data class State(
+        val selectedSyncOption: SyncOption = SyncOption.ZoteroAPI,
+        val isProceedEnabled: Boolean = true
+    )
+
+    sealed class Effect {
+        object NavigateToZoteroApiSetup : Effect()
+        object NavigateToApiKeyEntry : Effect()
+        object NavigateToLibrary : Effect()
+    }
+
+    sealed class Event {
+        data class SelectSyncOption(val option: SyncOption) : Event()
+        object ProceedWithSetup : Event()
+    }
+
+    override fun getInitialState(): State = State()
+
+    override fun handleEvent(event: Event) {
+        when (event) {
+            is Event.SelectSyncOption -> {
+                updateState {
+                    it.copy(
+                        selectedSyncOption = event.option,
+                        isProceedEnabled = event.option != SyncOption.Unset
+                    )
+                }
+            }
+
+            is Event.ProceedWithSetup -> {
+                when (currentState.selectedSyncOption) {
+                    SyncOption.ZoteroAPI -> {
+                        viewModelScope.launch {
+                            sendEffect(Effect.NavigateToZoteroApiSetup)
+                        }
+                    }
+                    SyncOption.ZoteroAPIManual -> {
+                        viewModelScope.launch {
+                            sendEffect(Effect.NavigateToApiKeyEntry)
+                        }
+                    }
+
+                    SyncOption.Unset -> {}
+                }
+            }
+        }
+    }
+}

@@ -11,7 +11,6 @@ import android.widget.EditText
 import android.widget.LinearLayout
 import com.mickstarify.zooforzotero.R
 import com.mickstarify.zooforzotero.ZoteroStorage.Database.Item
-import java.util.HashMap
 import java.util.LinkedList
 
 class ShareItemDialog(item: Item) {

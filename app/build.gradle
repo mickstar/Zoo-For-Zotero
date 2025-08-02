@@ -4,6 +4,7 @@ plugins {
     id 'kotlin-parcelize'
     id 'com.google.devtools.ksp'
     id 'com.google.dagger.hilt.android'
+    id 'org.jetbrains.kotlin.plugin.compose'
 }
 
 def apikeyPropertiesFile = rootProject.file("apikeys.properties")
@@ -11,11 +12,11 @@ def apikeyProperties = new Properties()
 apikeyProperties.load(new FileInputStream(apikeyPropertiesFile))
 
 android {
-    compileSdkVersion 35
+    compileSdkVersion 36
     defaultConfig {
         applicationId "com.mickstarify.zooforzotero"
-        minSdkVersion 23
-        targetSdkVersion 35
+        minSdkVersion 26
+        targetSdkVersion 36
         versionCode 51
         versionName "3.2"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
@@ -40,12 +41,51 @@ android {
     kotlinOptions {
         jvmTarget = "17"
     }
+    buildFeatures {
+        compose true
+    }
+    
+    testOptions {
+        unitTests.all {
+            useJUnitPlatform()
+        }
+    }
+    
     namespace 'com.mickstarify.zooforzotero'
 }
 
 dependencies {
     def nav_version = "2.9.3"
+    def nav3_version = "1.0.0-alpha06"
+    def compose_bom_version = "2024.12.01"
+    def acraVersion = "5.12.0"
 
+    // MAIN DEPENDENCIES
+    
+    // Compose BOM - manages all Compose library versions
+    implementation platform("androidx.compose:compose-bom:$compose_bom_version")
+    
+    // Core Compose dependencies
+    implementation 'androidx.compose.ui:ui'
+    implementation 'androidx.compose.ui:ui-tooling-preview'
+    implementation 'androidx.compose.material3:material3'
+    implementation 'androidx.compose.material:material-icons-extended'
+    implementation 'androidx.activity:activity-compose:1.10.1'
+    implementation 'androidx.lifecycle:lifecycle-viewmodel-compose:2.9.2'
+    implementation 'androidx.compose.runtime:runtime-livedata'
+    
+    // Navigation 3
+    implementation "androidx.navigation3:navigation3-runtime:$nav3_version"
+    implementation "androidx.navigation3:navigation3-ui:$nav3_version"
+
+    // Hilt integration with Compose
+    implementation 'androidx.hilt:hilt-navigation-compose:1.2.0'
+    
+    // Compose tooling (for debugging)
+    debugImplementation 'androidx.compose.ui:ui-tooling'
+    debugImplementation 'androidx.compose.ui:ui-test-manifest'
+
+    // Core Android dependencies
     implementation fileTree(dir: 'libs', include: ['*.jar'])
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
     implementation 'androidx.drawerlayout:drawerlayout:1.2.0'
@@ -56,10 +96,16 @@ dependencies {
     implementation "androidx.navigation:navigation-ui-ktx:$nav_version"
     implementation 'com.google.android.material:material:1.12.0'
     api 'com.google.guava:guava:33.4.8-jre'
+    implementation 'androidx.swiperefreshlayout:swiperefreshlayout:1.1.0'
+    implementation 'androidx.recyclerview:recyclerview:1.4.0'
+    implementation 'androidx.preference:preference-ktx:1.2.1'
+    implementation 'androidx.gridlayout:gridlayout:1.1.0'
+    implementation 'androidx.lifecycle:lifecycle-livedata-ktx:2.9.2'
+    implementation 'androidx.lifecycle:lifecycle-viewmodel-ktx:2.9.2'
 
+    // Networking
     implementation('com.squareup.okhttp3:okhttp:4.12.0')
     implementation('com.squareup.okhttp3:logging-interceptor:4.12.0')
-    // Note: OkHttp 5.x available but may have breaking changes
     implementation 'oauth.signpost:oauth-signpost:2.1.1'
     implementation('oauth.signpost:signpost-commonshttp4:2.1.1') {
         exclude group: 'org.apache.httpcomponents'
@@ -69,25 +115,9 @@ dependencies {
     implementation 'io.reactivex.rxjava2:rxjava:2.2.14'
     implementation 'io.reactivex.rxjava2:rxandroid:2.1.1'
     implementation 'com.squareup.retrofit2:converter-gson:2.9.0'
-    // SwipeRefreshLayout moved to separate dependency
-    implementation 'androidx.swiperefreshlayout:swiperefreshlayout:1.1.0'
-    implementation 'androidx.recyclerview:recyclerview:1.4.0'
-    implementation 'androidx.preference:preference-ktx:1.2.1'
-    testImplementation 'junit:junit:4.13.2'
-    testImplementation 'org.mockito:mockito-core:5.18.0'
-    androidTestImplementation 'org.mockito:mockito-android:5.18.0'
-    androidTestImplementation 'androidx.test:runner:1.7.0'
-    androidTestImplementation 'androidx.test.espresso:espresso-core:3.7.0'
-    implementation 'androidx.gridlayout:gridlayout:1.1.0'
-    implementation 'net.lingala.zip4j:zip4j:2.11.5'
-    implementation 'com.github.mickstar:sardine-android:v0.7c'
+    implementation "io.github.rburgst:okhttp-digest:3.1.1"
 
-    implementation 'androidx.lifecycle:lifecycle-livedata-ktx:2.9.2'
-    implementation 'androidx.lifecycle:lifecycle-viewmodel-ktx:2.9.2'
-
-//    debugImplementation 'com.squareup.leakcanary:leakcanary-android:2.7'
-
-    // barcode scanner
+    // Barcode scanner
     implementation 'com.journeyapps:zxing-android-embedded:4.3.0'
 
     // Room Dependencies
@@ -95,18 +125,35 @@ dependencies {
     implementation 'androidx.room:room-rxjava2:2.7.2'
     ksp "androidx.room:room-compiler:2.7.2"
 
-    def acraVersion = "5.12.0"
+    // ACRA crash reporting
     implementation "ch.acra:acra-mail:$acraVersion"
     implementation("ch.acra:acra-dialog:$acraVersion")
 
+    // Dependency Injection
     implementation "com.google.dagger:hilt-android:2.57"
     ksp "com.google.dagger:hilt-compiler:2.57"
 
-    // for fab on main screen
+    // Other utilities
     implementation 'com.getbase:floatingactionbutton:1.10.1'
+    implementation 'net.lingala.zip4j:zip4j:2.11.5'
+    implementation 'com.github.mickstar:sardine-android:v0.7c'
 
-    // for webdav
-    implementation "io.github.rburgst:okhttp-digest:3.1.1"
+//    debugImplementation 'com.squareup.leakcanary:leakcanary-android:2.7'
+
+    // TEST DEPENDENCIES
+
+    // Unit Testing
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.8.1'
+    testImplementation 'junit:junit:4.13.2'
+    testImplementation 'org.mockito:mockito-core:5.18.0'
+    testImplementation 'org.mockito.kotlin:mockito-kotlin:5.4.0'
+    testImplementation 'org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.1'
+    testImplementation 'app.cash.turbine:turbine:1.0.0'
+
+    // Instrumented Testing
+    androidTestImplementation 'org.mockito:mockito-android:5.18.0'
+    androidTestImplementation 'androidx.test:runner:1.7.0'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.7.0'
 
     configurations {
         all*.exclude group: 'xpp3', module: 'xpp3'

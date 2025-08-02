@@ -1,6 +1,5 @@
 package com.mickstarify.zooforzotero.ZoteroStorage.Database
 
-import android.os.Parcel
 import android.os.Parcelable
 import android.text.Html
 import android.util.Log
@@ -11,7 +10,6 @@ import io.reactivex.Maybe
 import io.reactivex.Single
 import kotlinx.parcelize.Parcelize
 import java.util.LinkedList
-import java.util.Locale
 
 /*this code is currently inactive. Just part of my project to migrate to sQL rather than using
 * json files for storage. */

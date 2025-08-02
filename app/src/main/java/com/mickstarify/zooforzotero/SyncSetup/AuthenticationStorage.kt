@@ -2,6 +2,7 @@ package com.mickstarify.zooforzotero.SyncSetup
 
 import android.content.Context
 import android.content.SharedPreferences
+import androidx.core.content.edit
 
 class AuthenticationStorage(context: Context) {
     private var sharedPreferences: SharedPreferences =
@@ -19,11 +20,11 @@ class AuthenticationStorage(context: Context) {
     }
 
     fun setCredentials(username: String, userID: String, userkey: String) {
-        val editor = sharedPreferences.edit()
-        editor.putString("username", username)
-        editor.putString("userID", userID)
-        editor.putString("userkey", userkey)
-        editor.apply()
+        sharedPreferences.edit {
+            putString("username", username)
+            putString("userID", userID)
+            putString("userkey", userkey)
+        }
     }
 
     fun getUserKey(): String {

@@ -1,13 +1,11 @@
 package com.mickstarify.zooforzotero.ZoteroStorage.ZoteroDB
 
-import android.app.Activity
 import android.content.Context
 import android.content.Context.MODE_PRIVATE
 import android.util.ArrayMap
 import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
-import com.mickstarify.zooforzotero.ZooForZoteroApplication
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.ItemPOJO
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Note
 import com.mickstarify.zooforzotero.ZoteroStorage.Database.AttachmentInfo
@@ -23,7 +21,6 @@ import io.reactivex.schedulers.Schedulers
 import java.io.File
 import java.io.InputStreamReader
 import java.util.LinkedList
-import javax.inject.Inject
 
 class ZoteroDB constructor(
     val context: Context,

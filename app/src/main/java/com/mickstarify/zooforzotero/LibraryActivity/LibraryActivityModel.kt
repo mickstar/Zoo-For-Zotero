@@ -5,28 +5,34 @@ import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import android.os.Bundle
 import android.os.Handler
 import android.util.Log
 import com.google.gson.JsonObject
 import com.mickstarify.zooforzotero.PreferenceManager
 import com.mickstarify.zooforzotero.SyncSetup.AuthenticationStorage
-import com.mickstarify.zooforzotero.ZooForZoteroApplication
-import com.mickstarify.zooforzotero.ZoteroAPI.*
+import com.mickstarify.zooforzotero.ZoteroAPI.AlreadyUploadedException
+import com.mickstarify.zooforzotero.ZoteroAPI.DeleteItemListener
+import com.mickstarify.zooforzotero.ZoteroAPI.DownloadProgress
+import com.mickstarify.zooforzotero.ZoteroAPI.ItemChangedSinceException
+import com.mickstarify.zooforzotero.ZoteroAPI.ItemLockedException
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Note
+import com.mickstarify.zooforzotero.ZoteroAPI.PreconditionFailedException
+import com.mickstarify.zooforzotero.ZoteroAPI.RequestEntityTooLarge
 import com.mickstarify.zooforzotero.ZoteroAPI.Syncing.OnSyncChangeListener
 import com.mickstarify.zooforzotero.ZoteroAPI.Syncing.SyncManager
+import com.mickstarify.zooforzotero.ZoteroAPI.ZoteroAPI
+import com.mickstarify.zooforzotero.ZoteroAPI.ZoteroNotFoundException
 import com.mickstarify.zooforzotero.ZoteroStorage.AttachmentStorageManager
-import com.mickstarify.zooforzotero.ZoteroStorage.Database.*
+import com.mickstarify.zooforzotero.ZoteroStorage.Database.AttachmentInfo
+import com.mickstarify.zooforzotero.ZoteroStorage.Database.GroupInfo
+import com.mickstarify.zooforzotero.ZoteroStorage.Database.Item
+import com.mickstarify.zooforzotero.ZoteroStorage.Database.RecentlyOpenedAttachment
+import com.mickstarify.zooforzotero.ZoteroStorage.Database.ZoteroDatabase
 import com.mickstarify.zooforzotero.ZoteroStorage.ZoteroDB.ZoteroDB
 import com.mickstarify.zooforzotero.ZoteroStorage.ZoteroDB.ZoteroDBPicker
 import com.mickstarify.zooforzotero.ZoteroStorage.ZoteroDB.ZoteroGroupDB
 import com.mickstarify.zooforzotero.di.SingletonComponentsEntryPoint
-import com.mickstarify.zooforzotero.di.SingletonModule
-import dagger.hilt.EntryPoint
-import dagger.hilt.InstallIn
 import dagger.hilt.android.EntryPointAccessors
-import dagger.hilt.components.SingletonComponent
 import io.reactivex.Completable
 import io.reactivex.CompletableObserver
 import io.reactivex.MaybeObserver
@@ -36,10 +42,8 @@ import io.reactivex.disposables.Disposable
 import io.reactivex.schedulers.Schedulers
 import java.io.FileNotFoundException
 import java.util.LinkedList
-import java.util.Locale
 import java.util.Stack
 import java.util.concurrent.TimeUnit
-import javax.inject.Inject
 import com.mickstarify.zooforzotero.ZoteroStorage.Database.Collection as ZoteroCollection
 
 

@@ -2,8 +2,7 @@ package com.mickstarify.zooforzotero.ZoteroAPI.Model
 
 import android.util.Log
 import com.google.gson.Gson
-import java.util.*
-import kotlin.collections.HashMap
+import java.util.LinkedList
 
 /* parses the output of the zotero item json and creates a itemPOJO object. */
 class ItemJSONConverter {
