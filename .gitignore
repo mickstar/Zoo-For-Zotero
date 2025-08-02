@@ -1,0 +1,65 @@
+# built application files
+*.apk
+*.ap_
+
+# zoo
+apikeys.properties
+
+# files for the dex VM
+*.dex
+
+# Java class files
+*.class
+
+# generated files
+/data
+.bundle/
+bin/
+libs/libray/bin/
+gen/
+libs/library/gen/
+build/
+.gradle/
+.gradle
+artifacts.zip
+logs.txt
+app/schemas/
+
+local.properties
+
+*.DS_Store
+
+## idea
+*.idea
+*.iml
+/.idea
+/out
+/iAuditor.iml
+/proguard_logs/dump.txt
+
+#project properties
+private.properties
+
+/.apt_generated
+/google-play-services
+/project.properties
+
+.kotlin
+
+/.gradle
+
+/.project
+app/src/test/assets
+app/build
+/app/data
+.cxx
+/.env
+/.kotlin/*
+
+# Flag evaluation script outputs
+flag-evaluation.csv
+
+# claude local config
+CLAUDE.local.md
+CLAUDE.md
+.claude/settings.local.json
