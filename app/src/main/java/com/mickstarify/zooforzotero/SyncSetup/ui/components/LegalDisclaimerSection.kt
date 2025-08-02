@@ -2,11 +2,11 @@ package com.mickstarify.zooforzotero.SyncSetup.ui.components
 
 import android.content.Intent
 import android.net.Uri
-import androidx.compose.foundation.text.ClickableText
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.text.ClickableText
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable

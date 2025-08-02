@@ -2,7 +2,6 @@ package com.mickstarify.zooforzotero
 
 import android.app.Application
 import dagger.hilt.android.HiltAndroidApp
-import org.acra.ACRA
 import org.acra.ReportField
 import org.acra.config.dialog
 import org.acra.config.mailSender

@@ -15,9 +15,12 @@ import okhttp3.internal.toHexString
 import okio.buffer
 import okio.sink
 import okio.source
-import java.io.*
+import java.io.File
+import java.io.FileNotFoundException
+import java.io.IOException
+import java.io.InputStream
+import java.io.OutputStream
 import java.security.MessageDigest
-import java.util.*
 import javax.inject.Inject
 import javax.inject.Singleton
 

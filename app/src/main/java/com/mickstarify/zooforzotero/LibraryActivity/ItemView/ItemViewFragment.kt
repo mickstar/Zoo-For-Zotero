@@ -3,7 +3,9 @@ package com.mickstarify.zooforzotero.LibraryActivity.ItemView
 import android.content.Context
 import android.os.Bundle
 import android.util.Log
-import android.view.*
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
 import android.widget.ImageButton
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -19,7 +21,6 @@ import com.mickstarify.zooforzotero.R
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.Note
 import com.mickstarify.zooforzotero.ZoteroStorage.Database.Creator
 import com.mickstarify.zooforzotero.ZoteroStorage.Database.Item
-import java.util.*
 
 /**
  * A fragment representing a list of Items.

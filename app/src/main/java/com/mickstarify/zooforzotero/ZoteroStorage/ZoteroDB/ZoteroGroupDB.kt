@@ -1,7 +1,6 @@
 package com.mickstarify.zooforzotero.ZoteroStorage.ZoteroDB
 
 import android.content.Context
-import com.mickstarify.zooforzotero.ZooForZoteroApplication
 import com.mickstarify.zooforzotero.ZoteroStorage.Database.ZoteroDatabase
 import com.mickstarify.zooforzotero.di.SingletonComponentsEntryPoint
 import dagger.hilt.android.EntryPointAccessors

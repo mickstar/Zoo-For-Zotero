@@ -5,7 +5,6 @@ import android.content.Context
 import android.util.Log
 import com.mickstarify.zooforzotero.PreferenceManager
 import com.mickstarify.zooforzotero.SyncSetup.AuthenticationStorage
-import com.mickstarify.zooforzotero.ZooForZoteroApplication
 import com.mickstarify.zooforzotero.ZoteroAPI.DownloadProgress
 import com.mickstarify.zooforzotero.ZoteroAPI.ZoteroAPI
 import com.mickstarify.zooforzotero.ZoteroStorage.AttachmentStorageManager
@@ -25,7 +24,6 @@ import io.reactivex.disposables.Disposable
 import io.reactivex.internal.operators.observable.ObservableFromIterable
 import io.reactivex.schedulers.Schedulers
 import java.util.LinkedList
-import javax.inject.Inject
 
 class AttachmentManagerModel(val presenter: Contract.Presenter, val context: Context) :
     Contract.Model {

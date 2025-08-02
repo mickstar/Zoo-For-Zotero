@@ -5,7 +5,7 @@ import android.os.Parcelable
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.mickstarify.zooforzotero.ZoteroStorage.Database.Item
-import java.util.*
+import java.util.LinkedList
 
 class Note() : Parcelable {
     lateinit var parent: String

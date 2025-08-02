@@ -1,11 +1,21 @@
 package com.mickstarify.zooforzotero.ZoteroStorage.Database
 
-import androidx.room.*
+import androidx.room.ColumnInfo
+import androidx.room.Dao
+import androidx.room.Delete
+import androidx.room.Entity
+import androidx.room.Ignore
+import androidx.room.Insert
+import androidx.room.OnConflictStrategy
+import androidx.room.PrimaryKey
+import androidx.room.Query
+import androidx.room.Transaction
+import androidx.room.Update
 import com.mickstarify.zooforzotero.ZoteroAPI.Model.CollectionPOJO
 import io.reactivex.Completable
 import io.reactivex.Maybe
 import io.reactivex.Single
-import java.util.*
+import java.util.LinkedList
 
 @Entity(tableName = "Collections")
 class Collection(
