@@ -15,7 +15,7 @@ android {
     compileSdkVersion 36
     defaultConfig {
         applicationId "com.mickstarify.zooforzotero"
-        minSdkVersion 23
+        minSdkVersion 26
         targetSdkVersion 36
         versionCode 51
         versionName "3.2"
