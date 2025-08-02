@@ -81,28 +81,6 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".SyncSetup.ZoteroAPISetup.ZoteroAPISetup"
-            android:label="@string/title_activity_zotero_api_setup"
-            android:launchMode="singleInstance"
-            android:parentActivityName=".SyncSetup.SyncSetupActivity"
-            android:theme="@style/Theme.ZooForZotero.NoActionBar"
-            android:exported="true">
-            <meta-data
-                android:name="android.support.PARENT_ACTIVITY"
-                android:value="com.mickstarify.zooforzotero.SyncSetup.SyncSetupActivity" />
-
-            <intent-filter>
-                <action android:name="android.intent.action.VIEW" />
-
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
-
-                <data
-                    android:host="oauth_callback"
-                    android:scheme="zooforzotero" />
-            </intent-filter>
-        </activity>
-        <activity
             android:name=".SyncSetup.SyncSetupActivity"
             android:label="@string/title_activity_sync_setup"
             android:theme="@style/Theme.ZooForZotero.NoActionBar" />

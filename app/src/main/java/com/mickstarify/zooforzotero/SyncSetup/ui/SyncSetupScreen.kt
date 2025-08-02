@@ -1,5 +1,10 @@
 package com.mickstarify.zooforzotero.SyncSetup.ui
 
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
@@ -51,7 +56,9 @@ fun SyncSetupScreen(
         }
     }
 
-    Scaffold { paddingValues ->
+    Scaffold(
+        contentWindowInsets = WindowInsets(0, 0, 0, 0)
+    ) { paddingValues ->
         NavHost(
             navController = navController,
             startDestination = SyncSetupRoutes.LANDING,

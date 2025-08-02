@@ -22,8 +22,8 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.mickstarify.zooforzotero.R
+import com.mickstarify.zooforzotero.common.Constants
 import com.mickstarify.zooforzotero.ui.theme.ZoteroTheme
-import com.mickstarify.zooforzotero.utils.Constants
 
 @Composable
 fun LegalDisclaimerSection() {
