@@ -339,19 +339,18 @@ interface ItemDao {
     fun insertTags(tags: List<ItemTag>): Completable
 
 
-    @Transaction
     fun insertItem(
         itemInfo: ItemInfo,
         itemDatas: List<ItemData>,
         creators: List<Creator>,
         collections: List<ItemCollection>,
         tags: List<ItemTag>
-    ) {
-        insertItemInfo(itemInfo).blockingAwait()
-        insertItemData(itemDatas).blockingAwait()
-        insertCreators(creators).blockingAwait()
-        insertItemCollections(collections).blockingAwait()
-        insertTags(tags).blockingAwait()
+    ): Completable {
+        return insertItemInfo(itemInfo)
+            .andThen(insertItemData(itemDatas))
+            .andThen(insertCreators(creators))
+            .andThen(insertItemCollections(collections))
+            .andThen(insertTags(tags))
     }
 
 //

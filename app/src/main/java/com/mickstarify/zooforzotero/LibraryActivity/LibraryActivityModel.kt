@@ -46,6 +46,7 @@ import java.util.Stack
 import java.util.concurrent.TimeUnit
 import com.mickstarify.zooforzotero.ZoteroStorage.Database.Collection as ZoteroCollection
 
+private const val TAG = "LibraryActivityModel"
 
 class LibraryActivityModel(private val presenter: Contract.Presenter, val context: Context) :
     Contract.Model, OnSyncChangeListener {
@@ -931,16 +932,16 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
         The role of this function is to load the library into memory and then
         trigger a UI update.
         * This will be called from the SyncManager. */
-        Log.d("zotero", "finished library loading.")
+        Log.d(TAG, "finishLibrarySync() called - starting final stage (loading from database)")
 
 
         val loadCollections = db.loadCollectionsFromDatabase().doOnError { e ->
-            Log.e("zotero", "loading collections from db got error $e")
+            Log.e(TAG, "loading collections from db got error $e")
             db.collections = LinkedList()
         }
 
         val loadItems = db.loadItemsFromDatabase().doOnError { e ->
-            Log.e("zotero", "loading Items from db got error $e")
+            Log.e(TAG, "loading Items from db got error $e")
             db.items = LinkedList()
         }
 
@@ -949,6 +950,7 @@ class LibraryActivityModel(private val presenter: Contract.Presenter, val contex
             .observeOn(AndroidSchedulers.mainThread())
             .andThen(loadItems)
             .andThen(db.loadTrashItemsFromDB())
+            .observeOn(AndroidSchedulers.mainThread())
             .doOnComplete {
                 presenter.hideBasicSyncAnimation()
                 if (db.groupID == GroupInfo.NO_GROUP_ID) {
