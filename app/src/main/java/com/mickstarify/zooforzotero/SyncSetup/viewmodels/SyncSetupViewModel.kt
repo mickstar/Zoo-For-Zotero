@@ -12,13 +12,14 @@ class SyncSetupViewModel @Inject constructor(
 ) : BaseViewModel<SyncSetupViewModel.State, SyncSetupViewModel.Effect, SyncSetupViewModel.Event>() {
 
     data class State(
-        val selectedSyncOption: SyncOption = SyncOption.Unset,
-        val isProceedEnabled: Boolean = false,
+        val selectedSyncOption: SyncOption = SyncOption.ZoteroAPI,
+        val isProceedEnabled: Boolean = true,
         val showApiKeyDialog: Boolean = false
     )
 
     sealed class Effect {
         object NavigateToZoteroApiSetup : Effect()
+        object NavigateToApiKeyEntry : Effect()
         object NavigateToLibrary : Effect()
     }
 
@@ -50,7 +51,9 @@ class SyncSetupViewModel @Inject constructor(
                         }
                     }
                     SyncOption.ZoteroAPIManual -> {
-                        updateState { it.copy(showApiKeyDialog = true) }
+                        viewModelScope.launch {
+                            sendEffect(Effect.NavigateToApiKeyEntry)
+                        }
                     }
                     SyncOption.Unset -> {
                         // Do nothing - button should be disabled
