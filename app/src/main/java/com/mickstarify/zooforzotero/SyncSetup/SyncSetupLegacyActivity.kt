@@ -12,7 +12,7 @@ import androidx.appcompat.app.AppCompatActivity
 import com.mickstarify.zooforzotero.R
 import com.mickstarify.zooforzotero.SyncSetup.ZoteroAPISetup.ZoteroAPISetup
 
-class SyncSetupView : AppCompatActivity(), SyncSetupContract.View {
+class SyncSetupLegacyActivity : AppCompatActivity(), SyncSetupContract.View {
     override fun createAlertDialog(title: String, message: String) {
         Log.e("zotero", "got error $title - $message")
         val alert = AlertDialog.Builder(this)
@@ -54,7 +54,7 @@ class SyncSetupView : AppCompatActivity(), SyncSetupContract.View {
     }
 
     override fun createUnsupportedAlert() {
-        val alert = AlertDialog.Builder(this@SyncSetupView)
+        val alert = AlertDialog.Builder(this@SyncSetupLegacyActivity)
         alert.setIcon(R.drawable.ic_error_black_24dp)
         alert.setTitle("Unsupported Syncing Option")
         alert.setMessage(

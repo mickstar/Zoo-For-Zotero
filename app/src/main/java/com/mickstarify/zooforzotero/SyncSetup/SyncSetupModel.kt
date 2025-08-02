@@ -78,7 +78,7 @@ class SyncSetupModel(val presenter: SyncSetupPresenter, val context: Context) :
     fun openLibrary() {
         val intent = Intent(context, LibraryActivity::class.java)
         context.startActivity(intent)
-        (context as SyncSetupView).finish()
+        (context as SyncSetupLegacyActivity).finish()
     }
 
 }

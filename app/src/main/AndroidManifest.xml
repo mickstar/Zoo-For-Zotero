@@ -84,12 +84,12 @@
             android:name=".SyncSetup.ZoteroAPISetup.ZoteroAPISetup"
             android:label="@string/title_activity_zotero_api_setup"
             android:launchMode="singleInstance"
-            android:parentActivityName=".SyncSetup.SyncSetupView"
+            android:parentActivityName=".SyncSetup.SyncSetupActivity"
             android:theme="@style/Theme.ZooForZotero.NoActionBar"
             android:exported="true">
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
-                android:value="com.mickstarify.zooforzotero.SyncSetup.SyncSetupView" />
+                android:value="com.mickstarify.zooforzotero.SyncSetup.SyncSetupActivity" />
 
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
@@ -103,7 +103,7 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".SyncSetup.SyncSetupView"
+            android:name=".SyncSetup.SyncSetupActivity"
             android:label="@string/title_activity_sync_setup"
             android:theme="@style/Theme.ZooForZotero.NoActionBar" />
         <activity

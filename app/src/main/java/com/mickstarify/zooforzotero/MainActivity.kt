@@ -7,7 +7,7 @@ import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import com.mickstarify.zooforzotero.LibraryActivity.LibraryActivity
 import com.mickstarify.zooforzotero.SyncSetup.AuthenticationStorage
-import com.mickstarify.zooforzotero.SyncSetup.SyncSetupView
+import com.mickstarify.zooforzotero.SyncSetup.SyncSetupActivity
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -31,7 +31,7 @@ class MainActivity : AppCompatActivity() {
         val intent = if (auth.hasCredentials()) {
             Intent(this, LibraryActivity::class.java)
         } else {
-            Intent(this, SyncSetupView::class.java)
+            Intent(this, SyncSetupActivity::class.java)
         }
         startActivity(intent)
         overridePendingTransition(0, 0)
