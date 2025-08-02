@@ -13,8 +13,7 @@ class SyncSetupViewModel @Inject constructor(
 
     data class State(
         val selectedSyncOption: SyncOption = SyncOption.ZoteroAPI,
-        val isProceedEnabled: Boolean = true,
-        val showApiKeyDialog: Boolean = false
+        val isProceedEnabled: Boolean = true
     )
 
     sealed class Effect {
@@ -26,8 +25,6 @@ class SyncSetupViewModel @Inject constructor(
     sealed class Event {
         data class SelectSyncOption(val option: SyncOption) : Event()
         object ProceedWithSetup : Event()
-        object DismissApiKeyDialog : Event()
-        data class SubmitApiKey(val apiKey: String) : Event()
     }
 
     override fun getInitialState(): State = State()
@@ -50,28 +47,13 @@ class SyncSetupViewModel @Inject constructor(
                             sendEffect(Effect.NavigateToZoteroApiSetup)
                         }
                     }
-
                     SyncOption.ZoteroAPIManual -> {
                         viewModelScope.launch {
                             sendEffect(Effect.NavigateToApiKeyEntry)
                         }
                     }
 
-                    SyncOption.Unset -> {
-                        // Do nothing - button should be disabled
-                    }
-                }
-            }
-
-            is Event.DismissApiKeyDialog -> {
-                updateState { it.copy(showApiKeyDialog = false) }
-            }
-
-            is Event.SubmitApiKey -> {
-                updateState { it.copy(showApiKeyDialog = false) }
-                // TODO: Validate API key, for now just navigate to library
-                viewModelScope.launch {
-                    sendEffect(Effect.NavigateToLibrary)
+                    SyncOption.Unset -> {}
                 }
             }
         }
