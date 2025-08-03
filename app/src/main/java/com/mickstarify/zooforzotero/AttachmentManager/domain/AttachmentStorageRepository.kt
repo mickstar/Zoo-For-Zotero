@@ -44,7 +44,7 @@ class AttachmentStorageRepositoryImpl @Inject constructor(
         withContext(dispatchersProvider.io) {
             val exists = attachmentStorageManager.checkIfAttachmentExists(item, checkMd5)
             val sizeBytes = if (exists) {
-                attachmentStorageManager.getFileSize(item)
+                attachmentStorageManager.getFileSize(item).getOrElse { 0L }
             } else {
                 0L
             }
