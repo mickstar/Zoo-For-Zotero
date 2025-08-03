@@ -63,9 +63,4 @@ class AttachmentManager : ComponentActivity() {
         }
     }
 
-    @Suppress("DEPRECATION")
-    override fun onBackPressed() {
-        Log.d(TAG, "Back pressed")
-        viewModel.dispatchEvent(AttachmentManagerViewModel.Event.NavigateBack)
-    }
 }

@@ -1,5 +1,6 @@
 package com.mickstarify.zooforzotero.AttachmentManager.ui
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -12,8 +13,10 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import android.widget.Toast
 import com.mickstarify.zooforzotero.AttachmentManager.ui.components.AttachmentStatsCard
 import com.mickstarify.zooforzotero.AttachmentManager.ui.components.LoadingSection
 import com.mickstarify.zooforzotero.AttachmentManager.viewmodel.AttachmentManagerViewModel
@@ -31,12 +34,35 @@ fun AttachmentManagerScreen(
     LaunchedEffect(Unit) {
         dispatch(AttachmentManagerViewModel.Event.LoadLibrary)
     }
+    
+    val context = LocalContext.current
+    val isDownloading = (state as? AttachmentManagerViewModel.State.LoadedState)?.isDownloading == true
+    
+    // Handle back navigation during downloads
+    BackHandler(enabled = isDownloading) {
+        Toast.makeText(
+            context,
+            "Do not exit while download is active. Cancel it first.",
+            Toast.LENGTH_SHORT
+        ).show()
+    }
+    
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("Attachment Manager") },
                 navigationIcon = {
-                    IconButton(onClick = { dispatch(AttachmentManagerViewModel.Event.NavigateBack) }) {
+                    IconButton(onClick = { 
+                        if (isDownloading) {
+                            Toast.makeText(
+                                context,
+                                "Do not exit while download is active. Cancel it first.",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        } else {
+                            dispatch(AttachmentManagerViewModel.Event.NavigateBack)
+                        }
+                    }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back"
