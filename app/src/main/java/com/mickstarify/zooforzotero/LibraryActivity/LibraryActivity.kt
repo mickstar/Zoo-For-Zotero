@@ -33,7 +33,7 @@ import androidx.navigation.fragment.NavHostFragment
 import com.google.android.material.navigation.NavigationView
 import com.journeyapps.barcodescanner.ScanContract
 import com.journeyapps.barcodescanner.ScanOptions
-import com.mickstarify.zooforzotero.AttachmentManager.AttachmentManagerLegacy
+import com.mickstarify.zooforzotero.AttachmentManager.AttachmentManager
 import com.mickstarify.zooforzotero.LibraryActivity.ItemView.ItemAttachmentEntry
 import com.mickstarify.zooforzotero.LibraryActivity.ItemView.ItemViewFragment
 import com.mickstarify.zooforzotero.LibraryActivity.Notes.NoteInteractionListener
@@ -290,7 +290,7 @@ class LibraryActivity : AppCompatActivity(),
             }
 
             R.id.attachment_manager -> {
-                val intent = Intent(this, AttachmentManagerLegacy::class.java)
+                val intent = Intent(this, AttachmentManager::class.java)
                 startActivity(intent)
             }
 

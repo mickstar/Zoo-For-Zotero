@@ -1,6 +1,8 @@
 package com.mickstarify.zooforzotero.AttachmentManager.ui.components
 
 import androidx.compose.animation.core.*
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -64,16 +66,39 @@ fun LoadingSection(
                     strokeWidth = 4.dp
                 )
             } else {
+                // Animated progress values
+                val targetProgress = if (progress.total > 0) {
+                    progress.current.toFloat() / progress.total.toFloat()
+                } else 0f
+                
+                val animatedProgress by animateFloatAsState(
+                    targetValue = targetProgress,
+                    animationSpec = tween(
+                        durationMillis = 300,
+                        easing = EaseOutCubic
+                    ),
+                    label = "progress_animation"
+                )
+                
+                val targetPercentage = if (progress.total > 0) {
+                    (progress.current * 100 / progress.total)
+                } else 0
+                
+                val animatedPercentage by animateIntAsState(
+                    targetValue = targetPercentage,
+                    animationSpec = tween(
+                        durationMillis = 300,
+                        easing = EaseOutCubic
+                    ),
+                    label = "percentage_animation"
+                )
+                
                 Column(
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     LinearProgressIndicator(
-                        progress = { 
-                            if (progress.total > 0) {
-                                progress.current.toFloat() / progress.total.toFloat()
-                            } else 0f
-                        },
+                        progress = { animatedProgress },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(8.dp),
@@ -93,22 +118,32 @@ fun LoadingSection(
                         )
                         
                         Text(
-                            text = "${if (progress.total > 0) (progress.current * 100 / progress.total) else 0}%",
+                            text = "$animatedPercentage%",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                             fontWeight = FontWeight.Medium
                         )
                     }
                     
-                    // Current file name (if available)
-                    if (progress.fileName.isNotEmpty()) {
-                        Text(
-                            text = "Downloading: ${progress.fileName}",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.primary,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.fillMaxWidth()
-                        )
+                    // Current file name (if available) with animation
+                    Crossfade(
+                        targetState = progress.fileName,
+                        animationSpec = tween(
+                            durationMillis = 250,
+                            easing = EaseInOut
+                        ),
+                        label = "filename_crossfade",
+                        modifier = Modifier.animateContentSize()
+                    ) { fileName ->
+                        if (fileName.isNotEmpty()) {
+                            Text(
+                                text = "Downloading: $fileName",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.primary,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
                     }
                 }
             }

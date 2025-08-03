@@ -31,9 +31,9 @@ class AttachmentManager : ComponentActivity() {
 
                 val (state, effect, dispatch) = viewModel.provides()
 
-                LaunchedEffect(Unit) {
-                    dispatch(AttachmentManagerViewModel.Event.LoadAttachments)
-                }
+//                LaunchedEffect(Unit) {
+//                    dispatch(AttachmentManagerViewModel.Event.LoadAttachments)
+//                }
 
                 LaunchedEffect(Unit) {
                     effect.collect { effect ->

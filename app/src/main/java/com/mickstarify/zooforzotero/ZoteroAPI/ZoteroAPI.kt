@@ -169,7 +169,6 @@ class ZoteroAPI(
                 service.getFileForGroup(groupID, item.itemKey)
             }
             downloader.subscribe(object : Observer<Response<ResponseBody>> {
-                val disposable: Disposable? = null
                 override fun onComplete() {
                     emitter.onComplete()
                 }
