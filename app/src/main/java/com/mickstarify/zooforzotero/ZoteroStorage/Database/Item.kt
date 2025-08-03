@@ -249,7 +249,7 @@ class ItemData(
 )
 
 @Entity(
-    tableName = "ItemCreator", primaryKeys = ["parent", "firstName", "lastName"],
+    tableName = "ItemCreator", primaryKeys = ["parent", "firstName", "lastName", "creatorType"],
     foreignKeys = [ForeignKey(
         entity = ItemInfo::class,
         parentColumns = ["itemKey"],
