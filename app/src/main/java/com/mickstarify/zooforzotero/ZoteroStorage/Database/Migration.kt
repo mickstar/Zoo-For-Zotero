@@ -44,7 +44,32 @@ val MIGRATION_4_5 = object: Migration(4,5){
     }
 }
 
-//val MIGRATION_5_6 = object: Migration(5,6){
-//    override fun migrate(database: SupportSQLiteDatabase) {
-//    }
-//}
+val MIGRATION_5_6 = object: Migration(5,6){
+    override fun migrate(database: SupportSQLiteDatabase) {
+        // Fix creator primary key to include creatorType so same person can have multiple roles
+        // Create new table with correct primary key structure
+        database.execSQL("""
+            CREATE TABLE IF NOT EXISTS `ItemCreator_new` (
+                `parent` TEXT NOT NULL, 
+                `firstName` TEXT NOT NULL, 
+                `lastName` TEXT NOT NULL, 
+                `creatorType` TEXT NOT NULL, 
+                `order` INTEGER NOT NULL, 
+                PRIMARY KEY(`parent`, `firstName`, `lastName`, `creatorType`), 
+                FOREIGN KEY(`parent`) REFERENCES `ItemInfo`(`itemKey`) ON UPDATE NO ACTION ON DELETE CASCADE
+            )
+        """.trimIndent())
+        
+        // Copy data from old table to new table
+        database.execSQL("""
+            INSERT INTO ItemCreator_new (parent, firstName, lastName, creatorType, `order`) 
+            SELECT parent, firstName, lastName, creatorType, `order` FROM ItemCreator
+        """.trimIndent())
+        
+        // Drop old table
+        database.execSQL("DROP TABLE ItemCreator")
+        
+        // Rename new table
+        database.execSQL("ALTER TABLE ItemCreator_new RENAME TO ItemCreator")
+    }
+}

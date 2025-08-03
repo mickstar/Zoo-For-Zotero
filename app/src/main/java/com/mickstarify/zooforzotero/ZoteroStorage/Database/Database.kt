@@ -26,7 +26,7 @@ import javax.inject.Singleton
         ItemCollection::class,
         AttachmentInfo::class
     ),
-    version = 5,
+    version = 6,
     exportSchema = true
 )
 abstract class ZoteroRoomDatabase : RoomDatabase() {
@@ -47,7 +47,8 @@ class ZoteroDatabase @Inject constructor(val context: Context) {
         .addMigrations(MIGRATION_1_2)
         .addMigrations(MIGRATION_2_3)
         .addMigrations(MIGRATION_3_4)
-        .addMigrations(MIGRATION_4_5).build()
+        .addMigrations(MIGRATION_4_5)
+        .addMigrations(MIGRATION_5_6).build()
 
     fun addGroup(group: GroupInfo): Completable {
         return db.groupInfoDao().insertGroupInfos(group)
