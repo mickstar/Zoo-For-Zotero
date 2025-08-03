@@ -17,8 +17,8 @@ android {
         applicationId "com.mickstarify.zooforzotero"
         minSdkVersion 26
         targetSdkVersion 36
-        versionCode 51
-        versionName "3.2"
+        versionCode 52
+        versionName "4.0.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "zotero_api_key", apikeyProperties['zotero_api_key'])
         buildConfigField("String", "zotero_api_secret", apikeyProperties['zotero_api_secret'])
@@ -143,12 +143,12 @@ dependencies {
     // TEST DEPENDENCIES
 
     // Unit Testing
-    testImplementation 'org.junit.jupiter:junit-jupiter:5.8.1'
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.13.4'
     testImplementation 'junit:junit:4.13.2'
     testImplementation 'org.mockito:mockito-core:5.18.0'
-    testImplementation 'org.mockito.kotlin:mockito-kotlin:5.4.0'
-    testImplementation 'org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.1'
-    testImplementation 'app.cash.turbine:turbine:1.0.0'
+    testImplementation 'org.mockito.kotlin:mockito-kotlin:6.0.0'
+    testImplementation 'org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2'
+    testImplementation 'app.cash.turbine:turbine:1.2.1'
 
     // Instrumented Testing
     androidTestImplementation 'org.mockito:mockito-android:5.18.0'

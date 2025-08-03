@@ -21,6 +21,9 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.updatePadding
 import com.getbase.floatingactionbutton.FloatingActionButton
 import com.getbase.floatingactionbutton.FloatingActionsMenu
 import com.mickstarify.zooforzotero.LibraryActivity.LibraryActivity
@@ -164,6 +167,9 @@ class LibraryListFragment : Fragment(), LibraryListInteractionListener,
         fabISBNScanner.setOnClickListener {
             viewModel.onBarcodeScanButtonPressed()
         }
+        
+        // Handle window insets for FAB positioning
+        setupWindowInsets()
     }
 
     override fun onResume() {
@@ -199,5 +205,20 @@ class LibraryListFragment : Fragment(), LibraryListInteractionListener,
         val layout =
             requireView().findViewById<ConstraintLayout>(R.id.constraintLayout_library_content)
         layout.visibility = View.GONE
+    }
+    
+    private fun setupWindowInsets() {
+        val rootView = requireView().findViewById<ConstraintLayout>(R.id.constraintLayout_library_view)
+        
+        ViewCompat.setOnApplyWindowInsetsListener(rootView) { view, windowInsets ->
+            val insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
+            
+            // Only apply bottom padding if there's actually a navigation bar (insets.bottom > 0)
+            if (insets.bottom > 0) {
+                view.updatePadding(bottom = insets.bottom)
+            }
+            
+            windowInsets
+        }
     }
 }
