@@ -341,14 +341,24 @@ class AttachmentStorageManager @Inject constructor(
         return File(directory, filename)
     }
 
-    fun getFileSize(attachment: Item): Long {
-        if (storageMode == StorageMode.EXTERNAL_CACHE) {
-            return getAttachmentFile(attachment).length()
-
-        } else if (storageMode == StorageMode.CUSTOM) {
-            return getFileSize(getAttachmentUri(attachment))
+    fun getFileSize(attachment: Item): Result<Long> {
+        return try {
+            val size = if (storageMode == StorageMode.EXTERNAL_CACHE) {
+                getAttachmentFile(attachment).length()
+            } else if (storageMode == StorageMode.CUSTOM) {
+                val uri = getAttachmentUri(attachment)
+                getFileSize(uri)
+            } else {
+                throw Exception("Invalid storage mode")
+            }
+            Result.success(size)
+        } catch (e: FileNotFoundException) {
+            Log.d("AttachmentStorageManager", "File not found for attachment ${attachment.itemKey}: ${e.message}")
+            Result.failure(e)
+        } catch (e: Exception) {
+            Log.e("AttachmentStorageManager", "Error getting file size for attachment ${attachment.itemKey}: ${e.message}")
+            Result.failure(e)
         }
-        throw Exception("Invalid storage mode")
     }
 
     fun getFileSize(attachmentUri: Uri): Long {
