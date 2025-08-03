@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.mickstarify.zooforzotero.SyncSetup.ui.components.ApiKeyInstructionsCard
 import com.mickstarify.zooforzotero.SyncSetup.viewmodels.ManualApiViewModel
+import com.mickstarify.zooforzotero.common.provides
 import com.mickstarify.zooforzotero.ui.theme.ZoteroTheme
 
 @Composable
@@ -39,10 +40,10 @@ fun SyncSetupApiKeyScreen(
     onNavigateToLibrary: () -> Unit,
     viewModel: ManualApiViewModel = hiltViewModel()
 ) {
-    val state by viewModel.state.collectAsState()
+    val (state, effects, dispatch) = viewModel.provides()
 
-    LaunchedEffect(viewModel.effects) {
-        viewModel.effects.collect { effect ->
+    LaunchedEffect(effects) {
+        effects.collect { effect ->
             when (effect) {
                 is ManualApiViewModel.Effect.NavigateToLibrary -> {
                     onNavigateToLibrary()
@@ -57,7 +58,7 @@ fun SyncSetupApiKeyScreen(
 
     SyncSetupApiKeyScreenContent(
         state = state,
-        onEvent = viewModel::dispatch
+        onEvent = dispatch
     )
 }
 

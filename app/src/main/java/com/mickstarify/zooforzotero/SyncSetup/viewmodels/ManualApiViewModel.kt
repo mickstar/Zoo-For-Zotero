@@ -5,6 +5,9 @@ import com.mickstarify.zooforzotero.SyncSetup.domain.ApiKeyRepository
 import com.mickstarify.zooforzotero.SyncSetup.domain.AuthenticationStorage
 import com.mickstarify.zooforzotero.common.BaseViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -13,6 +16,9 @@ class ManualApiViewModel @Inject constructor(
     private val apiKeyRepository: ApiKeyRepository,
     private val authStorage: AuthenticationStorage
 ) : BaseViewModel<ManualApiViewModel.State, ManualApiViewModel.Effect, ManualApiViewModel.Event>() {
+
+    private val _stateFlow = MutableStateFlow(State())
+    override val stateFlow: StateFlow<State> = _stateFlow.asStateFlow()
 
     data class State(
         val apiKey: String = "",
@@ -33,12 +39,11 @@ class ManualApiViewModel @Inject constructor(
         object NavigateBack : Event()
     }
 
-    override fun getInitialState(): State = State()
 
     override fun handleEvent(event: Event) {
         when (event) {
             is Event.ApiKeyChanged -> {
-                updateState {
+                updateCurrentState {
                     it.copy(
                         apiKey = event.apiKey.trim(),
                         isSubmitEnabled = event.apiKey.trim().isNotBlank(),
@@ -48,25 +53,25 @@ class ManualApiViewModel @Inject constructor(
             }
 
             is Event.SubmitApiKey -> {
-                if (currentState.apiKey.isNotBlank() && !currentState.isValidating) {
-                    validateApiKey(currentState.apiKey)
+                if (getCurrentState().apiKey.isNotBlank() && !getCurrentState().isValidating) {
+                    validateApiKey(getCurrentState().apiKey)
                 }
             }
 
             is Event.ClearError -> {
-                updateState { it.copy(errorMessage = null) }
+                updateCurrentState { it.copy(errorMessage = null) }
             }
 
             is Event.NavigateBack -> {
                 viewModelScope.launch {
-                    sendEffect(Effect.NavigateBack)
+                    triggerEffect(Effect.NavigateBack)
                 }
             }
         }
     }
 
     private fun validateApiKey(apiKey: String) {
-        updateState { it.copy(isValidating = true, errorMessage = null) }
+        updateCurrentState { it.copy(isValidating = true, errorMessage = null) }
 
         viewModelScope.launch {
             when (val result = apiKeyRepository.validateApiKey(apiKey)) {
@@ -77,12 +82,12 @@ class ManualApiViewModel @Inject constructor(
                         result.keyInfo.userID.toString(),
                         result.keyInfo.key
                     )
-                    updateState { it.copy(isValidating = false) }
-                    sendEffect(Effect.NavigateToLibrary)
+                    updateCurrentState { it.copy(isValidating = false) }
+                    triggerEffect(Effect.NavigateToLibrary)
                 }
 
                 is ApiKeyRepository.ValidationResult.Error -> {
-                    updateState {
+                    updateCurrentState {
                         it.copy(
                             isValidating = false,
                             errorMessage = result.message
@@ -91,7 +96,7 @@ class ManualApiViewModel @Inject constructor(
                 }
 
                 is ApiKeyRepository.ValidationResult.NetworkError -> {
-                    updateState {
+                    updateCurrentState {
                         it.copy(
                             isValidating = false,
                             errorMessage = "Network error connecting to Zotero API."
@@ -101,4 +106,10 @@ class ManualApiViewModel @Inject constructor(
             }
         }
     }
+    
+    private fun updateCurrentState(transform: (State) -> State) {
+        _stateFlow.value = transform(_stateFlow.value)
+    }
+    
+    private fun getCurrentState(): State = _stateFlow.value
 }

@@ -19,7 +19,7 @@
         android:usesCleartextTraffic="true"
         android:largeHeap="true">
         <activity
-            android:name=".AttachmentManager.AttachmentManager"
+            android:name=".AttachmentManager.AttachmentManagerLegacy"
             android:label="@string/title_activity_attachment_manager"
             android:parentActivityName=".LibraryActivity.LibraryActivity"
             android:theme="@style/Theme.ZooForZotero.NoActionBar">

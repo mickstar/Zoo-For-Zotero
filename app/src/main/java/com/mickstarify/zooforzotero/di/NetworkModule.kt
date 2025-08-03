@@ -22,7 +22,6 @@ annotation class UnauthenticatedApiService
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
 
-    @Singleton
     @Provides
     @UnauthenticatedApiService
     fun provideUnauthenticatedZoteroApiService(): ZoteroAPIService {

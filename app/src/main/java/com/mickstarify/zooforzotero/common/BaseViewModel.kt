@@ -1,41 +1,58 @@
 package com.mickstarify.zooforzotero.common
 
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.flowWithLifecycle
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asSharedFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 
 abstract class BaseViewModel<STATE, EFFECT, EVENT> : ViewModel() {
+
+    abstract val stateFlow: StateFlow<STATE>
     
-    private val _state = MutableStateFlow(getInitialState())
-    val state: StateFlow<STATE> = _state.asStateFlow()
-    
-    private val _effects = MutableSharedFlow<EFFECT>()
-    val effects: Flow<EFFECT> = _effects.asSharedFlow()
-    
-    protected abstract fun getInitialState(): STATE
+    private val effectChannel = Channel<EFFECT>()
+    val effect: Flow<EFFECT> = effectChannel.receiveAsFlow()
     
     protected abstract fun handleEvent(event: EVENT)
     
-    fun dispatch(event: EVENT) {
+    val dispatchEvent: (EVENT) -> Unit = { event ->
         handleEvent(event)
     }
     
-    protected fun setState(newState: STATE) {
-        _state.value = newState
+    protected suspend fun triggerEffect(effect: EFFECT) {
+        effectChannel.send(effect)
     }
-    
-    protected fun updateState(update: (STATE) -> STATE) {
-        _state.value = update(_state.value)
+}
+
+data class ViewModelProvides<STATE, EFFECT, EVENT>(
+    val state: STATE,
+    val effect: Flow<EFFECT>,
+    val dispatch: (EVENT) -> Unit
+) 
+
+@Composable
+fun <STATE, EFFECT, EVENT> BaseViewModel<STATE, EFFECT, EVENT>.provides(): ViewModelProvides<STATE, EFFECT, EVENT> {
+    val owner = LocalLifecycleOwner.current
+    val lifecycleAwareState = remember(stateFlow, owner) {
+        stateFlow.flowWithLifecycle(owner.lifecycle, Lifecycle.State.STARTED)
     }
-    
-    protected suspend fun sendEffect(effect: EFFECT) {
-        _effects.emit(effect)
+
+    val currentStateValue by lifecycleAwareState.collectAsState(stateFlow.value)
+
+    val lifecycleAwareEffect = remember(effect, owner) {
+        effect.flowWithLifecycle(owner.lifecycle, Lifecycle.State.STARTED)
     }
-    
-    protected val currentState: STATE
-        get() = _state.value
+
+    return ViewModelProvides(
+        state = currentStateValue,
+        effect = lifecycleAwareEffect,
+        dispatch = dispatchEvent
+    )
 }
