@@ -19,15 +19,6 @@
         android:usesCleartextTraffic="true"
         android:largeHeap="true">
         <activity
-            android:name=".AttachmentManager.AttachmentManagerLegacy"
-            android:label="@string/title_activity_attachment_manager"
-            android:parentActivityName=".LibraryActivity.LibraryActivity"
-            android:theme="@style/Theme.ZooForZotero.NoActionBar">
-            <meta-data
-                android:name="android.support.PARENT_ACTIVITY"
-                android:value="com.mickstarify.zooforzotero.LibraryActivity.LibraryActivity" />
-        </activity>
-        <activity
             android:name=".AttachmentManager.AttachmentManager"
             android:label="@string/title_activity_attachment_manager"
             android:parentActivityName=".LibraryActivity.LibraryActivity"
