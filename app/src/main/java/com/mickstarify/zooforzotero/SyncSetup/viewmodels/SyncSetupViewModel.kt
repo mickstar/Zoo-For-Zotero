@@ -4,12 +4,18 @@ import androidx.lifecycle.viewModelScope
 import com.mickstarify.zooforzotero.SyncSetup.SyncOption
 import com.mickstarify.zooforzotero.common.BaseViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
 class SyncSetupViewModel @Inject constructor(
 ) : BaseViewModel<SyncSetupViewModel.State, SyncSetupViewModel.Effect, SyncSetupViewModel.Event>() {
+
+    private val _stateFlow = MutableStateFlow(State())
+    override val stateFlow: StateFlow<State> = _stateFlow.asStateFlow()
 
     data class State(
         val selectedSyncOption: SyncOption = SyncOption.ZoteroAPI,
@@ -27,12 +33,10 @@ class SyncSetupViewModel @Inject constructor(
         object ProceedWithSetup : Event()
     }
 
-    override fun getInitialState(): State = State()
-
     override fun handleEvent(event: Event) {
         when (event) {
             is Event.SelectSyncOption -> {
-                updateState {
+                updateCurrentState {
                     it.copy(
                         selectedSyncOption = event.option,
                         isProceedEnabled = event.option != SyncOption.Unset
@@ -41,15 +45,15 @@ class SyncSetupViewModel @Inject constructor(
             }
 
             is Event.ProceedWithSetup -> {
-                when (currentState.selectedSyncOption) {
+                when (getCurrentState().selectedSyncOption) {
                     SyncOption.ZoteroAPI -> {
                         viewModelScope.launch {
-                            sendEffect(Effect.NavigateToZoteroApiSetup)
+                            triggerEffect(Effect.NavigateToZoteroApiSetup)
                         }
                     }
                     SyncOption.ZoteroAPIManual -> {
                         viewModelScope.launch {
-                            sendEffect(Effect.NavigateToApiKeyEntry)
+                            triggerEffect(Effect.NavigateToApiKeyEntry)
                         }
                     }
 
@@ -58,4 +62,10 @@ class SyncSetupViewModel @Inject constructor(
             }
         }
     }
+    
+    private fun updateCurrentState(transform: (State) -> State) {
+        _stateFlow.value = transform(_stateFlow.value)
+    }
+    
+    private fun getCurrentState(): State = _stateFlow.value
 }

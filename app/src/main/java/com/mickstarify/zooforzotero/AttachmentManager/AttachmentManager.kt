@@ -2,133 +2,65 @@ package com.mickstarify.zooforzotero.AttachmentManager
 
 import android.os.Bundle
 import android.util.Log
-import android.view.View
-import android.view.WindowManager
-import android.widget.Button
-import android.widget.LinearLayout
-import android.widget.ProgressBar
-import android.widget.TextView
-import android.widget.Toast
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.appcompat.app.AlertDialog
-import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.widget.Toolbar
-import com.mickstarify.zooforzotero.R
+import androidx.activity.viewModels
+import androidx.compose.runtime.LaunchedEffect
+import com.mickstarify.zooforzotero.AttachmentManager.ui.AttachmentManagerScreen
+import com.mickstarify.zooforzotero.AttachmentManager.viewmodel.AttachmentManagerViewModel
+import com.mickstarify.zooforzotero.common.provides
+import com.mickstarify.zooforzotero.ui.theme.ZoteroTheme
+import dagger.hilt.android.AndroidEntryPoint
 
-class AttachmentManager : AppCompatActivity(), Contract.View {
-    lateinit var presenter: Contract.Presenter
+private const val TAG = "AttachmentManager"
+
+@AndroidEntryPoint
+class AttachmentManager : ComponentActivity() {
+    
+    private val viewModel: AttachmentManagerViewModel by viewModels()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
-        
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_attachment_manager)
-        
-        setupToolbar()
-        supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
-        presenter = AttachmentManagerPresenter(this, this)
-    }
+        Log.d(TAG, "AttachmentManager created")
 
-    override fun initUI() {
-        findViewById<LinearLayout>(R.id.ll_meta_information).visibility = View.INVISIBLE
-        findViewById<Button>(R.id.button_download).setOnClickListener {
-            presenter.pressedDownloadAttachments()
-        }
-        setDownloadButtonState("Loading Library", false)
-    }
+        setContent {
+            ZoteroTheme {
 
-    override fun makeToastAlert(message: String) {
-        val toast = Toast.makeText(this, message, Toast.LENGTH_LONG)
-        toast.show()
-    }
+                val (state, effect, dispatch) = viewModel.provides()
 
-    override fun createErrorAlert(title: String, message: String, onClick: () -> Unit) {
-        val alert = AlertDialog.Builder(this)
-        alert.setIcon(R.drawable.ic_error_black_24dp)
-        alert.setTitle(title)
-        alert.setMessage(message)
-        alert.setPositiveButton("Ok") { _, _ -> onClick() }
-        try {
-            alert.show()
-        } catch (exception: WindowManager.BadTokenException) {
-            Log.e("zotero", "error cannot show error dialog. ${message}")
-        }
-    }
+//                LaunchedEffect(Unit) {
+//                    dispatch(AttachmentManagerViewModel.Event.LoadAttachments)
+//                }
 
-    var progressBar: ProgressBar? = null
-    override fun showLibraryLoadingAnimation() {
-        if (progressBar == null) {
-            progressBar = findViewById(R.id.progressBar)
-        }
+                LaunchedEffect(Unit) {
+                    effect.collect { effect ->
+                        when (effect) {
+                            is AttachmentManagerViewModel.Effect.NavigateBack -> {
+                                Log.d(TAG, "Navigate back effect received")
+                                finish()
+                            }
+                            is AttachmentManagerViewModel.Effect.ShowError -> {
+                                Log.d(TAG, "Show error effect: ${effect.message}")
+                            }
+                            is AttachmentManagerViewModel.Effect.OpenAttachment -> {
+                                Log.d(TAG, "Open attachment effect: ${effect.attachmentPath}")
+                            }
+                        }
+                    }
+                }
 
-        progressBar?.isIndeterminate = true
-        progressBar?.visibility = View.VISIBLE
-        progressBar?.isActivated = true
-
-        val textView = findViewById<TextView>(R.id.txt_loading_library_text)
-        textView.text = resources.getString(R.string.loading_your_library)
-        textView.visibility = View.VISIBLE
-    }
-
-    override fun hideLibraryLoadingAnimation() {
-        progressBar?.let {
-            it.visibility = View.INVISIBLE
-            it.isActivated = false
-        }
-        val textView = findViewById<TextView>(R.id.txt_loading_library_text)
-        textView.visibility = View.INVISIBLE
-    }
-
-    override fun setDownloadButtonState(text: String, enabled: Boolean) {
-        val button = findViewById<Button>(R.id.button_download)
-        button.isEnabled = enabled
-        button.text = text
-        Log.d("zotero", "button state changed. ${button.text} ${button.isEnabled}")
-    }
-
-    override fun updateLoadingProgress(message: String, current: Int, total: Int) {
-        if (progressBar == null) {
-            progressBar = findViewById(R.id.progressBar)
-        }
-        progressBar?.let {
-            it.visibility = View.VISIBLE
-            it.isIndeterminate = current == 0
-            it.progress = current
-            it.max = total
-            it.isActivated = true
-        }
-
-        val textView = findViewById<TextView>(R.id.txt_loading_library_text)
-        textView.visibility = View.VISIBLE
-        textView.text = message
-    }
-
-    override fun displayAttachmentInformation(
-        nLocal: Int,
-        sizeLocal: String,
-        nRemote: Int
-    ) {
-        findViewById<TextView>(R.id.txt_number_attachments).text =
-            "${nLocal} of ${nRemote} Downloaded"
-        findViewById<TextView>(R.id.txt_local_size).text = "${sizeLocal} used"
-
-        findViewById<LinearLayout>(R.id.ll_meta_information).visibility = View.VISIBLE
-
-        //todo add free disk space.
-    }
-
-
-    private var doubleBackToExitPressedOnce = false
-    override fun onBackPressed() {
-        if (presenter.isDownloading()) {
-            this.makeToastAlert("Do not exit while download is active. Cancel it first.")
-        } else {
-            super.onBackPressed()
+                AttachmentManagerScreen(
+                    state = state,
+                    dispatch = { event ->
+                        Log.d(TAG, "Event dispatched: $event")
+                        dispatch(event)
+                    }
+                )
+            }
         }
     }
 
-    private fun setupToolbar() {
-        val toolbar = findViewById<Toolbar>(R.id.toolbar)
-        setSupportActionBar(toolbar)
-    }
 }

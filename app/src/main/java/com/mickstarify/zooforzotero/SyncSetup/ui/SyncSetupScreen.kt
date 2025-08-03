@@ -17,6 +17,7 @@ import com.mickstarify.zooforzotero.SyncSetup.ui.screens.SyncSetupApiKeyScreen
 import com.mickstarify.zooforzotero.SyncSetup.ui.screens.SyncSetupLandingScreen
 import com.mickstarify.zooforzotero.SyncSetup.ui.screens.SyncSetupWebViewScreen
 import com.mickstarify.zooforzotero.SyncSetup.viewmodels.SyncSetupViewModel
+import com.mickstarify.zooforzotero.common.provides
 import com.mickstarify.zooforzotero.ui.theme.ZoteroTheme
 
 // Navigation Routes
@@ -31,11 +32,11 @@ fun SyncSetupScreen(
     onNavigateToLibrary: () -> Unit,
     viewModel: SyncSetupViewModel = hiltViewModel()
 ) {
-    val state by viewModel.state.collectAsState()
+    val (state,effects,dispatch) = viewModel.provides()
     val navController = rememberNavController()
 
-    LaunchedEffect(viewModel.effects) {
-        viewModel.effects.collect { effect ->
+    LaunchedEffect(effects) {
+        effects.collect { effect ->
             when (effect) {
                 is SyncSetupViewModel.Effect.NavigateToZoteroApiSetup -> {
                     navController.navigate(SyncSetupRoutes.WEBVIEW_AUTH)
@@ -63,7 +64,7 @@ fun SyncSetupScreen(
             composable(SyncSetupRoutes.LANDING) {
                 SyncSetupLandingScreen(
                     state = state,
-                    onEvent = viewModel::dispatch
+                    onEvent = dispatch
                 )
             }
 
