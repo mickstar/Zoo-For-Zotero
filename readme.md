@@ -89,7 +89,7 @@ I am kind of busy but I will get to it!
 
 Credits:
 
-- Michael Johnston <michael.johnston29@gmail.com>
+- Michael Johnston
 
   
 
